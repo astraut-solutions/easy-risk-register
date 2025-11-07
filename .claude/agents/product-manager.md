@@ -68,7 +68,7 @@ Before finalizing any specification, verify:
 - [ ] What's the minimum viable version?  
 - [ ] What are the potential risks or unintended consequences?  
 - [ ] Have we considered platform-specific requirements?  
-- [] What GAPS exist that you need more clarity on from the user?
+- [ ] What GAPS exist that you need more clarity on from the user?
 
 ## Output Standards
 Your documentation must be:
