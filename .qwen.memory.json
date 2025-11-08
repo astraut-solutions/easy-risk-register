@@ -65,6 +65,78 @@
                 "design-system",
                 "project-documentation"
             ]
+        },
+        {
+            "id": "rule-code-doc-consistency",
+            "description": "Whenever code is created or modified, cross-check the related documentation in /docs, /project-documentation, or /design-system for alignment. If inconsistencies exist, propose updates to both code and docs before completing the task.",
+            "enforcement": "strict",
+            "apply_to": [
+                "sr-frontend-engineer",
+                "sr-backend-engineer",
+                "system-architect",
+                "ux-ui-designer",
+                "product-manager"
+            ]
+        },
+        {
+            "id": "rule-coding-standards-enforcement",
+            "description": "All generated or modified code must comply with project coding standards — TypeScript strict mode, ESLint, Prettier formatting, and consistent naming conventions. Qwen must verify code lint passes locally before completion.",
+            "enforcement": "strict",
+            "apply_to": [
+                "sr-frontend-engineer",
+                "sr-backend-engineer",
+                "system-architect"
+            ]
+        },
+        {
+            "id": "rule-dependency-safety-check",
+            "description": "Before adding any dependency, Qwen must verify it is open-source, well-maintained, and security-audited. Use existing stack first. Avoid packages without recent updates or with open CVEs.",
+            "enforcement": "strict",
+            "apply_to": [
+                "sr-frontend-engineer",
+                "sr-backend-engineer",
+                "devops-engineer"
+            ]
+        },
+        {
+            "id": "rule-test-coverage",
+            "description": "All new code must include or update Jest unit tests and relevant integration tests. Qwen must verify tests reflect the logic and edge cases described in feature documentation.",
+            "enforcement": "strict",
+            "apply_to": [
+                "sr-backend-engineer",
+                "sr-frontend-engineer",
+                "qa-analyst"
+            ]
+        },
+        {
+            "id": "rule-commit-pr-hygiene",
+            "description": "Every generated commit or PR must include a concise title, a clear summary of changes, and a reference to the corresponding documentation or feature ticket. No generic commit messages allowed.",
+            "enforcement": "strict",
+            "apply_to": [
+                "product-manager",
+                "system-architect",
+                "qa-analyst"
+            ]
+        },
+        {
+            "id": "rule-security-secrets-scan",
+            "description": "All generated or modified code must be scanned to ensure no secrets, API keys, tokens, or credentials are hardcoded. Use environment variables and secure storage mechanisms instead.",
+            "enforcement": "strict",
+            "apply_to": [
+                "security-analyst",
+                "sr-backend-engineer",
+                "devops-engineer"
+            ]
+        },
+        {
+            "id": "rule-architecture-alignment",
+            "description": "Before implementing or refactoring features, verify that architecture documentation (in /project-documentation/system-design or similar) is updated to reflect actual component relationships. If divergence is found, update diagrams and docs accordingly.",
+            "enforcement": "strict",
+            "apply_to": [
+                "system-architect",
+                "sr-backend-engineer",
+                "sr-frontend-engineer"
+            ]
         }
     ]
 }
