@@ -1,56 +1,49 @@
 Easy Risk Register
 
-Concept:  
+Concept:
 A lightweight, cross-industry web app that empowers small and medium-sized organizations to identify, assess, and visualize operational, security, or compliance risks — delivering enterprise-level insights without the bloat, complexity, or high costs of traditional systems.
 
-Problem:  
+Problem:
 Many small and medium businesses (SMBs) rely on outdated methods like Excel spreadsheets or simply overlook risk management due to limited resources. Enterprise-grade tools such as Archer or ServiceNow demand steep learning curves, hefty subscriptions, and IT overhead, making them inaccessible for teams that need straightforward, actionable risk tracking.
 
-Solution:  
-Easy Risk Register is a minimalist, fully client-side web app that runs entirely in the browser, using local storage for data security and zero server dependencies. It enables users to:  
-- Quickly add, edit, or delete risks with intuitive forms.  
-- Assign probability (e.g., low/medium/high), impact levels, and custom mitigation plans.  
-- Automatically compute a risk score based on probability × impact formulas.  
-- Visualize risks in a dynamic probability-impact matrix (e.g., a color-coded grid for quick prioritization).  
-- Export data to CSV, PDF, or shareable reports for audits, meetings, or stakeholders.  
+Solution:
+Easy Risk Register is a minimalist, fully client-side web app that runs entirely in the browser, using local storage for data security and zero server dependencies. It enables users to:
+- Quickly add, edit, or delete risks with intuitive forms.
+- Assign probability (e.g., low/medium/high), impact levels, and custom mitigation plans.
+- Automatically compute a risk score based on probability × impact formulas.
+- Visualize risks in a dynamic probability-impact matrix (e.g., a color-coded grid for quick prioritization).
+- Export data to CSV for audits, meetings, or stakeholders.
 
-Why It Works:  
-- Universal appeal across industries (e.g., tech, finance, healthcare, manufacturing) where risk management is essential but often neglected.  
-- Instant setup: No installations, accounts, or backend — deployable for free on platforms like GitHub Pages or Vercel.  
-- Privacy-focused: All data stays local to the user's device, reducing compliance worries.  
-- Scalable: Core features are simple, but expandable via plugins for domain-specific risks (e.g., cybersecurity threats, financial audits, or project delays).  
-- User-friendly: Clean, responsive UI with drag-and-drop prioritization and real-time updates, making it accessible for non-experts.
+Why It Works:
+- Universal appeal across industries (e.g., tech, finance, healthcare, manufacturing) where risk management is essential but often neglected.
+- Instant setup: No installations, accounts, or backend — deployable for free on platforms like GitHub Pages or Vercel.
+- Privacy-focused: All data stays local to the user's device, reducing compliance worries.
+- Scalable: Core features are simple, but expandable via plugins for domain-specific risks (e.g., cybersecurity threats, financial audits, or project delays).
+- User-friendly: Clean, responsive UI with real-time updates, making it accessible for non-experts.
 
-Monetization Potential:  
-- Free core version for individual or small-team use.  
-- Paid tiers ($5-15/month per user) for advanced features like team collaboration (real-time sharing via cloud sync), custom templates, automated reminders, and premium reporting (e.g., dashboards with trend analysis).
+The MVP should generally flow like this:
 
-The MVP should generally flow like this:  
+1. User can access the app directly with no registration required.
 
-1. User can access the app directly (no mandatory registration for basic use) or sign up for enhanced features.  
+2. After loading the app, users can immediately start using the application.
 
-2. After loading the app, an optional onboarding flow collects basic info (e.g., industry type, team size, primary risk categories like operational/security/compliance) to customize default templates and suggestions.  
+3. A simple navigation bar at the top or side shows:
+   1. Risk Dashboard (home view)
+      - Overview matrix visualizing all active risks by probability and impact.
+      - Quick filters for sorting by score, category, or status (e.g., open/mitigated).
+      - Users can click into a risk for detailed view, where they edit details, add notes, or mark as resolved.
+      - Real-time risk score updates as changes are made.
 
-3. A simple navigation bar at the top or side shows:  
-   1. Risk Dashboard (home view)  
-      - Overview matrix visualizing all active risks by probability and impact.  
-      - Quick filters for sorting by score, category, or status (e.g., open/mitigated).  
-      - Users can click into a risk for detailed view, where they edit details, add notes, or mark as resolved.  
-      - Real-time risk score updates as changes are made.  
+   2. Add New Risk (prominent button, e.g., symbolized by a "+" icon)
+      - Launches a guided form: Input risk description, select probability/impact sliders, outline mitigation steps.
+      - Save locally and auto-refresh the dashboard.
 
-   2. Add New Risk (prominent button, e.g., symbolized by a "+" icon)  
-      - Launches a guided form: Input risk description, select probability/impact sliders, outline mitigation steps.  
-      - AI-assisted suggestions (if integrated later via browser APIs) for common mitigations based on industry.  
-      - Save locally and auto-refresh the dashboard.  
+   3. Reports & Exports
+      - View history of all risks (active/archived).
+      - Generate exports: Select format (CSV), and download/share.
 
-   3. Reports & Exports  
-      - View history of all risks (active/archived).  
-      - Generate exports: Select format (CSV/PDF), customize (e.g., include charts), and download/share.  
-      - For paid users: Schedule automated reports or integrate with tools like Google Drive.  
-
-   4. Settings  
-      - Customize matrix (e.g., adjust scoring scales, color themes).  
-      - Data management: Backup/restore local data, clear history.  
-      - Upgrade prompts for paid features like multi-user access.  
+   4. Settings
+      - Customize matrix (e.g., adjust scoring scales, color themes).
+      - Data management: Backup/restore local data, clear history.
 
 The audience for this app is SMB owners, managers, and compliance officers who handle risks informally but need a structured tool to stay proactive, without investing in heavy enterprise software. It targets the intersection of growing businesses that value efficiency and those in regulated sectors requiring basic documentation for audits or insurance.
