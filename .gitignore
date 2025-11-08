@@ -1,24 +1,33 @@
-# Dependencies
+# ────────────────────────────────
+#  Node.js Dependencies
+# ────────────────────────────────
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Environment variables
+# ────────────────────────────────
+#  Environment Variables
+# ────────────────────────────────
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# IDE files
+# ────────────────────────────────
+#  IDE / Editor Files
+# ────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+*.iml
 
-# OS generated files
+# ────────────────────────────────
+#  OS Generated Files
+# ────────────────────────────────
 .DS_Store
 .DS_Store?
 ._*
@@ -26,15 +35,46 @@ yarn-error.log*
 .Trashes
 ehthumbs.db
 Thumbs.db
+desktop.ini
 
-# Logs
+# ────────────────────────────────
+#  Logs
+# ────────────────────────────────
 logs/
 *.log
 
-# Build outputs
+# ────────────────────────────────
+#  Build Outputs
+# ────────────────────────────────
 dist/
 build/
 coverage/
+out/
+tmp/
 
-# Local configuration
+# ────────────────────────────────
+#  Local Configuration
+# ────────────────────────────────
 .local/
+.cache/
+.temp/
+*.bak
+
+# ────────────────────────────────
+#  Qwen / Claude Configuration
+# ────────────────────────────────
+# Keep core agent and memory config under version control
+!.qwen/
+!.qwen.memory.json
+!.claude/
+!.claude/agents/
+# Exclude any auto-generated or transient Claude logs
+.claude/logs/
+.claude/tmp/
+
+# ────────────────────────────────
+#  Miscellaneous
+# ────────────────────────────────
+*.zip
+*.tar
+*.gz

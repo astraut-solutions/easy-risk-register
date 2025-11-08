@@ -1,0 +1,84 @@
+{
+  "general": {
+    "memory": {
+      "enabled": true,
+      "rules": [
+        {
+          "id": "agent-binding-devops-engineer",
+          "description": "Always use the devops-engineer agent definition from project root.",
+          "path": "../.claude/agents/devops-engineer.md",
+          "enforcement": "strict",
+          "apply_to": [
+            "devops-engineer"
+          ]
+        },
+        {
+          "id": "agent-binding-product-manager",
+          "description": "Always use the product-manager agent definition from project root.",
+          "path": "../.claude/agents/product-manager.md",
+          "enforcement": "strict",
+          "apply_to": [
+            "product-manager"
+          ]
+        },
+        {
+          "id": "agent-binding-qa-analyst",
+          "description": "Always use the qa-analyst agent definition from project root.",
+          "path": "../.claude/agents/qa-analyst.md",
+          "enforcement": "strict",
+          "apply_to": [
+            "qa-analyst"
+          ]
+        },
+        {
+          "id": "agent-binding-security-analyst",
+          "description": "Always use the security-analyst agent definition from project root.",
+          "path": "../.claude/agents/security-analyst.md",
+          "enforcement": "strict",
+          "apply_to": [
+            "security-analyst"
+          ]
+        },
+        {
+          "id": "agent-binding-sr-backend-engineer",
+          "description": "Always use the sr-backend-engineer agent definition from project root.",
+          "path": "../.claude/agents/sr-backend-engineer.md",
+          "enforcement": "strict",
+          "apply_to": [
+            "sr-backend-engineer"
+          ]
+        },
+        {
+          "id": "agent-binding-sr-frontend-engineer",
+          "description": "Always use the sr-frontend-engineer agent definition from project root.",
+          "path": "../.claude/agents/sr-frontend-engineer.md",
+          "enforcement": "strict",
+          "apply_to": [
+            "sr-frontend-engineer"
+          ]
+        },
+        {
+          "id": "agent-binding-system-architect",
+          "description": "Always use the system-architect agent definition from project root.",
+          "path": "../.claude/agents/system-architect.md",
+          "enforcement": "strict",
+          "apply_to": [
+            "system-architect"
+          ]
+        },
+        {
+          "id": "agent-binding-ux-ui-designer",
+          "description": "Always use the ux-ui-designer agent definition from project root.",
+          "path": "../.claude/agents/ux-ui-designer.md",
+          "enforcement": "strict",
+          "apply_to": [
+            "ux-ui-designer",
+            "design-system",
+            "project-documentation"
+          ]
+        }
+      ]
+    }
+  },
+  "$version": 2
+}
