@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --rr-color-primary: #2563eb;
+  --rr-color-primary-dark: #1d4ed8;
+  --rr-color-primary-light: #dbeafe;
+  --rr-color-text-high: #0f172a;
+  --rr-color-text-mid: #334155;
+  --rr-color-text-low: #64748b;
+  --rr-color-bg-primary: #ffffff;
+  --rr-color-bg-secondary: #f8fafc;
+  --rr-color-bg-tertiary: #f1f5f9;
+  --rr-color-border-strong: #cbd5e1;
+  --rr-color-border-subtle: #e2e8f0;
+  --rr-color-border-faint: #f1f5f9;
+  --rr-color-success: #10b981;
+  --rr-color-warning: #f59e0b;
+  --rr-color-danger: #ef4444;
+  --rr-color-info: #3b82f6;
+  --rr-spacing-xs: 0.25rem;
+  --rr-spacing-sm: 0.5rem;
+  --rr-spacing-md: 1rem;
+  --rr-spacing-lg: 1.5rem;
+  --rr-spacing-xl: 2rem;
+  --rr-spacing-2xl: 3rem;
+  --rr-radius-md: 0.75rem;
+  --rr-radius-lg: 1rem;
+  --rr-shadow-card: 0 20px 45px -20px rgba(15, 23, 42, 0.18);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, sans-serif;
+  color: var(--rr-color-text-mid);
+  background-color: var(--rr-color-bg-tertiary);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--rr-color-border-subtle);
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--rr-color-bg-tertiary);
+    color: var(--rr-color-text-mid);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+      Ubuntu, Cantarell, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--rr-color-text-high);
+    letter-spacing: -0.02em;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .rr-panel {
+    @apply rounded-2xl border border-border-subtle bg-surface-primary shadow-card-soft;
+  }
+
+  .rr-input {
+    @apply w-full rounded-xl border border-border-subtle bg-surface-secondary px-4 py-2.5 text-sm text-text-high placeholder:text-text-low outline-none transition focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15;
+  }
+
+  .rr-select {
+    @apply w-full rounded-xl border border-border-subtle bg-surface-secondary px-4 py-2.5 text-sm text-text-high outline-none transition focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15;
+  }
+
+  .rr-textarea {
+    @apply w-full rounded-xl border border-border-subtle bg-surface-secondary px-4 py-3 text-sm text-text-high placeholder:text-text-low outline-none transition focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15;
+  }
+
+  .rr-label {
+    @apply text-sm font-semibold text-text-mid;
+  }
+
+  .rr-hint {
+    @apply text-xs text-text-low;
+  }
+}
