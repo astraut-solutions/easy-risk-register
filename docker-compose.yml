@@ -1,27 +1,36 @@
 version: '3.8'
 
 services:
+  frontend-qwen:
+    build:
+      context: ./easy-risk-register-frontend-qwen-editor
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    # Health check to ensure the application is running properly
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   frontend-codex:
-    container_name: easy-risk-register-frontend-codex-editor
     build:
       context: ./easy-risk-register-frontend-codex-editor
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     ports:
-      - "5173:5173"
-    volumes:
-      - ./easy-risk-register-frontend-codex-editor:/app
-      - /app/node_modules
+      - "3001:80"
     environment:
-      - NODE_ENV=development
-    command: npm run dev -- --host 0.0.0.0
-
-  # Optional: If you decide to add backend services in the future
-  # backend:
-  #   container_name: easy-risk-register-backend
-  #   build:
-  #     context: ./backend
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "8000:8000"
-  #   environment:
-  #     - NODE_ENV=development
+      - NODE_ENV=production
+    restart: unless-stopped
+    # Health check to ensure the application is running properly
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
