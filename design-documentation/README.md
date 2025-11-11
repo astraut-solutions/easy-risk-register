@@ -1,7 +1,7 @@
 ---
 title: Easy Risk Register - Design Documentation Overview
 description: Comprehensive design system and feature documentation for the Easy Risk Register application
-last-updated: 2025-11-08
+last-updated: 2025-11-10
 version: 1.0.0
 status: draft
 ---
@@ -18,10 +18,14 @@ This documentation contains the complete design system, feature specifications, 
   - [Style Guide](./design-system/style-guide.md)
   - [Components](./design-system/components/)
     - [Buttons](./design-system/components/buttons.md)
+    - [Cards](./design-system/components/cards.md)
     - [Forms](./design-system/components/forms.md)
     - [Navigation](./design-system/components/navigation.md)
-    - [Cards](./design-system/components/cards.md)
     - [Modals](./design-system/components/modals.md)
+    - [Badges](./design-system/components/badges.md)
+    - [Selects](./design-system/components/selects.md)
+    - [Textareas](./design-system/components/textareas.md)
+    - [Tables](./design-system/components/tables.md)
   - [Design Tokens](./design-system/tokens/)
     - [Colors](./design-system/tokens/colors.md)
     - [Typography](./design-system/tokens/typography.md)

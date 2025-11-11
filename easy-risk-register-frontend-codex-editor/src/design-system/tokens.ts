@@ -1,38 +1,72 @@
 export const colorTokens = {
   brand: {
-    primary: '#2563eb',
-    primaryDark: '#1d4ed8',
-    primaryLight: '#dbeafe',
-    secondary: '#64748b',
-    secondaryLight: '#e2e8f0',
-    secondaryPale: '#f1f5f9',
+    primary: '#2563eb', // Indigo 600 - Main CTAs, brand elements
+    primaryDark: '#1d4ed8', // Hover states, emphasis
+    primaryLight: '#dbeafe', // Subtle backgrounds, highlights
+    secondary: '#64748b', // Supporting elements (Slate 500)
+    secondaryLight: '#e2e8f0', // Backgrounds, subtle accents
+    secondaryPale: '#f1f5f9', // Selected states, highlights
   },
   semantic: {
-    success: '#10b981',
-    warning: '#f59e0b',
-    danger: '#ef4444',
-    info: '#3b82f6',
+    success: '#10b981', // Positive actions, confirmations (Emerald 500)
+    successDark: '#059669', // Darker success variant
+    warning: '#f59e0b', // Caution states, alerts (Amber 500)
+    warningDark: '#d97706', // Darker warning variant
+    danger: '#ef4444', // Errors, destructive actions (Red 500)
+    dangerDark: '#dc2626', // Darker danger variant
+    info: '#3b82f6', // Informational messages (Blue 500)
+    infoDark: '#1d428a', // Darker info variant
+  },
+  status: {
+    success: '#10b981', // Success status (Emerald 500)
+    successDark: '#059669', // Darker success variant
+    warning: '#f59e0b', // Warning status (Amber 500)
+    warningDark: '#d97706', // Darker warning variant
+    danger: '#ef4444', // Danger status (Red 500)
+    dangerDark: '#dc2626', // Darker danger variant
+    info: '#3b82f6', // Info status (Blue 500)
+    infoDark: '#1d428a', // Darker info variant
+    neutral: '#64748b', // Neutral status (Slate 500)
+  },
+  accent: {
+    primary: '#059669', // Important actions, notifications (Emerald 600)
+    secondary: '#d97706', // Warnings, highlights (Amber 600)
+    gradientStart: '#3b82f6', // For gradient elements (Blue 500)
+    gradientEnd: '#8b5cf6', // For gradient elements (Violet 500)
+  },
+  surface: {
+    primary: '#ffffff', // Main surface background
+    secondary: '#f8fafc', // Secondary surface background (slate-50)
+    tertiary: '#f1f5f9', // Tertiary surface background (slate-100)
+    quaternary: '#e2e8f0', // Quaternary surface background (slate-200)
+  },
+  border: {
+    strong: '#cbd5e1', // Strong borders (slate-300)
+    subtle: '#e2e8f0', // Subtle borders (slate-200)
+    faint: '#f1f5f9', // Faint borders (slate-100)
+  },
+  text: {
+    high: '#0f172a', // High contrast text (slate-900)
+    mid: '#334155', // Medium contrast text (slate-800)
+    low: '#64748b', // Low contrast text (slate-500)
+    inverted: '#ffffff', // Text on dark backgrounds
   },
   neutral: {
-    textHigh: '#0f172a',
-    textMid: '#334155',
-    textLow: '#64748b',
-    textMuted: '#94a3b8',
-    bgPrimary: '#ffffff',
-    bgSecondary: '#f8fafc',
-    bgTertiary: '#f1f5f9',
-    borderStrong: '#cbd5e1',
-    borderMid: '#e2e8f0',
-    borderWeak: '#f1f5f9',
-  },
-  gradient: {
-    start: '#3b82f6',
-    end: '#8b5cf6',
+    50: '#f8fafc', // Very light backgrounds
+    100: '#f1f5f9', // Light backgrounds
+    200: '#e2e8f0', // Borders, subtle dividers
+    300: '#cbd5e1', // Medium borders
+    400: '#94a3b8', // Medium text, icons
+    500: '#64748b', // Body text
+    600: '#475569', // Headings
+    700: '#334155', // Dark headings
+    800: '#1e293b', // Text on light backgrounds
+    900: '#0f172a', // Text on light backgrounds
   },
   risk: {
-    low: '#22c55e',
-    medium: '#f97316',
-    high: '#ef4444',
+    low: '#22c55e', // Green for low risk
+    medium: '#f97316', // Amber for medium risk
+    high: '#ef4444', // Red for high risk
   },
 } as const
 

@@ -1,0 +1,247 @@
+0001: import { useEffect } from 'react'
+0002: import { useForm } from 'react-hook-form'
+0003: 
+0004: import type { RiskInput, RiskStatus } from '../../types/risk'
+0005: import { calculateRiskScore, getRiskSeverity } from '../../utils/riskCalculations'
+0006: import { Button, Input, Select, Textarea } from '../../design-system'
+0007: import { cn } from '../../utils/cn'
+0008: 
+0009: export type RiskFormValues = RiskInput & { status: RiskStatus }
+0010: 
+0011: interface RiskFormProps {
+0012:   categories: string[]
+0013:   defaultValues?: Partial<RiskFormValues>
+0014:   mode?: 'create' | 'edit'
+0015:   onSubmit: (values: RiskFormValues) => void
+0016:   onCancel?: () => void
+0017:   className?: string
+0018: }
+0019: 
+0020: export const RiskForm = ({
+0021:   categories,
+0022:   defaultValues,
+0023:   mode = 'create',
+0024:   onSubmit,
+0025:   onCancel,
+0026:   className,
+0027: }: RiskFormProps) => {
+0028:   const {
+0029:     register,
+0030:     handleSubmit,
+0031:     watch,
+0032:     reset,
+0033:     formState: { errors, isSubmitting },
+0034:   } = useForm<RiskFormValues>({
+0035:     defaultValues: {
+0036:       title: '',
+0037:       description: '',
+0038:       probability: 3,
+0039:       impact: 3,
+0040:       category: categories[0] ?? 'Operational',
+0041:       mitigationPlan: '',
+0042:       status: 'open',
+0043:       ...defaultValues,
+0044:     },
+0045:   })
+0046: 
+0047:   const probability = watch('probability')
+0048:   const impact = watch('impact')
+0049:   const riskScore = calculateRiskScore(probability, impact)
+0050:   const severity = getRiskSeverity(riskScore)
+0051: 
+0052:   useEffect(() => {
+0053:     if (defaultValues) {
+0054:       reset({
+0055:         title: defaultValues.title ?? '',
+0056:         description: defaultValues.description ?? '',
+0057:         probability: defaultValues.probability ?? 3,
+0058:         impact: defaultValues.impact ?? 3,
+0059:         category: defaultValues.category ?? categories[0] ?? 'Operational',
+0060:         mitigationPlan: defaultValues.mitigationPlan ?? '',
+0061:         status: defaultValues.status ?? 'open',
+0062:       })
+0063:     }
+0064:   }, [categories, defaultValues, reset])
+0065: 
+0066:   const onFormSubmit = (values: RiskFormValues) => {
+0067:     onSubmit({
+0068:       ...values,
+0069:       probability: Number(values.probability),
+0070:       impact: Number(values.impact),
+0071:     })
+0072: 
+0073:     if (mode === 'create') {
+0074:       reset({
+0075:         title: '',
+0076:         description: '',
+0077:         probability: 3,
+0078:         impact: 3,
+0079:         category: categories[0] ?? 'Operational',
+0080:         mitigationPlan: '',
+0081:         status: 'open',
+0082:       })
+0083:     }
+0084:   }
+0085: 
+0086:   return (
+0087:     <form
+0088:       onSubmit={handleSubmit(onFormSubmit)}
+0089:       className={cn('flex h-full min-h-full flex-col gap-4', className)}
+0090:     >
+0091:       <div className="flex flex-1 flex-col gap-4 pb-1">
+0092:         <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+0093:           <section className="space-y-4 rounded-[20px] border border-border-faint/70 bg-surface-primary/95 p-4 shadow-[0_28px_56px_rgba(15,23,42,0.08)]">
+0094:             <div className="grid gap-2.5 md:grid-cols-[minmax(0,0.6fr)_minmax(0,0.4fr)]">
+0095:               <Input
+0096:                 label="Title"
+0097:                 helperText="Keep it sharp so execs can scan quickly."
+0098:                 error={errors.title?.message?.toString()}
+0099:                 placeholder="Supply chain disruption"
+0100:                 className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-2.5 text-sm focus:ring-brand-primary/30"
+0101:                 {...register('title', { required: 'Title is required' })}
+0102:               />
+0103:               <Select
+0104:                 label="Category"
+0105:                 error={errors.category?.message?.toString()}
+0106:                 options={categories.map(category => ({ value: category, label: category }))}
+0107:                 className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-2.5 text-sm focus:ring-brand-primary/30"
+0108:                 {...register('category', { required: 'Category is required' })}
+0109:               />
+0110:             </div>
+0111: 
+0112:             <Textarea
+0113:               label="Description"
+0114:               error={errors.description?.message?.toString()}
+0115:               helperText="Capture context, trigger, and business impact in 2-3 sentences."
+0116:               placeholder="Describe the risk context and impact..."
+0117:               rows={3}
+0118:               className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-2.5 text-sm focus:ring-brand-primary/30"
+0119:               {...register('description', { required: 'Description is required' })}
+0120:             />
+0121: 
+0122:             <div className="grid gap-2.5 md:grid-cols-[minmax(0,0.35fr)_minmax(0,0.65fr)]">
+0123:               <Select
+0124:                 label="Status"
+0125:                 options={[
+0126:                   { value: 'open', label: 'Open' },
+0127:                   { value: 'mitigated', label: 'Mitigated' },
+0128:                   { value: 'closed', label: 'Closed' },
+0129:                 ]}
+0130:                 className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-2.5 text-sm focus:ring-brand-primary/30"
+0131:                 {...register('status', { required: true })}
+0132:               />
+0133:               <div className="flex items-center rounded-2xl border border-dashed border-border-faint bg-surface-secondary/20 px-3.5 py-2.5 text-[11px] text-text-low">
+0134:                 Probability x Impact updates instantly so you can gauge severity before committing changes.
+0135:               </div>
+0136:             </div>
+0137:           </section>
+0138: 
+0139:           <section className="flex flex-col gap-3 rounded-[20px] border border-border-faint/60 bg-gradient-to-b from-surface-primary/90 to-surface-secondary/20 p-4 shadow-[0_28px_56px_rgba(15,23,42,0.08)]">
+0140:             <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
+0141:               <Textarea
+0142:                 label="Mitigation plan"
+0143:                 placeholder="Outline mitigation actions, owners, or milestones..."
+0144:                 helperText="Optional, but it keeps downstream owners aligned."
+0145:                 rows={2}
+0146:                 className="rounded-xl border-border-faint bg-surface-secondary/10 px-3.5 py-2 text-sm focus:ring-brand-primary/30"
+0147:                 {...register('mitigationPlan')}
+0148:               />
+0149:             </div>
+0150: 
+0151:             <div className="grid gap-2.5 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,0.45fr)]">
+0152:               <div className="space-y-3">
+0153:                 <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
+0154:                   <div className="flex items-center justify-between text-xs font-medium text-text-high">
+0155:                     <span>Probability</span>
+0156:                     <span className="rounded-full bg-surface-secondary/30 px-3 py-0.5 text-[11px] font-semibold text-text-high">
+0157:                       {probability} / 5
+0158:                     </span>
+0159:                   </div>
+0160:                   <input
+0161:                     type="range"
+0162:                     min={1}
+0163:                     max={5}
+0164:                     step={1}
+0165:                     {...register('probability', {
+0166:                       required: true,
+0167:                       valueAsNumber: true,
+0168:                     })}
+0169:                     className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-gradient-to-r from-brand-primary/20 via-brand-primary/10 to-brand-primary/5 accent-brand-primary focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/25"
+0170:                   />
+0171:                   <p className="mt-1.5 text-[11px] text-text-low">
+0172:                     Estimate likelihood from 1 (rare) to 5 (almost certain).
+0173:                   </p>
+0174:                 </div>
+0175: 
+0176:                 <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
+0177:                   <div className="flex items-center justify-between text-xs font-medium text-text-high">
+0178:                     <span>Impact</span>
+0179:                     <span className="rounded-full bg-surface-secondary/30 px-3 py-0.5 text-[11px] font-semibold text-text-high">
+0180:                       {impact} / 5
+0181:                     </span>
+0182:                   </div>
+0183:                   <input
+0184:                     type="range"
+0185:                     min={1}
+0186:                     max={5}
+0187:                     step={1}
+0188:                     {...register('impact', {
+0189:                       required: true,
+0190:                       valueAsNumber: true,
+0191:                     })}
+0192:                     className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-gradient-to-r from-status-danger/20 via-status-danger/10 to-status-danger/5 accent-status-danger focus:outline-none focus-visible:ring-4 focus-visible:ring-status-danger/25"
+0193:                   />
+0194:                   <p className="mt-1.5 text-[11px] text-text-low">
+0195:                     Gauge downstream effect from 1 (minimal) to 5 (critical).
+0196:                   </p>
+0197:                 </div>
+0198:               </div>
+0199: 
+0200:               <aside className="flex h-full flex-col justify-between rounded-[18px] border border-border-subtle bg-surface-primary p-3.5 text-text-high shadow-sm">
+0201:                 <div className="space-y-3">
+0202:                   <p className="text-xs font-semibold uppercase tracking-[0.25em] text-text-low">
+0203:                     Live score
+0204:                   </p>
+0205:                   <div className="flex items-baseline gap-3">
+0206:                     <span className="text-4xl font-bold">{riskScore}</span>
+0207:                     <span className="rounded-full border border-border-faint bg-surface-primary/90 px-3 py-0.5 text-xs font-semibold">
+0208:                       {severity.toUpperCase()}
+0209:                     </span>
+0210:                   </div>
+0211:                   <p className="text-xs text-text-low">
+0212:                     Probability x Impact refresh with every adjustment so you always see the latest severity.
+0213:                   </p>
+0214:                 </div>
+0215:                 <dl className="space-y-1.5 pt-2.5 text-xs text-text-low">
+0216:                   <div className="flex justify-between">
+0217:                     <dt className="font-semibold text-text-high">Probability</dt>
+0218:                     <dd>
+0219:                       {probability} / 5 <span className="text-text-low">({probability * 20}%)</span>
+0220:                     </dd>
+0221:                   </div>
+0222:                   <div className="flex justify-between">
+0223:                     <dt className="font-semibold text-text-high">Impact</dt>
+0224:                     <dd>
+0225:                       {impact} / 5 <span className="text-text-low">({impact * 20}%)</span>
+0226:                     </dd>
+0227:                   </div>
+0228:                 </dl>
+0229:               </aside>
+0230:             </div>
+0231: 
+0232:             <div className="flex flex-wrap items-center justify-end gap-1.5 pt-1">
+0233:               {mode === 'edit' && onCancel && (
+0234:                 <Button type="button" variant="ghost" onClick={onCancel}>
+0235:                   Cancel
+0236:                 </Button>
+0237:               )}
+0238:               <Button type="submit" disabled={isSubmitting} className="px-6">
+0239:                 {mode === 'create' ? 'Add risk' : 'Save changes'}
+0240:               </Button>
+0241:             </div>
+0242:           </section>
+0243:         </div>
+0244:       </div>
+0245:     </form>
+0246:   )
+0247: }

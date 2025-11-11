@@ -3,33 +3,102 @@
 @tailwind utilities;
 
 :root {
-  --rr-color-primary: #2563eb;
-  --rr-color-primary-dark: #1d4ed8;
-  --rr-color-primary-light: #dbeafe;
-  --rr-color-text-high: #0f172a;
-  --rr-color-text-mid: #334155;
-  --rr-color-text-low: #64748b;
-  --rr-color-bg-primary: #ffffff;
-  --rr-color-bg-secondary: #f8fafc;
-  --rr-color-bg-tertiary: #f1f5f9;
-  --rr-color-border-strong: #cbd5e1;
-  --rr-color-border-subtle: #e2e8f0;
-  --rr-color-border-faint: #f1f5f9;
-  --rr-color-success: #10b981;
-  --rr-color-warning: #f59e0b;
-  --rr-color-danger: #ef4444;
-  --rr-color-info: #3b82f6;
-  --rr-spacing-xs: 0.25rem;
-  --rr-spacing-sm: 0.5rem;
-  --rr-spacing-md: 1rem;
-  --rr-spacing-lg: 1.5rem;
-  --rr-spacing-xl: 2rem;
-  --rr-spacing-2xl: 3rem;
+  /* Color System */
+  --rr-color-primary: #2563eb; /* Indigo 600 - Main CTAs, brand elements */
+  --rr-color-primary-dark: #1d4ed8; /* Hover states, emphasis */
+  --rr-color-primary-light: #dbeafe; /* Subtle backgrounds, highlights */
+  --rr-color-secondary: #64748b; /* Supporting elements (Slate 500) */
+  --rr-color-secondary-light: #e2e8f0; /* Backgrounds, subtle accents */
+  --rr-color-secondary-pale: #f1f5f9; /* Selected states, highlights */
+  --rr-color-accent-primary: #059669; /* Important actions, notifications (Emerald 600) */
+  --rr-color-accent-secondary: #d97706; /* Warnings, highlights (Amber 600) */
+  --rr-color-gradient-start: #3b82f6; /* For gradient elements (Blue 500) */
+  --rr-color-gradient-end: #8b5cf6; /* For gradient elements (Violet 500) */
+  --rr-color-success: #10b981; /* Positive actions, confirmations (Emerald 500) */
+  --rr-color-warning: #f59e0b; /* Caution states, alerts (Amber 500) */
+  --rr-color-danger: #ef4444; /* Errors, destructive actions (Red 500) */
+  --rr-color-info: #3b82f6; /* Informational messages (Blue 500) */
+  --rr-color-neutral-50: #f8fafc; /* Very light backgrounds */
+  --rr-color-neutral-100: #f1f5f9; /* Light backgrounds */
+  --rr-color-neutral-200: #e2e8f0; /* Borders, subtle dividers */
+  --rr-color-neutral-300: #cbd5e1; /* Medium borders */
+  --rr-color-neutral-400: #94a3b8; /* Medium text, icons */
+  --rr-color-neutral-500: #64748b; /* Body text */
+  --rr-color-neutral-600: #475569; /* Headings */
+  --rr-color-neutral-700: #334155; /* Dark headings */
+  --rr-color-neutral-800: #1e293b; /* Text on light backgrounds */
+  --rr-color-neutral-900: #0f172a; /* Text on light backgrounds */
+  --rr-color-risk-low: #22c55e; /* Green for low risk */
+  --rr-color-risk-medium: #f97316; /* Amber for medium risk */
+  --rr-color-risk-high: #ef4444; /* Red for high risk */
+
+  /* Typography System */
+  --rr-font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --rr-font-family-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
+  --rr-font-weight-light: 300;
+  --rr-font-weight-regular: 400;
+  --rr-font-weight-medium: 500;
+  --rr-font-weight-semibold: 600;
+  --rr-font-weight-bold: 700;
+  --rr-font-size-h1: 2.5rem; /* 40px */
+  --rr-font-size-h2: 2rem; /* 32px */
+  --rr-font-size-h3: 1.75rem; /* 28px */
+  --rr-font-size-h4: 1.5rem; /* 24px */
+  --rr-font-size-h5: 1.25rem; /* 20px */
+  --rr-font-size-h6: 1.125rem; /* 18px */
+  --rr-font-size-body-large: 1.125rem; /* 18px */
+  --rr-font-size-body: 1rem; /* 16px */
+  --rr-font-size-body-small: 0.875rem; /* 14px */
+  --rr-font-size-caption: 0.75rem; /* 12px */
+  --rr-font-size-label: 0.875rem; /* 14px */
+  --rr-font-size-code: 0.875rem; /* 14px */
+  --rr-line-height-h1: 1.2;
+  --rr-line-height-h2: 1.25;
+  --rr-line-height-h3: 1.3;
+  --rr-line-height-h4: 1.33;
+  --rr-line-height-h5: 1.4;
+  --rr-line-height-h6: 1.5;
+  --rr-line-height-body-large: 1.6;
+  --rr-line-height-body: 1.5;
+  --rr-line-height-body-small: 1.43;
+  --rr-line-height-caption: 1.6;
+  --rr-line-height-label: 1.43;
+  --rr-line-height-code: 1.43;
+  --rr-letter-spacing-h1: -0.025em;
+  --rr-letter-spacing-h2: -0.025em;
+  --rr-letter-spacing-h3: -0.025em;
+  --rr-letter-spacing-h4: -0.025em;
+  --rr-letter-spacing-h5: -0.025em;
+  --rr-letter-spacing-h6: -0.025em;
+
+  /* Spacing System */
+  --rr-spacing-xs: 0.25rem; /* 4px */
+  --rr-spacing-sm: 0.5rem; /* 8px */
+  --rr-spacing-md: 1rem; /* 16px */
+  --rr-spacing-lg: 1.5rem; /* 24px */
+  --rr-spacing-xl: 2rem; /* 32px */
+  --rr-spacing-2xl: 3rem; /* 48px */
+  --rr-spacing-3xl: 4rem; /* 64px */
+  --rr-spacing-4xl: 8rem; /* 128px */
+
+  /* Background and Text Colors */
+  --rr-color-bg-primary: var(--rr-color-neutral-50);
+  --rr-color-bg-secondary: var(--rr-color-neutral-50);
+  --rr-color-bg-tertiary: var(--rr-color-neutral-100);
+  --rr-color-border-strong: var(--rr-color-neutral-300);
+  --rr-color-border-subtle: var(--rr-color-neutral-200);
+  --rr-color-border-faint: var(--rr-color-neutral-100);
+  --rr-color-text-high: var(--rr-color-neutral-900);
+  --rr-color-text-mid: var(--rr-color-neutral-700);
+  --rr-color-text-low: var(--rr-color-neutral-500);
+  --rr-color-text-muted: var(--rr-color-neutral-400);
+
+  /* Radius and Shadow */
   --rr-radius-md: 0.75rem;
   --rr-radius-lg: 1rem;
   --rr-shadow-card: 0 20px 45px -20px rgba(15, 23, 42, 0.18);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-    Ubuntu, Cantarell, sans-serif;
+  
+  font-family: var(--rr-font-family-sans);
   color: var(--rr-color-text-mid);
   background-color: var(--rr-color-bg-tertiary);
   text-rendering: optimizeLegibility;
@@ -48,8 +117,7 @@
     min-height: 100vh;
     background-color: var(--rr-color-bg-tertiary);
     color: var(--rr-color-text-mid);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-      Ubuntu, Cantarell, sans-serif;
+    font-family: var(--rr-font-family-sans);
   }
 
   h1,
@@ -59,7 +127,49 @@
   h5,
   h6 {
     color: var(--rr-color-text-high);
-    letter-spacing: -0.02em;
+    letter-spacing: var(--rr-letter-spacing-h1);
+  }
+  
+  h1 {
+    font-size: var(--rr-font-size-h1);
+    line-height: var(--rr-line-height-h1);
+    font-weight: var(--rr-font-weight-semibold);
+    letter-spacing: var(--rr-letter-spacing-h1);
+  }
+  
+  h2 {
+    font-size: var(--rr-font-size-h2);
+    line-height: var(--rr-line-height-h2);
+    font-weight: var(--rr-font-weight-semibold);
+    letter-spacing: var(--rr-letter-spacing-h2);
+  }
+  
+  h3 {
+    font-size: var(--rr-font-size-h3);
+    line-height: var(--rr-line-height-h3);
+    font-weight: var(--rr-font-weight-medium);
+    letter-spacing: var(--rr-letter-spacing-h3);
+  }
+  
+  h4 {
+    font-size: var(--rr-font-size-h4);
+    line-height: var(--rr-line-height-h4);
+    font-weight: var(--rr-font-weight-medium);
+    letter-spacing: var(--rr-letter-spacing-h4);
+  }
+  
+  h5 {
+    font-size: var(--rr-font-size-h5);
+    line-height: var(--rr-line-height-h5);
+    font-weight: var(--rr-font-weight-medium);
+    letter-spacing: var(--rr-letter-spacing-h5);
+  }
+  
+  h6 {
+    font-size: var(--rr-font-size-h6);
+    line-height: var(--rr-line-height-h6);
+    font-weight: var(--rr-font-weight-medium);
+    letter-spacing: var(--rr-letter-spacing-h6);
   }
 
   #root {

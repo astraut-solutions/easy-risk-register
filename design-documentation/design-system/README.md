@@ -45,10 +45,14 @@ Our design philosophy centers on "bold simplicity" with intuitive navigation, cr
 ## Component Library
 
 - [Buttons](./components/buttons.md)
-- [Forms](./components/forms.md)
-- [Navigation](./components/navigation.md)
 - [Cards](./components/cards.md)
+- [Forms](./components/forms.md) (includes Input, Textarea, Select, and other form elements)
 - [Modals](./components/modals.md)
+- [Navigation](./components/navigation.md)
+- [Badges](./components/badges.md)
+- [Selects](./components/selects.md)
+- [Textareas](./components/textareas.md)
+- [Tables](./components/tables.md)
 
 ## Platform Adaptations
 
