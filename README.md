@@ -20,12 +20,14 @@ Easy Risk Register addresses a critical market gap where SMBs currently rely on 
 - CSV export functionality for reporting
 - Real-time updates for risk scores and visualizations
 - WCAG 2.1 AA compliant accessibility features
+- Content Security Policy (CSP) implementation for enhanced security
 - 100% compliance with product requirements
 
 ## Architecture
 
 The application follows a client-side-only architecture with no server dependencies:
 - All data is stored in browser local storage with robust input sanitization to prevent XSS attacks
+- Content Security Policy (CSP) implementation to prevent code injection attacks
 - Built with React, TypeScript, Vite, and Tailwind CSS
 - Zustand for state management
 - Framer Motion for animations

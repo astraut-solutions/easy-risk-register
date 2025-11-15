@@ -2,6 +2,23 @@
 
 This document outlines the security measures implemented in the Easy Risk Register application to protect against common web vulnerabilities.
 
+## Content Security Policy (CSP)
+
+The application implements a Content Security Policy (CSP) to prevent XSS (Cross-Site Scripting) and other code injection attacks. The CSP is implemented via a meta tag in the `index.html` file with the following directives:
+
+- `default-src 'self'` - Restricts all resources to same-origin by default
+- `script-src 'self' 'unsafe-inline' 'unsafe-eval'` - Allows scripts from same origin and inline scripts (needed for React/Vite)
+- `style-src 'self' 'unsafe-inline'` - Allows stylesheets from same-origin and inline styles
+- `img-src 'self' data: https:` - Allows images from same origin, data URLs, and HTTPS sources
+- `font-src 'self' data:` - Allows fonts from same-origin and data URLs
+- `connect-src 'self' http: https:` - Allows XMLHttpRequest, WebSocket, and fetch requests to same origin and HTTPS
+- `media-src 'self'` - Restricts media to same origin
+- `object-src 'none'` - Blocks plugins like Flash
+- `frame-src 'self'` - Allows frames from same-origin
+- `frame-ancestors 'none'` - Prevents the page from being framed (clickjacking protection)
+- `base-uri 'self'` - Restricts the base URI
+- `form-action 'self'` - Restricts form submissions to same origin
+
 ## Input Sanitization
 
 The application implements comprehensive input sanitization to prevent XSS (Cross-Site Scripting) attacks and other injection vulnerabilities.

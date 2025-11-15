@@ -11,6 +11,7 @@ import {
   filterRisks,
 } from '../utils/riskCalculations'
 import { sanitizeRiskInput, sanitizeTextInput } from '../utils/sanitization'
+import ZustandEncryptedStorage from '../utils/ZustandEncryptedStorage'
 
 const clampScore = (value: number) => Math.min(Math.max(Math.round(value), 1), 5)
 
@@ -54,8 +55,19 @@ const memoryStorage = (): Storage => {
   } as Storage
 }
 
-const safeStorage = () =>
-  typeof window === 'undefined' ? memoryStorage() : window.localStorage
+// Updated safeStorage function to use encrypted storage when available
+const safeStorage = () => {
+  if (typeof window === 'undefined') {
+    return memoryStorage()
+  }
+
+  // Check if secure storage is available, otherwise default to localStorage
+  if (ZustandEncryptedStorage.isAvailable()) {
+    return new ZustandEncryptedStorage()
+  }
+
+  return window.localStorage
+}
 
 const toCSV = (risks: Risk[]): string => {
   const header = [
