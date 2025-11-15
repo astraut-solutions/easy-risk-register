@@ -68,19 +68,19 @@ The application follows a client-side-only architecture with no server dependenc
 For detailed information about the design system, features, and implementation guidelines, see:
 
 ### Core Documentation
-- [Product Requirements](product-requirements.md) - Complete feature specifications and requirements
-- [Technical Architecture](project-documentation/architecture-output.md) - System architecture and implementation details
-- [System Diagrams](DIAGRAMS.md) - Visual representations of system architecture and data flows
+- [Product Requirements](docs/product/product-requirements.md) - Complete feature specifications and requirements
+- [Technical Architecture](docs/architecture/architecture-output.md) - System architecture and implementation details
+- [System Diagrams](docs/architecture/DIAGRAMS.md) - Visual representations of system architecture and data flows
 
 ### Design Documentation
-- [Design Documentation Overview](design-documentation/) - Complete design system and feature specifications
-  - [Design System](design-documentation/design-system/) - Style guide and component specifications
-  - [Features Documentation](design-documentation/features/) - Feature-specific implementation guides
-  - [Accessibility Guidelines](design-documentation/accessibility/) - Inclusive design standards
+- [Design Documentation Overview](docs/design/) - Complete design system and feature specifications
+  - [Design System](docs/design/design-system/) - Style guide and component specifications
+  - [Features Documentation](docs/design/features/) - Feature-specific implementation guides
+  - [Accessibility Guidelines](docs/design/accessibility/) - Inclusive design standards
 
 ### Getting Started
-- [Setup Instructions](SETUP.md) - Environment setup and configuration guide
-- [High Level Overview](high-level-current.txt) - Current implementation summary
+- [Setup Instructions](docs/getting-started/SETUP.md) - Environment setup and configuration guide
+- [High Level Overview](docs/architecture/high-level-current.txt) - Current implementation summary
 
 To view the diagrams properly, use a Markdown editor or viewer that supports Mermaid syntax (such as GitHub, GitLab, or specialized Mermaid editors).
 
