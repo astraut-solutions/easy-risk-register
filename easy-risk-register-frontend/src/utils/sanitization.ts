@@ -1,10 +1,10 @@
-import createDOMPurify from 'isomorphic-dompurify'
+import DOMPurify from 'isomorphic-dompurify'
 
 // Configure DOMPurify to allow only safe HTML elements and attributes
 // This prevents XSS attacks by removing any potentially dangerous code
 const sanitizeHTML = (html: string): string => {
   if (!html) return html
-  return createDOMPurify().sanitize(html, {
+  return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: [
       'p', 'br', 'strong', 'em', 'b', 'i', 'u', 'ol', 'ul', 'li',
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code'

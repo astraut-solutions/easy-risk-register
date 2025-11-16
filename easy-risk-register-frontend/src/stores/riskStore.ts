@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { nanoid } from 'nanoid'
+import Papa from 'papaparse'
 
 import { DEFAULT_CATEGORIES, LOCAL_STORAGE_KEY } from '../constants/risk'
 import type { Risk, RiskFilters, RiskInput } from '../types/risk'
@@ -104,29 +105,38 @@ const toCSV = (risks: Risk[]): string => {
 }
 
 const fromCSV = (csv: string): Risk[] => {
-  const [, ...rows] = csv
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
+  // Use papaparse to securely parse the CSV
+  const results = Papa.parse(csv, {
+    header: true, // Use first row as headers
+    skipEmptyLines: true,
+    transform: (value) => {
+      // Clean up the values during parsing
+      return value ? value.toString().trim() : value;
+    }
+  });
 
-  return rows
-    .map((row) => {
-      const [id, title, description, probability, impact, , category, status, mitigationPlan, creationDate, lastModified] =
-        row.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)
+  if (results.errors && results.errors.length > 0) {
+    console.error('CSV parsing errors:', results.errors);
+    // Continue processing even if there are errors - just log them
+  }
 
-      if (!title || !description) return null
+  return results.data
+    .map((row: any) => {
+      // Cast to any since papaparse returns unknown for parsed objects
+      if (!row.title || !row.description) return null;
+
       return {
-        id: id?.replaceAll('"', '') || nanoid(12),
-        title: sanitizeTextInput(title.replace(/^"|"$/g, '').replace(/""/g, '"')),
-        description: sanitizeTextInput(description.replace(/^"|"$/g, '').replace(/""/g, '"')),
-        probability: clampScore(Number(probability) || 1),
-        impact: clampScore(Number(impact) || 1),
-        riskScore: calculateRiskScore(Number(probability) || 1, Number(impact) || 1),
-        category: sanitizeTextInput((category || DEFAULT_CATEGORIES[0]).replace(/^"|"$/g, '')),
-        status: (status?.replace(/^"|"$/g, '') as Risk['status']) ?? 'open',
-        mitigationPlan: sanitizeTextInput((mitigationPlan || '').replace(/^"|"$/g, '').replace(/""/g, '"')),
-        creationDate: creationDate || new Date().toISOString(),
-        lastModified: lastModified || new Date().toISOString(),
+        id: row.id || nanoid(12),
+        title: sanitizeTextInput(row.title ? row.title.toString().replace(/""/g, '"') : ''),
+        description: sanitizeTextInput(row.description ? row.description.toString().replace(/""/g, '"') : ''),
+        probability: clampScore(Number(row.probability) || 1),
+        impact: clampScore(Number(row.impact) || 1),
+        riskScore: calculateRiskScore(Number(row.probability) || 1, Number(row.impact) || 1),
+        category: sanitizeTextInput(row.category || DEFAULT_CATEGORIES[0]),
+        status: (row.status as Risk['status']) || 'open',
+        mitigationPlan: sanitizeTextInput(row.mitigationPlan || ''),
+        creationDate: row.creationDate || new Date().toISOString(),
+        lastModified: row.lastModified || new Date().toISOString(),
       } satisfies Risk
     })
     .filter((risk): risk is Risk => Boolean(risk))

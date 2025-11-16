@@ -1,7 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { generateEncryptionKey, encryptData, decryptData, generateKeyString, exportKey, importKey } from './encryption';
 import SecureStorage from './SecureStorage';
 import ZustandEncryptedStorage from './ZustandEncryptedStorage';
+
+const globalWithWindow = globalThis as typeof globalThis & {
+  window?: typeof globalThis & { crypto?: Crypto; localStorage?: Storage };
+};
+const mockWindow = (globalWithWindow.window ??= globalWithWindow);
 
 // Mock localStorage for testing
 const mockLocalStorage = (() => {
@@ -37,11 +42,11 @@ const mockSubtleCrypto = {
     };
     return key;
   },
-  exportKey: async (format: string, key: any) => {
+  exportKey: async (_format: string, _key: any) => {
     // Return a mock key buffer
     return new Uint8Array(32).buffer; // 256-bit key
   },
-  importKey: async (format: string, keyData: any, algorithm: any, extractable: boolean, keyUsages: string[]) => {
+  importKey: async (_format: string, _keyData: any, algorithm: any, extractable: boolean, keyUsages: string[]) => {
     const key = {
       type: 'secret',
       extractable: extractable,
@@ -50,11 +55,11 @@ const mockSubtleCrypto = {
     };
     return key;
   },
-  encrypt: async (algorithm: any, key: any, data: ArrayBuffer) => {
+  encrypt: async (_algorithm: any, _key: any, data: ArrayBuffer) => {
     // Simulate encryption by returning the data unchanged but as an ArrayBuffer
     return data;
   },
-  decrypt: async (algorithm: any, key: any, data: ArrayBuffer) => {
+  decrypt: async (_algorithm: any, _key: any, data: ArrayBuffer) => {
     // Simulate decryption by returning the data unchanged
     return data;
   }
@@ -69,7 +74,7 @@ const mockGetRandomValues = (array: Uint8Array) => {
   return array;
 };
 
-Object.defineProperty(window, 'crypto', {
+Object.defineProperty(mockWindow, 'crypto', {
   value: {
     subtle: mockSubtleCrypto,
     getRandomValues: mockGetRandomValues
@@ -77,7 +82,7 @@ Object.defineProperty(window, 'crypto', {
   writable: true
 });
 
-Object.defineProperty(window, 'localStorage', {
+Object.defineProperty(mockWindow, 'localStorage', {
   value: mockLocalStorage,
   writable: true
 });
