@@ -2,6 +2,22 @@
 
 A lightweight, privacy-focused risk management application for small and medium-sized businesses (SMBs). The application provides effective tools to manage operational, security, and compliance risks through an intuitive web interface that operates entirely in the browser.
 
+## 📋 Table of Contents
+- [Overview](#overview)
+- [Real-World Use Cases](#real-world-use-cases)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Getting Started](#getting-started)
+- [User Journey Examples](#user-journey-examples)
+- [Testing](#testing)
+- [Tech Stack](#tech-stack)
+- [Documentation](#documentation)
+- [Integrated Diagrams in Documentation](#integrated-diagrams-in-documentation)
+- [Contributing](#contributing)
+- [License](#license)
+- [Security Policy](#security-policy)
+- [Support](#support)
+
 ## Overview
 
 Easy Risk Register addresses a critical market gap where SMBs currently rely on outdated methods like Excel spreadsheets or informal processes for risk management, while enterprise-grade tools remain too complex and costly for their needs. The application offers:
@@ -143,18 +159,34 @@ For more details on testing, see [Testing Guide](docs/guides/testing.md).
 
 ## Documentation
 
-This section provides a comprehensive index of all project documentation organized by category:
+This README serves as the **single source of truth** for the Easy Risk Register project documentation. All other documentation files are centralized and accessible through the links below:
 
-| Documentation Cluster | Documents |
-|----------------------|-----------|
-| **Architecture** | [Architecture Documentation](docs/architecture/architecture-diagrams.md) - System architecture with integrated diagrams<br>[System Architecture](docs/architecture/architecture-output.md) - System architecture and implementation details |
-| **Guides** | [Setup Guide](docs/guides/setup.md) - Complete setup instructions from quick start to advanced development<br>[Testing Guide](docs/guides/testing.md) - How to run and write tests<br>[Contributing Guide](docs/guides/contributing.md) - Guidelines for contributing to the project<br>[Development Workflow](docs/guides/development-workflow.md) - Standard development process and commands<br>[Code Style Guide](docs/guides/code-style.md) - Coding standards and best practices |
-| **Reference** | [System Diagrams](docs/reference/diagrams.md) - Visual representations of system architecture and data flows<br>[High-level Overview](docs/reference/high-level.txt) - High level architecture overview<br>[Current Implementation](docs/reference/high-level-current.txt) - Current implementation summary |
-| **Design** | [Design System](docs/design/design-system/) - Style guide and component specifications<br>[Features Documentation](docs/design/features/) - Feature-specific implementation guides<br>[Accessibility Guidelines](docs/design/accessibility/) - Inclusive design standards<br>[Design Assets](docs/design/assets/) - Design tokens and reference materials<br>[Requirements Mapping](docs/design/requirements-mapping.md) - Mapping of requirements to design elements |
-| **Product** | [Product Requirements](docs/product/product-requirements.md) - Complete feature specifications and requirements<br>[Tech Stack Preferences](docs/product/tech-stack-pref.md) - Technology stack preferences and decisions |
-| **Reports & Analysis** | [Project Report](docs/report/report.pdf) - Project report<br>[Deployment Report](docs/report/report-host-it-publicly.pdf) - Hosting and deployment report<br>[Compliance Report](docs/report/compliance-report.md) - 100% compliance achievement with minor documentation clarifications<br>[Security Analysis Summary](docs/report/security-analysis-summary.md) - Comprehensive security assessment and implementation<br>[Accessibility Implementation Summary](docs/report/accessibility-implementation-summary.md) - WCAG 2.1 AA compliance implementation details |
+### 📚 Complete Documentation Index
 
-This README serves as the canonical index for all project documentation, preserving the "single source" promise by providing centralized access to all resources.
+| Category | Documents | Description |
+|----------|-----------|-------------|
+| **Architecture** | [Architecture Documentation](docs/architecture/architecture-diagrams.md) | System architecture with integrated diagrams |
+| | [System Architecture](docs/architecture/architecture-output.md) | System architecture and implementation details |
+| **Guides** | [Setup Guide](docs/guides/setup.md) | Complete setup instructions from quick start to advanced development |
+| | [Testing Guide](docs/guides/testing.md) | How to run and write tests |
+| | [Contributing Guide](docs/guides/contributing.md) | Guidelines for contributing to the project |
+| | [Development Workflow](docs/guides/development-workflow.md) | Standard development process and commands |
+| | [Code Style Guide](docs/guides/code-style.md) | Coding standards and best practices |
+| **Reference** | [System Diagrams](docs/reference/diagrams.md) | Visual representations of system architecture and data flows |
+| | [High-level Overview](docs/reference/high-level.txt) | High level architecture overview |
+| | [Current Implementation](docs/reference/high-level-current.txt) | Current implementation summary |
+| **Design** | [Design System](docs/design/design-system/) | Style guide and component specifications |
+| | [Features Documentation](docs/design/features/) | Feature-specific implementation guides |
+| | [Accessibility Guidelines](docs/design/accessibility/) | Inclusive design standards |
+| | [Design Assets](docs/design/assets/) | Design tokens and reference materials |
+| | [Requirements Mapping](docs/design/requirements-mapping.md) | Mapping of requirements to design elements |
+| **Product** | [Product Requirements](docs/product/product-requirements.md) | Complete feature specifications and requirements |
+| | [Tech Stack Preferences](docs/product/tech-stack-pref.md) | Technology stack preferences and decisions |
+| **Reports & Analysis** | [Project Report](docs/report/report.pdf) | Project report |
+| | [Deployment Report](docs/report/report-host-it-publicly.pdf) | Hosting and deployment report |
+| | [Compliance Report](docs/report/compliance-report.md) | 100% compliance achievement with minor documentation clarifications |
+| | [Security Analysis Summary](docs/report/security-analysis-summary.md) | Comprehensive security assessment and implementation |
+| | [Accessibility Implementation Summary](docs/report/accessibility-implementation-summary.md) | WCAG 2.1 AA compliance implementation details |
 
 ## Integrated Diagrams in Documentation
 
@@ -168,12 +200,23 @@ The Easy Risk Register documentation includes integrated PlantUML and Mermaid di
 
 ## Contributing
 
-We welcome contributions to the Easy Risk Register project. Please read our contributing guidelines for details on our code of conduct and development process.
+We welcome contributions to the Easy Risk Register project. Please read our [contributing guidelines](docs/guides/contributing.md) for details on our development process, and our [Code of Conduct](CODE_OF_CONDUCT.md) for details on our code of conduct.
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Security Policy
+
+We take security seriously. If you discover a security vulnerability, please report it to us responsibly by following our [Security Policy](SECURITY.md). For more information about our security measures and reporting process, see our [security documentation](SECURITY.md).
+
 ## Support
 
 For support, please open an issue in the GitHub repository.
+
+---
+
+## 🏷️ Project Status
+- **Current Version**: Development
+- **Status**: Active
+- **Last Updated**: November 2025

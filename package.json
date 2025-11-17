@@ -2,6 +2,7 @@
   "name": "easy-risk-register-root",
   "private": true,
   "version": "1.0.0",
+  "license": "MIT",
   "scripts": {
     "dev": "cd easy-risk-register-frontend && npm run dev",
     "dev:docker": "docker-compose --profile development up --build frontend-dev",
