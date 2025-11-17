@@ -68,6 +68,7 @@ export const RiskMatrix = ({ risks, onSelect }: RiskMatrixProps) => {
         className="grid grid-cols-[auto_repeat(5,minmax(0,1fr))] gap-2"
         role="grid"
         aria-label="Risk matrix grid showing risk distribution by probability and impact"
+        aria-labelledby="risk-matrix-title"
       >
         <div role="gridcell" />
         {impactScale.map((impact) => (

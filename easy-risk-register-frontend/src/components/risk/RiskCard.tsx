@@ -42,6 +42,7 @@ export const RiskCard = ({ risk, onEdit, onDelete, onView }: RiskCardProps) => {
             subtle={false}
             className="text-sm font-semibold px-3 py-1 rounded-full border"
             aria-label={`Risk score: ${risk.riskScore}, ${getRiskSeverityTone(risk.riskScore)} severity`}
+            data-testid="risk-score-badge"
           >
             {risk.riskScore}
           </Badge>
@@ -55,6 +56,7 @@ export const RiskCard = ({ risk, onEdit, onDelete, onView }: RiskCardProps) => {
             tone="neutral"
             className="text-xs font-medium px-2 py-1 rounded-lg"
             aria-label={`Category: ${risk.category}`}
+            data-testid="risk-category-badge"
           >
             {risk.category}
           </Badge>

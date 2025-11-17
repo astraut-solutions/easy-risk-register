@@ -1,8 +1,22 @@
 // vitest.setup.ts
 // Setup file for Vitest
 
-// Mock DOM globals for testing
-import { vi } from 'vitest'
+// For React 19 compatibility with testing-library
+import { afterEach, vi } from 'vitest'
+import '@testing-library/jest-dom/vitest'
+import { cleanup } from '@testing-library/react'
+
+// Ensure jsdom is reset between tests to prevent cross-test bleed
+afterEach(() => {
+  cleanup()
+})
+
+// React 19 compatibility fix - ensure act is available
+import React from 'react'
+
+// Add React to the global scope to ensure act is available
+// @ts-ignore - adding React for compatibility
+globalThis.React = React
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {

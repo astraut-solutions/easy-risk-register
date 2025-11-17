@@ -1,5 +1,5 @@
 import { forwardRef, useId } from 'react'
-import type { ReactNode } from 'react'
+import type { ReactNode, MouseEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 import { cn } from '../../utils/cn'
@@ -27,8 +27,16 @@ const sizeClasses: Record<Required<ModalProps>['size'], string> = {
 }
 
 export const Modal = forwardRef<HTMLDivElement, ModalProps>(
-  ({ isOpen, onClose, title, eyebrow, description, headerAside, size = 'sm', children, className }, ref) => {
+  (
+    { isOpen, onClose, title, eyebrow, description, headerAside, size = 'sm', children, className },
+    ref,
+  ) => {
     const titleId = useId()
+    const handleBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
+      if (event.target === event.currentTarget) {
+        onClose()
+      }
+    }
 
     return (
       <AnimatePresence>
@@ -38,6 +46,7 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/45 px-4 py-10 backdrop-blur-sm sm:px-8"
+            onClick={handleBackdropClick}
           >
             <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
 

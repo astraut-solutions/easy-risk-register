@@ -46,11 +46,15 @@ export const Select = ({
 }: SelectProps) => {
   const hasError = Boolean(error)
   const listboxId = useId()
+  const generatedId = useId()
+  const selectId = id ?? name ?? generatedId
+  const helperId = helperText ? `${selectId}-helper` : undefined
+  const errorId = error ? `${selectId}-error` : undefined
   const containerRef = useRef<HTMLDivElement>(null)
 
   const isControlled = value !== undefined
   const [internalValue, setInternalValue] = useState(
-    () => value ?? defaultValue ?? options[0]?.value ?? '',
+    () => value ?? defaultValue ?? '',
   )
   const [isOpen, setIsOpen] = useState(false)
   const [highlightedIndex, setHighlightedIndex] = useState(0)
@@ -183,7 +187,7 @@ export const Select = ({
       {label && (
         <label
           className="mb-2 block text-sm font-medium text-text-high"
-          htmlFor={id}
+          htmlFor={selectId}
         >
           {label}
         </label>
@@ -200,7 +204,7 @@ export const Select = ({
       <div className="relative">
         <button
           type="button"
-          id={id}
+          id={selectId}
           disabled={disabled}
           className={cn(
             'flex w-full items-center justify-between rounded-[20px] border border-border-faint bg-surface-secondary/10 px-4 py-2.5 text-left text-sm text-text-high transition focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20 disabled:cursor-not-allowed disabled:opacity-50',
@@ -211,6 +215,7 @@ export const Select = ({
           aria-expanded={isOpen}
           aria-controls={dropdownId}
           aria-invalid={hasError}
+          aria-describedby={[helperId, errorId].filter(Boolean).join(' ') || undefined}
           onClick={() => {
             if (!disabled) {
               setIsOpen(prev => !prev)
@@ -289,9 +294,9 @@ export const Select = ({
         )}
       </div>
       {helperText && !hasError && (
-        <p className="mt-2 text-sm text-text-low">{helperText}</p>
+        <p id={helperId} className="mt-2 text-sm text-text-low">{helperText}</p>
       )}
-      {error && <p className="mt-2 text-sm text-status-danger">{error}</p>}
+      {error && <p id={errorId} className="mt-2 text-sm text-status-danger">{error}</p>}
     </div>
   )
 }

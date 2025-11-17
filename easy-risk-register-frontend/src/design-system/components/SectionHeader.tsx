@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react'
+import type { HTMLAttributes, ReactNode } from 'react'
 
 import { cn } from '../../utils/cn'
 
-interface SectionHeaderProps {
+interface SectionHeaderProps extends HTMLAttributes<HTMLElement> {
   eyebrow?: string
   title: string
   description?: string
@@ -16,8 +16,12 @@ export const SectionHeader = ({
   description,
   actions,
   className,
+  ...props
 }: SectionHeaderProps) => (
-  <header className={cn('flex flex-col gap-4 text-text-mid md:flex-row md:items-end', className)}>
+  <header
+    className={cn('flex flex-col gap-4 text-text-mid md:flex-row md:items-end', className)}
+    {...props}
+  >
     <div className="flex-1 space-y-3">
       {eyebrow && (
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-primary">

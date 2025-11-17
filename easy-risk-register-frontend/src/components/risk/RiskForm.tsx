@@ -45,8 +45,7 @@ export const RiskForm = ({
     },
   })
 
-  const probability = watch('probability')
-  const impact = watch('impact')
+  const { probability = 3, impact = 3 } = watch()
   const riskScore = calculateRiskScore(probability, impact)
   const severity = getRiskSeverity(riskScore)
 

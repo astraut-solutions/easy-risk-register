@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react'
+import type { HTMLAttributes, ReactNode } from 'react'
 
 import { cn } from '../../utils/cn'
 
-interface StatCardProps {
+interface StatCardProps extends HTMLAttributes<HTMLDivElement> {
   label: string
   value: string | number
   description?: string
@@ -25,12 +25,14 @@ export const StatCard = ({
   accent = 'brand',
   icon,
   className,
+  ...props
 }: StatCardProps) => (
   <div
     className={cn(
       'rounded-2xl border border-border-faint bg-gradient-to-br from-surface-primary to-surface-secondary/60 p-6 shadow-card-soft',
       className,
     )}
+    {...props}
   >
     <div className="flex items-start justify-between gap-4">
       <div>
