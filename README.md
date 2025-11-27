@@ -208,7 +208,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Security Policy
 
-We take security seriously. If you discover a security vulnerability, please report it to us responsibly by following our [Security Policy](SECURITY.md). For more information about our security measures and reporting process, see our [security documentation](SECURITY.md).
+We take security seriously. For information about our security measures, see our [security documentation](SECURITY.md).
 
 ### Automated Security Scanning
 
@@ -216,13 +216,7 @@ The project includes automated secret scanning in the CI/CD pipeline using Gitle
 - `.github/workflows/gitleaks-scan.yml`
 - `.github/workflows/security-scanning.yml`
 
-## Support
-
-For support, please open an issue in the GitHub repository.
-
 ---
 
 ## 🏷️ Project Status
-- **Current Version**: Development
-- **Status**: Active
 - **Last Updated**: November 2025
