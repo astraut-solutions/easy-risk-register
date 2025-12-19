@@ -8,40 +8,34 @@ The Easy Risk Register is designed as a privacy-focused, client-side risk manage
 
 ### High-Level Architecture Diagram
 
-```plantuml
-@startuml
-!theme plain
-title Easy Risk Register - High-Level Architecture
+GitHub does not render PlantUML blocks, so diagrams in this doc use Mermaid.
 
-package "Browser Environment" {
+```mermaid
+flowchart LR
+  subgraph Browser["Browser Environment"]
+    subgraph Frontend["Easy Risk Register Frontend"]
+      UI["React UI Layer"]
+      State["State Management (Zustand)"]
+      Service["Risk Service Layer"]
+      Sanitization["Data Sanitization"]
+      Storage["Storage Layer"]
+    end
 
-  component "Easy Risk Register Frontend" as Frontend {
-    component "React UI Layer" as UI
-    component "State Management (Zustand)" as State
-    component "Risk Service Layer" as Service
-    component "Data Sanitization" as Sanitization
-    component "Storage Layer" as Storage
-  }
+    BrowserStorage["Browser Local Storage"]
+    EncryptedStorage["Encrypted Storage (optional)"]
+  end
 
-  component "Browser Local Storage" as BrowserStorage
-  component "Encrypted Storage (optional)" as EncryptedStorage
-}
-
-UI --> State : State Management
-State --> Service : Data Operations
-Service --> Sanitization : Input Validation
-Sanitization --> Storage : Secure Storage
-Storage --> BrowserStorage : Persists Data
-Storage --> EncryptedStorage : Alternative Encrypted Storage
-
-note top of Frontend
-  Core application logic runs client-side
-  All user data remains local by default
-  Optional client-side encryption available
-end note
-
-@enduml
+  UI -->|State management| State
+  State -->|Data operations| Service
+  Service -->|Input validation| Sanitization
+  Sanitization -->|Secure storage| Storage
+  Storage -->|Persists data| BrowserStorage
+  Storage -->|Alternative encrypted storage| EncryptedStorage
 ```
+
+- Core application logic runs client-side.
+- All user data remains local by default.
+- Optional client-side encryption available.
 
 ### Technology Stack Summary
 
@@ -157,66 +151,56 @@ Tests live under `easy-risk-register-frontend/test/` (for example `test/stores/`
 
 #### State Management Architecture
 
-```plantuml
-@startuml
-!theme plain
-title Zustand State Management Architecture
+```mermaid
+flowchart LR
+  subgraph Store["Zustand Store"]
+    subgraph RiskStore["Risk Store"]
+      Risks["Risks Array"]
+      Categories["Risk Categories"]
+      Filters["Risk Filters"]
+      Stats["Risk Statistics"]
+    end
 
-package "Zustand Store" {
+    subgraph Actions["Store Actions"]
+      Add["addRisk()"]
+      Update["updateRisk()"]
+      Delete["deleteRisk()"]
+      SetFilters["setFilters()"]
+      Export["exportToCSV()"]
+      Import["importFromCSV()"]
+      CalcScore["calculateRiskScore()"]
+    end
 
-  package "Risk Store" as RiskStore {
-    [Risks Array] as Risks
-    [Risk Categories] as Categories
-    [Risk Filters] as Filters
-    [Risk Statistics] as Stats
-  }
+    subgraph Selectors["Selectors"]
+      FilteredRisks["filteredRisks"]
+      StatsSelector["stats"]
+    end
+  end
 
-  package "Store Actions" as Actions {
-    [addRisk()] as Add
-    [updateRisk()] as Update
-    [deleteRisk()] as Delete
-    [setFilters()] as SetFilters
-    [exportToCSV()] as Export
-    [importFromCSV()] as Import
-    [calculateRiskScore()] as CalcScore
-  }
+  subgraph Components["React Components"]
+    Form["RiskForm"]
+    Card["RiskCard"]
+    List["RiskList"]
+    Matrix["RiskMatrix"]
+    App["App"]
+  end
 
-  package "Selectors" as Selectors {
-    [filteredRisks] as FilteredRisks
-    [stats] as StatsSelector
-  }
-}
+  Form -->|Calls| Add
+  Form -->|Calls| Update
+  Card -->|Calls| Delete
+  List -->|Uses selector| FilteredRisks
+  Matrix -->|Uses function| CalcScore
+  App -->|Uses function| SetFilters
 
-package "React Components" {
-  [RiskForm] as Form
-  [RiskCard] as Card
-  [RiskList] as List
-  [RiskMatrix] as Matrix
-  [App] as App
-}
-
-Form --> Add : Calls
-Form --> Update : Calls
-Card --> Delete : Calls
-List --> FilteredRisks : Uses Selector
-Matrix --> CalcScore : Uses Function
-App --> SetFilters : Uses Function
-
-RiskStore --> Form : Provides State
-RiskStore --> Card : Provides State
-RiskStore --> List : Provides State
-RiskStore --> Matrix : Provides State
-RiskStore --> App : Provides State
-
-note top of RiskStore
-  Single source of truth
-  All data operations centralized
-  Persisted to localStorage
-  Encrypted storage option available
-end note
-
-@enduml
+  RiskStore -->|Provides state| Form
+  RiskStore -->|Provides state| Card
+  RiskStore -->|Provides state| List
+  RiskStore -->|Provides state| Matrix
+  RiskStore -->|Provides state| App
 ```
+
+- Single source of truth: the Zustand store centralizes state and actions.
+- Data persists to `localStorage` (with optional encrypted storage).
 
 #### State Management (Zustand Store)
 
@@ -274,76 +258,43 @@ interface RiskStoreState {
 
 #### Risk Creation Flow
 
-```plantuml
-@startuml
-!theme plain
-title Risk Creation Flow
-
-start
-:User opens RiskForm;
-:Form validates user input;
-:Form sanitizes input data;
-:Form calls addRisk() action;
-
-:buildRisk() creates Risk object;
-:calculateRiskScore() calculates score;
-:Input sanitization applied;
-:Adds creation and modification dates;
-
-:Store updates risks array;
-:Store recalculates statistics;
-:Store persists to localStorage;
-:Store updates filtered risks;
-
-:Risk card appears in UI;
-:Risk matrix updates automatically;
-stop
-
-note right
-  All operations happen client-side
-  Input is sanitized before storage
-  Risk scores calculated automatically
-  Data persists to browser storage
-end note
-
-@enduml
+```mermaid
+flowchart TD
+  Start([Start]) --> A[User opens RiskForm]
+  A --> B[Form validates user input]
+  B --> C[Form sanitizes input data]
+  C --> D[Form calls addRisk() action]
+  D --> E[buildRisk() creates Risk object]
+  E --> F[calculateRiskScore() calculates score]
+  F --> G[Adds creation and modification dates]
+  G --> H[Store updates risks array]
+  H --> I[Store recalculates statistics]
+  I --> J[Store persists to localStorage]
+  J --> K[Store updates filtered risks]
+  K --> L[Risk card appears in UI]
+  L --> M[Risk matrix updates automatically]
+  M --> Stop([Stop])
 ```
 
 #### Risk Update Flow
 
-```plantuml
-@startuml
-!theme plain
-title Risk Update Flow
-
-start
-:User edits a Risk in RiskForm;
-:Form validates updated input;
-:Form sanitizes updated data;
-:Form calls updateRisk() action;
-
-:Store finds risk by ID;
-:Store applies sanitized updates;
-:Recalculates riskScore if needed;
-:Updates lastModified timestamp;
-
-:Store updates risks array;
-:Store recalculates statistics;
-:Store persists to localStorage;
-:Store updates filtered risks;
-
-:Risk card updates in UI;
-:Risk matrix updates automatically;
-stop
-
-note right
-  Only sanitized data is updated
-  Risk ID and creationDate preserved
-  lastModified timestamp updated
-  All operations happen client-side
-end note
-
-@enduml
+```mermaid
+flowchart TD
+  Start([Start]) --> A[User edits a risk in RiskForm]
+  A --> B[Form validates updated input]
+  B --> C[Form sanitizes updated data]
+  C --> D[Form calls updateRisk() action]
+  D --> E[Store finds risk by ID]
+  E --> F[Store applies sanitized updates]
+  F --> G[Recalculates riskScore if needed]
+  G --> H[Updates lastModified timestamp]
+  H --> I[Store updates risks array]
+  I --> J[Store recalculates statistics]
+  J --> K[Store persists to localStorage]
+  K --> L[Store updates filtered risks]
+  L --> M[Risk card updates in UI]
+  M --> N[Risk matrix updates automatically]
+  N --> Stop([Stop])
 ```
 
 ### Service Layer Architecture
@@ -417,55 +368,39 @@ export const sanitizeRiskInput = (input: unknown): Partial<RiskInput> => {
 
 #### Responsive Layout Architecture
 
-```plantuml
-@startuml
-!theme plain
-title Responsive Layout Architecture
+```mermaid
+flowchart TB
+  subgraph Layout["App Component"]
+    subgraph Header["SectionHeader"]
+      Title["App Title"]
+      Nav["Navigation"]
+      HeaderActions["Action Buttons"]
+    end
 
-package "App Component" as Layout {
+    subgraph Sidebar["Sidebar Component"]
+      NavItems["Navigation Items"]
+    end
 
-  package "SectionHeader" as Header {
-    [App Title] as Title
-    [Navigation] as Nav
-    [Action Buttons] as Actions
-  }
+    subgraph Main["Main Content"]
+      Summary["Risk Summary Cards"]
+      Filters["Risk Filters Bar"]
+      Matrix["Risk Matrix"]
+      List["Risk List"]
+      Table["Risk Table"]
+    end
 
-  package "Sidebar Component" as Sidebar {
-    [Navigation Items] as NavItems
-  }
+    subgraph Modal["Modal Component"]
+      Form["RiskForm"]
+    end
 
-  package "Main Content" as Main {
-    [Risk Summary Cards] as Summary
-    [Risk Filters Bar] as Filters
-    [Risk Matrix] as Matrix
-    [Risk List] as List
-    [Risk Table] as Table
-  }
+    subgraph Breakpoints["Responsive Breakpoints"]
+      Desktop["Desktop: Full Layout"]
+      Tablet["Tablet: Collapsible Elements"]
+      Mobile["Mobile: Stacked Layout"]
+    end
+  end
 
-  package "Modal Component" as Modal {
-    [RiskForm] as Form
-  }
-
-  package "Responsive Breakpoints" as Breakpoints {
-    [Desktop: Full Layout] as Desktop
-    [Tablet: Collapsible Elements] as Tablet
-    [Mobile: Stacked Layout] as Mobile
-  }
-}
-
-Header -[hidden]down- Sidebar
-Sidebar -[hidden]down- Main
-Modal -[hidden]up- Main
-
-Breakpoints --> Layout : Controls layout behavior
-
-note bottom of Layout
-  Desktop: Sidebar visible, main content area
-  Tablet: Elements adjust size, mobile nav appears
-  Mobile: Full-width elements, stacked vertically
-end note
-
-@enduml
+  Breakpoints -->|Controls layout behavior| Layout
 ```
 
 The application uses Tailwind CSS for responsive design with mobile-first approach:
@@ -614,49 +549,37 @@ graph LR
 
 #### Security Architecture Diagram
 
-```plantuml
-@startuml
-!theme plain
-title Security Architecture - Client-Side Model
+```mermaid
+flowchart LR
+  subgraph Security["Client-Side Security"]
+    subgraph Input["Input Sanitization Layer"]
+      FormValidation["Form Validation"]
+      XSS["XSS Prevention"]
+      DataType["Data Type Checking"]
+    end
 
-package "Client-Side Security" {
+    subgraph Protection["Data Protection Layer"]
+      StorageIsolation["Local Storage Isolation"]
+      OutputSanitization["Output Sanitization"]
+      CSVPrevention["CSV Injection Prevention"]
+    end
 
-  package "Input Sanitization Layer" {
-    [Form Validation] as FormValidation
-    [XSS Prevention] as XSS
-    [Data Type Checking] as DataType
-  }
+    subgraph EncryptionLayer["Encryption Layer (Optional)"]
+      Encryption["Client-Side Encryption"]
+      KeyManagement["Secure Key Management"]
+    end
 
-  package "Data Protection Layer" {
-    [Local Storage Isolation] as StorageIsolation
-    [Output Sanitization] as OutputSanitization
-    [CSV Injection Prevention] as CSVPrevention
-  }
+    subgraph Validation["Validation Layer"]
+      ContentValidation["Content Validation"]
+      SanitizationValidation["Sanitization Validation"]
+    end
+  end
 
-  package "Encryption Layer (Optional)" {
-    [Client-Side Encryption] as Encryption
-    [Secure Key Management] as KeyManagement
-  }
-
-  package "Validation Layer" {
-    [Content Validation] as ContentValidation
-    [Sanitization Validation] as SanitizationValidation
-  }
-}
-
-FormValidation --> XSS : Prevents Injection
-DataType --> XSS : Ensures Valid Types
-OutputSanitization --> StorageIsolation : Sanitized Output
-CSVPrevention --> ContentValidation : Validates CSV Content
-Encryption --> KeyManagement : Secure Keys
-
-note bottom
-  All data remains on user's device by default
-  Input sanitization applied before storage
-  Optional client-side encryption for sensitive data
-end note
-
-@enduml
+  FormValidation -->|Prevents injection| XSS
+  DataType -->|Ensures valid types| XSS
+  OutputSanitization -->|Sanitized output| StorageIsolation
+  CSVPrevention -->|Validates CSV content| ContentValidation
+  Encryption -->|Secure keys| KeyManagement
 ```
 
 ### Security Implementation Details
@@ -723,44 +646,32 @@ export default defineConfig({
 
 #### Persistent Storage Strategy
 
-```plantuml
-@startuml
-!theme plain
-title Data Storage Architecture
+```mermaid
+flowchart LR
+  subgraph Persistence["Zustand Persistence Layer"]
+    subgraph Config["Store Configuration"]
+      Key["Local Storage Key"]
+      Version["Storage Version"]
+      Migration["Migration Handler"]
+    end
 
-package "Zustand Persistence Layer" {
+    subgraph Mechanism["Storage Mechanism"]
+      SafeStorage["Safe Storage Handler"]
+      Memory["Memory Storage Fallback"]
+      Encrypted["Encrypted Storage Option"]
+    end
 
-  package "Store Configuration" as Config {
-    [Local Storage Key] as Key
-    [Storage Version] as Version
-    [Migration Handler] as Migration
-  }
+    subgraph Data["Data Handling"]
+      Serialization["Data Serialization"]
+      Sanitization["State Sanitization"]
+      JSON["JSON Storage"]
+    end
+  end
 
-  package "Storage Mechanism" as Mechanism {
-    [Safe Storage Handler] as SafeStorage
-    [Memory Storage Fallback] as Memory
-    [Encrypted Storage Option] as Encrypted
-  }
-
-  package "Data Handling" as Data {
-    [Data Serialization] as Serialization
-    [State Sanitization] as Sanitization
-    [JSON Storage] as JSON
-  }
-}
-
-Config --> Mechanism : Configures storage
-SafeStorage --> Memory : Fallback if window undefined
-SafeStorage --> Encrypted : If available
-Migration --> Data : Updates schema
-
-note right of Data
-  Key: easy-risk-register-data
-  Format: Encrypted or plain JSON
-  Versioned for migration compatibility
-end note
-
-@enduml
+  Config -->|Configures storage| Mechanism
+  SafeStorage -->|Fallback if window undefined| Memory
+  SafeStorage -->|If available| Encrypted
+  Migration -->|Updates schema| Data
 ```
 
 #### Storage Implementation
@@ -835,47 +746,34 @@ const memoryStorage = (): Storage => {
 
 #### Storage Architecture Diagram
 
-```plantuml
-@startuml
-!theme plain
-title Client-Side Storage Architecture
+```mermaid
+flowchart LR
+  subgraph BrowserStorageLayer["Browser Storage Layer"]
+    subgraph Middleware["Zustand Persistence Middleware"]
+      State["Store State"]
+      Adapter["Storage Adapter"]
+      Serialization["Serialization Handler"]
+    end
 
-package "Browser Storage Layer" {
+    subgraph Options["Storage Options"]
+      Encrypted["Encrypted Storage"]
+      Plain["Plain LocalStorage"]
+      Memory["Memory Storage"]
+    end
 
-  package "Zustand Persistence Middleware" as Middleware {
-    [Store State] as State
-    [Storage Adapter] as Adapter
-    [Serialization Handler] as Serialization
-  }
+    subgraph Format["Stored Data Format"]
+      Risks["Sanitized Risk Objects"]
+      Categories["Category Array"]
+      Filters["Filter State"]
+      Stats["Statistics"]
+    end
+  end
 
-  package "Storage Options" as Options {
-    [Encrypted Storage] as Encrypted
-    [Plain LocalStorage] as Plain
-    [Memory Storage] as Memory
-  }
-
-  package "Stored Data Format" as Format {
-    [Sanitized Risk Objects] as Risks
-    [Category Array] as Categories
-    [Filter State] as Filters
-    [Statistics] as Stats
-  }
-}
-
-Middleware --> Options : Selects storage option
-Middleware --> Format : Serializes state
-Encrypted --> State : Secure storage
-Plain --> State : Standard storage
-Memory --> State : SSR fallback
-
-note right of Format
-  Format: JSON string
-  Key: easy-risk-register-data
-  Versioned for compatibility
-  Sanitized to prevent XSS
-end note
-
-@enduml
+  Middleware -->|Selects storage option| Options
+  Middleware -->|Serializes state| Format
+  Encrypted -->|Secure storage| State
+  Plain -->|Standard storage| State
+  Memory -->|SSR fallback| State
 ```
 
 #### Client-Side Storage Schema
@@ -988,73 +886,42 @@ actions.seedDemoData()
 
 #### Risk Creation Data Flow
 
-```plantuml
-@startuml
-!theme plain
-title Risk Creation Data Flow
-
-start
-:User submits RiskForm;
-:Form validates and sanitizes input;
-:Form calls actions.addRisk();
-
-:buildRisk() sanitizes and transforms input;
-:calculateRiskScore() calculates score;
-:Creates Risk object with timestamps;
-
-:Store adds Risk to risks array;
-:Store recalculates filteredRisks;
-:Store updates stats;
-:Store persists to browser storage;
-
-:Zustand triggers re-renders;
-:RiskCard displays new risk;
-:RiskMatrix updates visualization;
-:RiskSummaryCards shows updated stats;
-stop
-
-note right
-  All operations are synchronous
-  Input is sanitized before storage
-  State updates trigger UI updates
-  Data persists automatically
-end note
-
-@enduml
+```mermaid
+flowchart TD
+  Start([Start]) --> A[User submits RiskForm]
+  A --> B[Form validates and sanitizes input]
+  B --> C[Form calls actions.addRisk()]
+  C --> D[buildRisk() sanitizes and transforms input]
+  D --> E[calculateRiskScore() calculates score]
+  E --> F[Creates risk object with timestamps]
+  F --> G[Store adds risk to risks array]
+  G --> H[Store recalculates filteredRisks]
+  H --> I[Store updates stats]
+  I --> J[Store persists to browser storage]
+  J --> K[Zustand triggers re-renders]
+  K --> L[RiskCard displays new risk]
+  L --> M[RiskMatrix updates visualization]
+  M --> N[RiskSummaryCards shows updated stats]
+  N --> Stop([Stop])
 ```
 
 #### CSV Import Data Flow
 
-```plantuml
-!theme plain
-title CSV Import Data Flow
-
-start
-:User selects CSV file;
-:FileReader reads file content;
-:actions.importFromCSV() called;
-
-:validateCSVContent() checks for injection;
-:PapaParse parses CSV securely;
-:Sanitizes each imported risk;
-
-:Filters out invalid risks;
-:buildRisk() for each valid risk;
-:Adds risks to store;
-
-:Store recalculates all data;
-:Store persists to browser storage;
-:UI updates with new risks;
-stop
-
-note right
-  CSV validation prevents injection
-  Each risk is individually sanitized
-  Only valid risks are imported
-  All operations client-side
-end note
-
-@enduml
+```mermaid
+flowchart TD
+  Start([Start]) --> A[User selects CSV file]
+  A --> B[FileReader reads file content]
+  B --> C[actions.importFromCSV() called]
+  C --> D[validateCSVContent() checks for injection]
+  D --> E[PapaParse parses CSV securely]
+  E --> F[Sanitizes each imported risk]
+  F --> G[Filters out invalid risks]
+  G --> H[buildRisk() for each valid risk]
+  H --> I[Adds risks to store]
+  I --> J[Store recalculates all data]
+  J --> K[Store persists to browser storage]
+  K --> L[UI updates with new risks]
+  L --> Stop([Stop])
 ```
 
 ## Security and Performance Foundation

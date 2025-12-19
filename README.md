@@ -221,7 +221,7 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 
 ## Integrated Diagrams in Documentation
 
-The Easy Risk Register documentation includes integrated PlantUML and Mermaid diagrams directly within markdown files. This approach ensures diagrams remain version-controlled with the codebase and are always synchronized with documentation content. You'll find:
+The Easy Risk Register documentation includes Mermaid diagrams directly within markdown files so they render on GitHub while remaining version-controlled with the codebase. You'll find:
 
 - Architecture diagrams showing system components and data flows
 - Component architecture with visual hierarchy

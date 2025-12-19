@@ -30,5 +30,4 @@ Implementation lives under `easy-risk-register-frontend/`:
 
 ## Diagrams
 
-See `docs/architecture/architecture-diagrams.md` for PlantUML and Mermaid diagrams, including data flow and state management.
-
+See `docs/architecture/architecture-diagrams.md` for Mermaid diagrams, including data flow and state management.
