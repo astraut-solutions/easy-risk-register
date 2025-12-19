@@ -887,7 +887,7 @@ actions.seedDemoData()
 #### Risk Creation Data Flow
 
 ```mermaid
-flowchart TD
+flowchart LR
   Start --> A[User submits RiskForm]
   A --> B[Form validates and sanitizes input]
   B --> C[Form calls addRisk]
@@ -909,19 +909,17 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  Start --> A[User selects CSV file]
-  A --> B[FileReader reads file content]
-  B --> C[Call importFromCSV]
-  C --> D[validateCSVContent() checks for injection]
-  D --> E[PapaParse parses CSV securely]
-  E --> F[Sanitizes each imported risk]
-  F --> G[Filters out invalid risks]
-  G --> H[buildRisk for each valid risk]
-  H --> I[Adds risks to store]
-  I --> J[Store recalculates all data]
-  J --> K[Store persists to browser storage]
+  A[User selects CSV file] --> B[FileReader reads file content]
+  B --> C[Import CSV called]
+  C --> D[Validate CSV content]
+  D --> E[Parse CSV with PapaParse]
+  E --> F[Sanitize each imported risk]
+  F --> G[Filter out invalid rows]
+  G --> H[Build risk objects]
+  H --> I[Add risks to store]
+  I --> J[Recalculate derived data]
+  J --> K[Persist to browser storage]
   K --> L[UI updates with new risks]
-  L --> Stop
 ```
 
 ## Security and Performance Foundation
