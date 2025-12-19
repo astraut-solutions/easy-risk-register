@@ -202,8 +202,7 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | | [Development Workflow](docs/guides/development-workflow.md) | Standard development process and commands |
 | | [Code Style Guide](docs/guides/code-style.md) | Coding standards and best practices |
 | **Reference** | [System Diagrams](docs/reference/diagrams.md) | Visual representations of system architecture and data flows |
-| | [High-level Overview](docs/reference/high-level.txt) | High level architecture overview |
-| | [Current Implementation](docs/reference/high-level-current.txt) | Current implementation summary |
+| | [High-level Overview](docs/reference/high-level.txt) | Product overview + current implementation summary |
 | **Design** | [Design System](docs/design/design-system/) | Style guide and component specifications |
 | | [Features Documentation](docs/design/features/) | Feature-specific implementation guides |
 | | [Accessibility Guidelines](docs/design/accessibility/) | Inclusive design standards |
