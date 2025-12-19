@@ -4,33 +4,17 @@ This document explains how to run and write tests for the Easy Risk Register pro
 
 ## Running Tests
 
-The project uses [Vitest](https://vitest.dev/) for testing. You can run tests using the following commands:
-
-### Run all tests once:
-```bash
-npm run test:run
-```
-
-### Run all tests in watch mode:
-```bash
-npm run test
-```
-
-### Run specific test file:
-```bash
-npx vitest riskStore.test.ts
-```
-
-## Available Test Scripts
-
-- `npm run test` - Run Vitest in watch mode (for development)
-- `npm run test:run` - Run all tests once (for CI/verification)
+The project uses [Vitest](https://vitest.dev/). For the current commands and dev/CI workflows, see the `## Testing` section in `README.md`.
 
 ## Test Structure
 
-Tests are located alongside the code they test or in a dedicated test file. The project currently has:
+Tests live in `easy-risk-register-frontend/test/`, grouped by area:
 
-- `riskStore.test.ts` - Tests for the risk store functionality (Zustand store)
+- `test/stores/` - State management tests (Zustand stores)
+- `test/utils/` - Utility unit tests (e.g., calculations, sanitization)
+- `test/services/` - Service-layer tests
+- `test/components/` - Component tests (React)
+- `test/integration/` - End-to-end-ish integration coverage
 
 ## Writing Tests
 
@@ -44,8 +28,4 @@ When adding new features, please follow these testing guidelines:
 
 ## Test Coverage
 
-Aim for at least 80% test coverage for business logic, especially for:
-- Risk calculations (probability × impact)
-- Risk store operations (add, update, delete)
-- Data import/export functionality
-- Filtering and search functionality
+Coverage expectations and focus areas are documented in `README.md`.

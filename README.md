@@ -59,6 +59,8 @@ The application follows a client-side-only architecture with no server dependenc
 - Zustand for state management
 - Framer Motion for animations
 
+Diagrams and a deeper breakdown are in `docs/architecture/architecture-diagrams.md`.
+
 ## Getting Started
 
 ### Prerequisites
@@ -141,9 +143,11 @@ docker compose down
 
 ## Testing
 
-### Running Tests
+### Running Tests (Vitest)
 
 The project uses [Vitest](https://vitest.dev/) for testing. You can run tests using the following commands:
+
+From `easy-risk-register-frontend/`:
 
 #### Run all tests once:
 ```bash
@@ -157,7 +161,7 @@ npm run test
 
 #### Run specific test file:
 ```bash
-npx vitest riskStore.test.ts
+npx vitest test/stores/riskStore.test.ts
 ```
 
 ### Available Test Scripts
@@ -183,7 +187,6 @@ For more details on testing, see [Testing Guide](docs/guides/testing.md).
 - **State Management**: Zustand
 - **Forms**: React Hook Form
 - **Animations**: Framer Motion
-- **Data Visualization**: Built-in charting components
 
 ## Documentation
 
@@ -194,7 +197,7 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | Category | Documents | Description |
 |----------|-----------|-------------|
 | **Architecture** | [Architecture Documentation](docs/architecture/architecture-diagrams.md) | System architecture with integrated diagrams |
-| | [System Architecture](docs/architecture/architecture-output.md) | System architecture and implementation details |
+| | [System Architecture (Overview)](docs/architecture/architecture-output.md) | Implementation-aligned architecture summary |
 | **Guides** | [Setup Guide](docs/guides/setup.md) | Complete setup instructions from quick start to advanced development |
 | | [Testing Guide](docs/guides/testing.md) | How to run and write tests |
 | | [Contributing Guide](docs/guides/contributing.md) | Guidelines for contributing to the project |

@@ -9,7 +9,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest --run",
+    "test": "vitest",
     "test:run": "vitest --run",
     "test:a11y": "echo 'Accessibility tests run in development mode via the AccessibilityTester component'"
   },
