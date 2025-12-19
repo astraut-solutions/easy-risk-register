@@ -22,11 +22,13 @@ jobs:
       uses: gitleaks/gitleaks-action@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        GITLEAKS_CONFIG: .gitleaks.toml  # Optional: custom config file
-        GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}  # Optional: for enterprise features
+        # Use the built-in gitleaks default ruleset unless a custom config
+        # exists in the repo (setting GITLEAKS_CONFIG to a missing file fails).
+        # GITLEAKS_CONFIG: .gitleaks.toml
+        # GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
     - name: Notify on failure
-      if: failure()
+      if: failure() && secrets.SLACK_WEBHOOK != ''
       uses: rtCamp/action-slack-notify@v2
       env:
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
@@ -52,7 +54,7 @@ jobs:
       run: npm audit --audit-level moderate
 
     - name: Notify on failure
-      if: failure()
+      if: failure() && secrets.SLACK_WEBHOOK != ''
       uses: rtCamp/action-slack-notify@v2
       env:
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
@@ -89,7 +91,7 @@ jobs:
       uses: github/codeql-action/analyze@v3
 
     - name: Notify on failure
-      if: failure()
+      if: failure() && secrets.SLACK_WEBHOOK != ''
       uses: rtCamp/action-slack-notify@v2
       env:
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
