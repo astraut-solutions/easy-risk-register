@@ -259,7 +259,7 @@ interface RiskStoreState {
 #### Risk Creation Flow
 
 ```mermaid
-flowchart TD
+flowchart LR
   Start --> A[User opens RiskForm]
   A --> B[Form validates user input]
   B --> C[Form sanitizes input data]
@@ -279,7 +279,7 @@ flowchart TD
 #### Risk Update Flow
 
 ```mermaid
-flowchart TD
+flowchart LR
   Start --> A[User edits a risk in RiskForm]
   A --> B[Form validates updated input]
   B --> C[Form sanitizes updated data]
@@ -369,7 +369,7 @@ export const sanitizeRiskInput = (input: unknown): Partial<RiskInput> => {
 #### Responsive Layout Architecture
 
 ```mermaid
-flowchart TB
+flowchart LR
   subgraph Layout["App Component"]
     subgraph Header["SectionHeader"]
       Title["App Title"]
@@ -908,7 +908,7 @@ flowchart LR
 #### CSV Import Data Flow
 
 ```mermaid
-flowchart TD
+flowchart LR
   A[User selects CSV file] --> B[FileReader reads file content]
   B --> C[Import CSV called]
   C --> D[Validate CSV content]
