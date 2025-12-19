@@ -2,7 +2,7 @@
 
 A lightweight, privacy-focused risk management application for small and medium-sized businesses (SMBs). The application provides effective tools to manage operational, security, and compliance risks through an intuitive web interface that operates entirely in the browser.
 
-## 📋 Table of Contents
+## Table of Contents
 - [Overview](#overview)
 - [Real-World Use Cases](#real-world-use-cases)
 - [Features](#features)
@@ -15,7 +15,7 @@ A lightweight, privacy-focused risk management application for small and medium-
 - [Integrated Diagrams in Documentation](#integrated-diagrams-in-documentation)
 - [License](#license)
 - [Security Policy](#security-policy)
-- [Support](#support)
+- [Project Status](#project-status)
 
 ## Overview
 
@@ -32,7 +32,7 @@ Easy Risk Register addresses a critical market gap where SMBs currently rely on 
 A medical practice with 15 staff members uses Easy Risk Register to track patient data security risks, equipment failure possibilities, and regulatory compliance issues. They can visualize risks on the probability-impact matrix to prioritize which threats require immediate attention, like potential HIPAA violations or medical device failures.
 
 ### Manufacturing Company
-A small manufacturing company tracks risks related to supply chain disruptions, workplace safety incidents, and quality control failures. Using the risk scoring feature (probability × impact), they prioritize which risks could have the greatest effect on production and revenue.
+A small manufacturing company tracks risks related to supply chain disruptions, workplace safety incidents, and quality control failures. Using the risk scoring feature (probability x impact), they prioritize which risks could have the greatest effect on production and revenue.
 
 ### Financial Services Firm
 A regional financial advisor firm manages risks including market volatility, cybersecurity threats, and regulatory changes. The CSV export feature allows them to share risk assessments with their compliance team and create reports for stakeholders.
@@ -40,10 +40,10 @@ A regional financial advisor firm manages risks including market volatility, cyb
 ## Features
 
 - Create, edit, and delete risk records with comprehensive details
-- Automatic risk scoring using probability × impact calculations
+- Automatic risk scoring using probability x impact calculations
 - Interactive probability-impact matrix visualization
 - Responsive design that works across devices
-- CSV export functionality for reporting
+- CSV import/export functionality for reporting and backups
 - Real-time updates for risk scores and visualizations
 - WCAG 2.1 AA compliant accessibility features
 - Content Security Policy (CSP) implementation for enhanced security
@@ -125,7 +125,7 @@ docker compose down
 ### Creating Your First Risk
 1. Click the "Create New Risk" button on the dashboard
 2. Fill in the risk details: title, description, probability (1-5 scale), impact (1-5 scale), and category
-3. The system automatically calculates the risk score (probability × impact)
+3. The system automatically calculates the risk score (probability x impact)
 4. Add a mitigation plan if applicable
 5. Save the risk to add it to your register
 
@@ -139,6 +139,11 @@ docker compose down
 1. Click the "Export" button on the dashboard or risk list
 2. Download the CSV file containing all your risk data
 3. Open in Excel or other spreadsheet applications for further analysis
+
+### Importing from CSV
+1. Click the "Import CSV" button on the dashboard
+2. Select a CSV file exported from Easy Risk Register (or a compatible format)
+3. Review the updated risk list and matrix after import completes
 
 ## Testing
 
@@ -171,7 +176,7 @@ npx vitest test/stores/riskStore.test.ts
 ### Test Coverage
 
 Aim for at least 80% test coverage for business logic, especially for:
-- Risk calculations (probability × impact)
+- Risk calculations (probability x impact)
 - Risk store operations (add, update, delete)
 - Data import/export functionality
 - Filtering and search functionality
@@ -191,7 +196,7 @@ For more details on testing, see [Testing Guide](docs/guides/testing.md).
 
 This README serves as the **single source of truth** for the Easy Risk Register project documentation. All other documentation files are centralized and accessible through the links below:
 
-### 📚 Complete Documentation Index
+### Complete Documentation Index
 
 | Category | Documents | Description |
 |----------|-----------|-------------|
@@ -210,11 +215,6 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | | [Requirements Mapping](docs/design/requirements-mapping.md) | Mapping of requirements to design elements |
 | **Product** | [Product Requirements](docs/product/product-requirements.md) | Complete feature specifications and requirements |
 | | [Tech Stack Preferences](docs/product/tech-stack-pref.md) | Technology stack preferences and decisions |
-| **Reports & Analysis** | [Project Report](docs/report/report.pdf) | Project report |
-| | [Deployment Report](docs/report/report-host-it-publicly.pdf) | Hosting and deployment report |
-| | [Compliance Report](docs/report/compliance-report.md) | 100% compliance achievement with minor documentation clarifications |
-| | [Security Analysis Summary](docs/report/security-analysis-summary.md) | Comprehensive security assessment and implementation |
-| | [Accessibility Implementation Summary](docs/report/accessibility-implementation-summary.md) | WCAG 2.1 AA compliance implementation details |
 
 ## Integrated Diagrams in Documentation
 
@@ -242,5 +242,5 @@ The project includes automated secret scanning in the CI/CD pipeline using Gitle
 
 ---
 
-## 🏷️ Project Status
+## Project Status
 - **Last Updated**: November 2025
