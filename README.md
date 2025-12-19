@@ -59,7 +59,7 @@ The application follows a client-side-only architecture with no server dependenc
 - Zustand for state management
 - Framer Motion for animations
 
-Diagrams and a deeper breakdown are in `docs/architecture/architecture-diagrams.md`.
+Diagrams and a deeper breakdown are in [Architecture Documentation](docs/architecture/architecture-diagrams.md).
 
 ## Getting Started
 
