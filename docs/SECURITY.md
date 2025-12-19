@@ -71,7 +71,3 @@ Security updates are released as part of regular application updates. Users shou
 - Keep the application updated to the latest version
 - Review release notes for security-related changes
 - Follow best practices for browser security
-
-## Questions
-
-For questions about this security policy or security measures in Easy Risk Register, please open an issue in the GitHub repository or contact the maintainers directly.
