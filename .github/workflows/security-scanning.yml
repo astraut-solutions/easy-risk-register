@@ -9,6 +9,9 @@ on:
     # Run daily at 3 AM UTC
     - cron: '0 3 * * *'
 
+env:
+  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
 jobs:
   secret-scanning:
     name: Secret Scanning with Gitleaks
@@ -28,10 +31,10 @@ jobs:
         # GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
     - name: Notify on failure
-      if: failure() && secrets.SLACK_WEBHOOK != ''
+      if: failure() && env.SLACK_WEBHOOK != ''
       uses: rtCamp/action-slack-notify@v2
       env:
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_WEBHOOK: ${{ env.SLACK_WEBHOOK }}
         SLACK_TITLE: 'Security Scan Failed'
         SLACK_MESSAGE: 'Secret scanning job failed in security-scanning.yml workflow'
         SLACK_COLOR: '#FF0000'
@@ -54,10 +57,10 @@ jobs:
       run: npm audit --audit-level moderate
 
     - name: Notify on failure
-      if: failure() && secrets.SLACK_WEBHOOK != ''
+      if: failure() && env.SLACK_WEBHOOK != ''
       uses: rtCamp/action-slack-notify@v2
       env:
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_WEBHOOK: ${{ env.SLACK_WEBHOOK }}
         SLACK_TITLE: 'Security Scan Failed'
         SLACK_MESSAGE: 'Dependency scanning job failed in security-scanning.yml workflow'
         SLACK_COLOR: '#FF0000'
@@ -91,10 +94,10 @@ jobs:
       uses: github/codeql-action/analyze@v3
 
     - name: Notify on failure
-      if: failure() && secrets.SLACK_WEBHOOK != ''
+      if: failure() && env.SLACK_WEBHOOK != ''
       uses: rtCamp/action-slack-notify@v2
       env:
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_WEBHOOK: ${{ env.SLACK_WEBHOOK }}
         SLACK_TITLE: 'Security Scan Failed'
         SLACK_MESSAGE: 'CodeQL analysis job failed in security-scanning.yml workflow'
         SLACK_COLOR: '#FF0000'
