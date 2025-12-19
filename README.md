@@ -198,10 +198,6 @@ The Easy Risk Register documentation includes integrated PlantUML and Mermaid di
 - Data flow diagrams illustrating how information moves through the application
 - Performance and security architecture visualizations
 
-## Contributing
-
-We welcome contributions to the Easy Risk Register project. Please read our [contributing guidelines](docs/guides/contributing.md) for details on our development process, and our [Code of Conduct](CODE_OF_CONDUCT.md) for details on our code of conduct.
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](docs/LICENSE) file for details.
