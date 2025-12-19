@@ -13,7 +13,6 @@ A lightweight, privacy-focused risk management application for small and medium-
 - [Tech Stack](#tech-stack)
 - [Documentation](#documentation)
 - [Integrated Diagrams in Documentation](#integrated-diagrams-in-documentation)
-- [Contributing](#contributing)
 - [License](#license)
 - [Security Policy](#security-policy)
 - [Support](#support)
@@ -200,7 +199,6 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | | [System Architecture (Overview)](docs/architecture/architecture-output.md) | Implementation-aligned architecture summary |
 | **Guides** | [Setup Guide](docs/guides/setup.md) | Complete setup instructions from quick start to advanced development |
 | | [Testing Guide](docs/guides/testing.md) | How to run and write tests |
-| | [Contributing Guide](docs/guides/contributing.md) | Guidelines for contributing to the project |
 | | [Development Workflow](docs/guides/development-workflow.md) | Standard development process and commands |
 | | [Code Style Guide](docs/guides/code-style.md) | Coding standards and best practices |
 | **Reference** | [System Diagrams](docs/reference/diagrams.md) | Visual representations of system architecture and data flows |
