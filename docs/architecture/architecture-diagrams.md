@@ -260,12 +260,12 @@ interface RiskStoreState {
 
 ```mermaid
 flowchart TD
-  Start([Start]) --> A[User opens RiskForm]
+  Start --> A[User opens RiskForm]
   A --> B[Form validates user input]
   B --> C[Form sanitizes input data]
-  C --> D[Form calls addRisk() action]
-  D --> E[buildRisk() creates Risk object]
-  E --> F[calculateRiskScore() calculates score]
+  C --> D[Form calls addRisk]
+  D --> E[buildRisk creates risk object]
+  E --> F[calculateRiskScore calculates score]
   F --> G[Adds creation and modification dates]
   G --> H[Store updates risks array]
   H --> I[Store recalculates statistics]
@@ -273,17 +273,17 @@ flowchart TD
   J --> K[Store updates filtered risks]
   K --> L[Risk card appears in UI]
   L --> M[Risk matrix updates automatically]
-  M --> Stop([Stop])
+  M --> Stop
 ```
 
 #### Risk Update Flow
 
 ```mermaid
 flowchart TD
-  Start([Start]) --> A[User edits a risk in RiskForm]
+  Start --> A[User edits a risk in RiskForm]
   A --> B[Form validates updated input]
   B --> C[Form sanitizes updated data]
-  C --> D[Form calls updateRisk() action]
+  C --> D[Form calls updateRisk]
   D --> E[Store finds risk by ID]
   E --> F[Store applies sanitized updates]
   F --> G[Recalculates riskScore if needed]
@@ -294,7 +294,7 @@ flowchart TD
   K --> L[Store updates filtered risks]
   L --> M[Risk card updates in UI]
   M --> N[Risk matrix updates automatically]
-  N --> Stop([Stop])
+  N --> Stop
 ```
 
 ### Service Layer Architecture
@@ -888,11 +888,11 @@ actions.seedDemoData()
 
 ```mermaid
 flowchart TD
-  Start([Start]) --> A[User submits RiskForm]
+  Start --> A[User submits RiskForm]
   A --> B[Form validates and sanitizes input]
-  B --> C[Form calls actions.addRisk()]
-  C --> D[buildRisk() sanitizes and transforms input]
-  D --> E[calculateRiskScore() calculates score]
+  B --> C[Form calls addRisk]
+  C --> D[buildRisk sanitizes and transforms input]
+  D --> E[calculateRiskScore calculates score]
   E --> F[Creates risk object with timestamps]
   F --> G[Store adds risk to risks array]
   G --> H[Store recalculates filteredRisks]
@@ -902,26 +902,26 @@ flowchart TD
   K --> L[RiskCard displays new risk]
   L --> M[RiskMatrix updates visualization]
   M --> N[RiskSummaryCards shows updated stats]
-  N --> Stop([Stop])
+  N --> Stop
 ```
 
 #### CSV Import Data Flow
 
 ```mermaid
 flowchart TD
-  Start([Start]) --> A[User selects CSV file]
+  Start --> A[User selects CSV file]
   A --> B[FileReader reads file content]
-  B --> C[actions.importFromCSV() called]
+  B --> C[Call importFromCSV]
   C --> D[validateCSVContent() checks for injection]
   D --> E[PapaParse parses CSV securely]
   E --> F[Sanitizes each imported risk]
   F --> G[Filters out invalid risks]
-  G --> H[buildRisk() for each valid risk]
+  G --> H[buildRisk for each valid risk]
   H --> I[Adds risks to store]
   I --> J[Store recalculates all data]
   J --> K[Store persists to browser storage]
   K --> L[UI updates with new risks]
-  L --> Stop([Stop])
+  L --> Stop
 ```
 
 ## Security and Performance Foundation
