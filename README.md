@@ -58,16 +58,17 @@ The application follows a client-side-only architecture with no server dependenc
 - Built with React, TypeScript, Vite, and Tailwind CSS
 - Zustand for state management
 - Framer Motion for animations
-- Chart.js for risk matrices and visualizations
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
-- npm or yarn
+- Option A (local): Node.js (v18 or higher) + npm or yarn
+- Option B (containerized): Docker Desktop (or Docker Engine) + Docker Compose
 
 ### Installation
+
+#### Local (Node/npm)
 
 1. Clone the repository
 2. Navigate to the frontend directory:
@@ -84,11 +85,38 @@ The application follows a client-side-only architecture with no server dependenc
    ```
 5. Open [http://localhost:5173](http://localhost:5173) in your browser
 
+#### Docker Compose (no local Node/npm)
+
+From the repo root:
+
+```bash
+docker compose --profile development up --build frontend-dev
+```
+
+> If your system uses the legacy `docker-compose` binary, replace `docker compose` with `docker-compose`.
+
+Then open [http://localhost:5173](http://localhost:5173).
+
+To stop/remove containers:
+
+```bash
+docker compose --profile development down
+```
+
 ### Docker Setup
 
-For containerized development:
+For containerized workflows:
+
 ```bash
-npm run dev:docker
+docker compose up --build frontend
+```
+
+Open [http://localhost:3001](http://localhost:3001).
+
+To stop/remove containers:
+
+```bash
+docker compose down
 ```
 
 ## User Journey Examples
