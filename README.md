@@ -219,6 +219,7 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | | [Tech Stack Preferences](docs/product/tech-stack-pref.md) | Technology stack preferences and decisions |
 | **Security** | [Security Policy](docs/SECURITY.md) | Security policy and overview |
 | | [Security Implementation](docs/security-implementation.md) | CSP directives, sanitization, and storage hardening |
+| | [Security Improvements Checklist](docs/security-improvements-checklist.md) | Done vs. recommended hardening tasks |
 
 ## Integrated Diagrams in Documentation
 

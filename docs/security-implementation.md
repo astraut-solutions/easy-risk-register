@@ -2,6 +2,8 @@
 
 This document outlines the security measures implemented in the Easy Risk Register application to protect against common web vulnerabilities.
 
+For a “done vs. recommended” checklist, see `docs/security-improvements-checklist.md`.
+
 ## Content Security Policy (CSP)
 
 The application implements a Content Security Policy (CSP) to reduce the risk of XSS (Cross-Site Scripting) and other code injection attacks. The CSP is implemented via a meta tag in `easy-risk-register-frontend/index.html` with the following directives:
@@ -44,7 +46,12 @@ Risk text fields are sanitized before being persisted:
 - `mitigationPlan`
 - `category`
 
-Length validation is applied and oversized fields are truncated as a fallback.
+Length validation is applied and oversized fields are truncated as a fallback:
+
+- `title`: 200 characters
+- `description`: 5000 characters
+- `mitigationPlan`: 5000 characters
+- `category`: 100 characters
 
 ### CSV Import Security
 
@@ -52,6 +59,7 @@ CSV import is validated and sanitized:
 
 - CSV content is validated to reduce spreadsheet formula injection (`=`, `+`, `-`, `@`)
 - Imported values are trimmed and passed through the same sanitization pipeline as manual entries
+- The UI shows a user-facing message when no risks are imported (for example when validation fails)
 
 ## Client-Side Security Architecture
 
@@ -64,4 +72,3 @@ As a client-side only application:
 ## Security Testing
 
 Security-relevant behaviors are covered by tests under `easy-risk-register-frontend/test/`, including sanitization and CSV validation utilities.
-
