@@ -31,6 +31,9 @@ This documentation provides comprehensive information about accessibility standa
   - Accessibility statements
   - Conformance reports
 
+- [Accessibility Statement](./accessibility-statement.md)
+  - Public statement and feedback channels
+
 ## Our Accessibility Commitment
 
 Easy Risk Register is built with accessibility as a core requirement, ensuring that users of all abilities can effectively manage their risk registers. We follow WCAG 2.1 AA guidelines to provide equal access to our risk management tools.
@@ -43,6 +46,18 @@ Easy Risk Register is built with accessibility as a core requirement, ensuring t
 - **Respect for User Preferences**: Support for reduced motion and high contrast modes
 - **Form Accessibility**: All forms have proper labels and error handling
 - **Responsive Design**: Accessible on various devices and screen sizes
+
+
+### WCAG 2.1 AA Principles
+
+- **Perceivable**: 4.5:1 (normal) / 3:1 (large) contrast, text alternatives/ARIA labels, correct heading structure, non-color indicators
+- **Operable**: full keyboard support, visible focus indicators, skip links, no keyboard traps
+- **Understandable**: consistent navigation, predictable UI behavior, labeled forms, clear errors and instructions
+- **Robust**: semantic HTML, valid markup, appropriate ARIA, compatibility with assistive technologies
+
+### Automated Testing
+
+We run automated accessibility checks with **axe-core** during development and recommend periodic audits with axe DevTools, WAVE, Lighthouse, and screen readers (NVDA/JAWS/VoiceOver), plus keyboard-only testing.
 
 ### Target Compliance Level
 
@@ -84,3 +99,5 @@ For developers working on the Easy Risk Register application:
 ## Maintenance and Updates
 
 Accessibility is an ongoing commitment. Regular audits, testing, and updates ensure continued compliance as the application evolves. All new features must meet accessibility requirements before release.
+
+
