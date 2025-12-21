@@ -25,11 +25,14 @@ The application implements comprehensive input sanitization to prevent XSS attac
 
 ### Data Encryption
 
-All risk data stored in browser local storage is encrypted:
-- Uses AES-GCM encryption with 256-bit keys via the Web Crypto API
-- Each encryption operation uses a randomly generated initialization vector
-- Encryption occurs before data is saved to localStorage
-- Encryption key is stored separately with additional protection
+Persisted risk data can be encrypted in browser local storage:
+- Uses AES-GCM encryption with 256-bit keys via the Web Crypto API (when available)
+- Each encryption operation uses a randomly generated 12-byte initialization vector (IV)
+- Encrypted values are stored as base64 of `IV || ciphertext`
+- The encryption key is stored in LocalStorage under `easy-risk-register-key` (base64-encoded raw key material)
+- When Web Crypto is unavailable, the app falls back to unencrypted LocalStorage (and uses in-memory storage during SSR)
+
+For details, see `docs/architecture/secure-data-storage.md`.
 
 ### CSV Import Security
 
@@ -60,7 +63,7 @@ The CSV import functionality includes security measures:
 ## Compliance
 
 The Easy Risk Register application has been designed to:
-- Protect sensitive business risk data with client-side encryption
+- Protect sensitive business risk data with optional client-side encryption (when supported by the browser)
 - Minimize data exposure by storing information locally
 - Implement web security best practices to prevent common vulnerabilities
 - Support accessibility standards while maintaining security

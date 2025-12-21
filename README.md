@@ -45,6 +45,7 @@ A regional financial advisor firm manages risks including market volatility, cyb
 - Responsive design that works across devices
 - CSV import/export functionality for reporting and backups
 - Real-time updates for risk scores and visualizations
+- Optional client-side encryption for persisted state (AES-GCM via Web Crypto, when available)
 - WCAG 2.1 AA compliant accessibility features
 - Content Security Policy (CSP) implementation for enhanced security
 - 100% compliance with product requirements
@@ -202,6 +203,7 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 |----------|-----------|-------------|
 | **Architecture** | [Architecture Documentation](docs/architecture/architecture-diagrams.md) | System architecture with integrated diagrams |
 | | [System Architecture (Overview)](docs/architecture/architecture-output.md) | Implementation-aligned architecture summary |
+| | [Secure Data Storage](docs/architecture/secure-data-storage.md) | Client-side encryption for persisted LocalStorage data |
 | **Guides** | [Setup Guide](docs/guides/setup.md) | Complete setup instructions from quick start to advanced development |
 | | [Testing Guide](docs/guides/testing.md) | How to run and write tests |
 | | [Development Workflow](docs/guides/development-workflow.md) | Standard development process and commands |
@@ -233,6 +235,7 @@ This project is licensed under the MIT License - see the [LICENSE](docs/LICENSE)
 ## Security Policy
 
 We take security seriously. For information about our security measures, see our [security documentation](docs/SECURITY.md).
+For details on how persisted client-side state is encrypted, see [Secure Data Storage](docs/architecture/secure-data-storage.md).
 
 ### Automated Security Scanning
 
