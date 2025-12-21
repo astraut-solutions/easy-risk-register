@@ -217,6 +217,8 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | | [Requirements Mapping](docs/design/requirements-mapping.md) | Mapping of requirements to design elements |
 | **Product** | [Product Requirements](docs/product/product-requirements.md) | Complete feature specifications and requirements |
 | | [Tech Stack Preferences](docs/product/tech-stack-pref.md) | Technology stack preferences and decisions |
+| **Security** | [Security Policy](docs/SECURITY.md) | Security policy and overview |
+| | [Security Implementation](docs/security-implementation.md) | CSP directives, sanitization, and storage hardening |
 
 ## Integrated Diagrams in Documentation
 

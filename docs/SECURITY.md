@@ -8,20 +8,29 @@ Easy Risk Register is a privacy-focused risk management application that priorit
 
 ### Content Security Policy (CSP)
 
-The application implements a Content Security Policy to prevent XSS (Cross-Site Scripting) and other code injection attacks. The CSP directives include:
-- `default-src 'self'` - Restricts all resources to same-origin by default
-- `script-src 'self' 'unsafe-inline' 'unsafe-eval'` - Allows scripts from same origin (needed for React/Vite)
-- `style-src 'self' 'unsafe-inline'` - Allows stylesheets from same-origin and inline styles
-- `img-src 'self' data: https:` - Allows images from same origin, data URLs, and HTTPS sources
-- `frame-ancestors 'none'` - Prevents clickjacking by blocking framing of the page
+The application implements a Content Security Policy to reduce the risk of XSS (Cross-Site Scripting) and other code injection attacks. The CSP is implemented via a meta tag in `easy-risk-register-frontend/index.html` with directives including:
+- `default-src 'self'`
+- `script-src 'self' 'unsafe-inline' 'unsafe-eval'` (needed for React/Vite tooling)
+- `style-src 'self' 'unsafe-inline'`
+- `img-src 'self' data: https:`
+- `font-src 'self' data:`
+- `connect-src 'self' http: https:`
+- `media-src 'self'`
+- `object-src 'none'`
+- `frame-src 'self'`
+- `frame-ancestors 'none'`
+- `base-uri 'self'`
+- `form-action 'self'`
+
+For more detail, see `docs/security-implementation.md`.
 
 ### Input Sanitization
 
 The application implements comprehensive input sanitization to prevent XSS attacks:
-- All user inputs are sanitized using the `isomorphic-dompurify` library
-- Dangerous HTML tags like `<script>`, `<iframe>`, `<object>` are removed
-- Potentially harmful attributes are stripped
-- Only safe HTML elements are allowed (e.g., `<p>`, `<strong>`, `<em>`, lists, headings)
+- User-provided text is sanitized using `isomorphic-dompurify` (`easy-risk-register-frontend/src/utils/sanitization.ts`)
+- A small allowlist of safe formatting tags is permitted (for example `<p>`, `<strong>`, `<em>`, lists, headings, `<pre>`, `<code>`)
+- Attributes are stripped by default and dangerous tags/attributes are explicitly forbidden
+- Risk inputs are sanitized before persistence and oversized fields are truncated as a fallback
 
 ### Data Encryption
 
