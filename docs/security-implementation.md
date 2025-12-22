@@ -6,10 +6,20 @@ For a “done vs. recommended” checklist, see `docs/security-improvements-chec
 
 ## Content Security Policy (CSP)
 
-The application implements a Content Security Policy (CSP) to reduce the risk of XSS (Cross-Site Scripting) and other code injection attacks. The CSP is implemented via a meta tag in `easy-risk-register-frontend/index.html` with the following directives:
+The application implements a Content Security Policy (CSP) to reduce the risk of XSS (Cross-Site Scripting) and other code injection attacks.
+
+For production deployments, CSP is set via **HTTP response headers** at the hosting layer:
+- **Vercel**: `vercel.json` adds a CSP header for all routes.
+- **Docker (production)**: `easy-risk-register-frontend/server.mjs` serves the built app and sets a per-request nonce-based CSP header.
+
+For local development, the Vite dev server adds a more permissive CSP header (see `easy-risk-register-frontend/vite.config.ts`) to support dev tooling.
+
+Core directives:
 
 - `default-src 'self'` - Restricts all resources to same-origin by default
-- `script-src 'self' 'unsafe-inline' 'unsafe-eval'` - Allows scripts from same origin and inline/eval scripts (needed for React/Vite tooling)
+- `script-src 'self'` (production) - Allows scripts from same origin (no `unsafe-inline` / `unsafe-eval`)
+- `script-src 'self' 'unsafe-eval'` (development) - Allows eval used by some dev tooling (avoid in production)
+- `script-src-attr 'none'` - Disallows inline event handler attributes
 - `style-src 'self' 'unsafe-inline'` - Allows stylesheets from same-origin and inline styles
 - `img-src 'self' data: https:` - Allows images from same origin, data URLs, and HTTPS sources
 - `font-src 'self' data:` - Allows fonts from same-origin and data URLs
@@ -21,7 +31,7 @@ The application implements a Content Security Policy (CSP) to reduce the risk of
 - `base-uri 'self'` - Restricts the base URI
 - `form-action 'self'` - Restricts form submissions to same origin
 
-Note: the current CSP includes `unsafe-inline` and `unsafe-eval`. For stricter production hardening, consider migrating to nonce/hash-based CSP.
+Note: the Docker production server sets a per-request script nonce in the CSP header to support nonce-based allowlisting without enabling `unsafe-inline`.
 
 ## Input Sanitization
 

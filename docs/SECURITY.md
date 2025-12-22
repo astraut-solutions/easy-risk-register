@@ -8,10 +8,17 @@ Easy Risk Register is a privacy-focused risk management application that priorit
 
 ### Content Security Policy (CSP)
 
-The application implements a Content Security Policy to reduce the risk of XSS (Cross-Site Scripting) and other code injection attacks. The CSP is implemented via a meta tag in `easy-risk-register-frontend/index.html` with directives including:
+The application implements a Content Security Policy to reduce the risk of XSS (Cross-Site Scripting) and other code injection attacks. For production deployments, CSP is set via **HTTP response headers** at the hosting layer (header-based CSP is harder to bypass than a meta-based CSP in some threat models).
+
+Current hosting-layer CSP implementations:
+- **Vercel**: `vercel.json` sets a strict header for all routes (no `unsafe-inline` / `unsafe-eval`).
+- **Docker (production)**: `easy-risk-register-frontend/server.mjs` serves the built app and sets a per-request **nonce-based** CSP header.
+- **Local development**: `easy-risk-register-frontend/vite.config.ts` sets a dev CSP header (includes `unsafe-eval` to support Vite dev tooling).
+
+The CSP directives include:
 - `default-src 'self'`
-- `script-src 'self' 'unsafe-inline' 'unsafe-eval'` (needed for React/Vite tooling)
-- `style-src 'self' 'unsafe-inline'`
+- `script-src 'self'` (production) / `script-src 'self' 'unsafe-eval'` (development)
+- `style-src 'self' 'unsafe-inline'` (to support inline styles used by some UI libraries)
 - `img-src 'self' data: https:`
 - `font-src 'self' data:`
 - `connect-src 'self' http: https:`

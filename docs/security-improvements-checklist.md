@@ -4,6 +4,10 @@ This checklist maps the “Security Improvements Report” items to the current 
 
 ## Done (Implemented)
 
+### CSP hardening
+- [x] Replace `script-src 'unsafe-inline' 'unsafe-eval'` with a nonce/hash-based CSP for production deployments.
+- [x] Prefer setting CSP via HTTP response headers at the hosting layer (meta-based CSP is easier to bypass in some threat models).
+
 ### Input sanitization hardening
 - [x] Sanitize user-provided text with `isomorphic-dompurify` (`easy-risk-register-frontend/src/utils/sanitization.ts`).
 - [x] Allowlist safe HTML tags and strip all attributes by default.
@@ -31,14 +35,9 @@ This checklist maps the “Security Improvements Report” items to the current 
 
 ## To do (Recommended hardening)
 
-### CSP hardening
-- [ ] Replace `script-src 'unsafe-inline' 'unsafe-eval'` with a nonce/hash-based CSP for production deployments.
-- [ ] Prefer setting CSP via HTTP response headers at the hosting layer (meta-based CSP is easier to bypass in some threat models).
-
 ### CSV UX and robustness
 - [ ] Replace `alert()` with an in-app notification/toast pattern for better UX.
-- [ ] Consider returning structured import results (e.g., `{ imported, reason }`) so the UI can distinguish “invalid CSV” from “valid but empty/mismatched CSV”.
+- [ ] Consider returning structured import results (e.g., `{ imported, reason }`) so the UI can distinguish "invalid CSV" from "valid but empty/mismatched CSV".
 
 ### Threat model
 - [ ] Document limitations clearly: client-side encryption does not protect against XSS / same-origin code execution, and the key material is stored alongside ciphertext in LocalStorage.
-

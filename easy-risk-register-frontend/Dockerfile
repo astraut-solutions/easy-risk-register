@@ -23,20 +23,13 @@ FROM node:20-slim
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-
-# Install only production dependencies
-RUN npm ci --only=production && npm cache clean --force
-
 # Copy the built application from the builder stage
 COPY --from=builder /app/dist ./dist
 
-# Install serve to serve the static build files
-RUN npm install -g serve
+COPY server.mjs ./server.mjs
 
 # Expose port 8080 for the frontend application
 EXPOSE 8080
 
-# Start the application using serve to serve static files
-CMD ["serve", "-s", "dist", "-l", "8080"]
+# Start the application using a small Node server that sets security headers (including CSP)
+CMD ["node", "server.mjs"]
