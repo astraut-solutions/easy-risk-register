@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { useForm } from 'react-hook-form'
+import { useForm, useFieldArray } from 'react-hook-form'
 import { RiskForm } from '../../../src/components/risk/RiskForm'
 
 // Mock react-hook-form
@@ -9,6 +9,12 @@ vi.mock('react-hook-form', async () => {
   return {
     ...actual,
     useForm: vi.fn(),
+    useFieldArray: vi.fn(() => ({
+      fields: [],
+      append: vi.fn(),
+      remove: vi.fn(),
+      move: vi.fn(),
+    })),
     Controller: ({ name, defaultValue, render }: any) =>
       render({
         field: {
@@ -78,20 +84,15 @@ vi.mock('../../../src/design-system', async () => {
 })
 
 // Mock utils
-vi.mock('../../utils/riskCalculations', () => ({
-  calculateRiskScore: (prob: number, impact: number) => prob * impact,
-  getRiskSeverity: (score: number) => {
-    if (score <= 4) return 'low'
-    if (score <= 9) return 'medium'
-    return 'high'
-  },
-}))
-
 const mockUseForm = {
   register: vi.fn(),
   handleSubmit: vi.fn((fn) => fn),
-  watch: vi.fn(),
+  watch: vi.fn((name?: string) => {
+    if (typeof name === 'string') return 'open'
+    return { probability: 3, impact: 3 }
+  }),
   reset: vi.fn(),
+  setValue: vi.fn(),
   control: {},
   formState: { errors: {}, isSubmitting: false },
 }
@@ -105,7 +106,12 @@ describe('RiskForm', () => {
   beforeEach(() => {
     mockFieldCounter = 0
     vi.mocked(useForm).mockReturnValue(mockUseForm)
-    vi.mocked(mockUseForm.watch).mockReturnValue({ probability: 3, impact: 3 })
+    vi.mocked(useFieldArray).mockReturnValue({
+      fields: [],
+      append: vi.fn(),
+      remove: vi.fn(),
+      move: vi.fn(),
+    } as any)
   })
 
   it('renders all form fields', () => {
@@ -116,16 +122,17 @@ describe('RiskForm', () => {
     expect(screen.getByLabelText(/description/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/status/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/mitigation plan/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/probability/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/likelihood/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/impact/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^owner$/i)).toBeInTheDocument()
   })
 
   it('displays correct mode button text', () => {
     const { rerender } = render(<RiskForm {...defaultProps} mode="create" />)
-    expect(screen.getByTestId('mock-button')).toHaveTextContent('Add risk')
+    expect(screen.getByText('Add risk')).toBeInTheDocument()
 
     rerender(<RiskForm {...defaultProps} mode="edit" />)
-    expect(screen.getByTestId('mock-button')).toHaveTextContent('Save changes')
+    expect(screen.getByText('Save changes')).toBeInTheDocument()
   })
 
   it('shows risk score calculation', () => {
@@ -164,25 +171,41 @@ describe('RiskForm', () => {
         impact: 4,
         category: 'Security',
         mitigationPlan: 'Test plan',
-        status: 'open'
+        status: 'open',
+        owner: '',
+        ownerTeam: '',
+        dueDate: '',
+        reviewDate: '',
+        riskResponse: 'treat',
+        ownerResponse: '',
+        securityAdvisorComment: '',
+        vendorResponse: '',
+        notes: '',
+        evidence: [],
+        mitigationSteps: [],
       }))
     })
 
     render(<RiskForm {...defaultProps} onSubmit={mockSubmit} />)
 
-    const submitButton = screen.getByTestId('mock-button')
+    const submitButton = screen.getByText('Add risk')
     fireEvent.click(submitButton)
 
     await waitFor(() => {
-      expect(mockSubmit).toHaveBeenCalledWith({
-        title: 'Test Risk',
-        description: 'Test Description',
-        probability: 3,
-        impact: 4,
-        category: 'Security',
-        mitigationPlan: 'Test plan',
-        status: 'open'
-      })
+      expect(mockSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Test Risk',
+          description: 'Test Description',
+          probability: 3,
+          impact: 4,
+          category: 'Security',
+          mitigationPlan: 'Test plan',
+          status: 'open',
+          riskResponse: 'treat',
+          evidence: [],
+          mitigationSteps: [],
+        }),
+      )
     })
   })
 
@@ -207,7 +230,7 @@ describe('RiskForm', () => {
 
     render(<RiskForm {...defaultProps} mode="create" onSubmit={() => {}} />)
 
-    const submitButton = screen.getByTestId('mock-button')
+    const submitButton = screen.getByText('Add risk')
     fireEvent.click(submitButton)
 
     await waitFor(() => {
@@ -219,6 +242,18 @@ describe('RiskForm', () => {
         category: 'Security',
         mitigationPlan: '',
         status: 'open',
+        owner: '',
+        ownerTeam: '',
+        dueDate: '',
+        reviewDate: '',
+        reviewCadence: undefined,
+        riskResponse: 'treat',
+        ownerResponse: '',
+        securityAdvisorComment: '',
+        vendorResponse: '',
+        notes: '',
+        evidence: [],
+        mitigationSteps: [],
       })
     })
   })
@@ -244,7 +279,7 @@ describe('RiskForm', () => {
 
     render(<RiskForm {...defaultProps} mode="edit" onSubmit={() => {}} />)
 
-    const submitButton = screen.getByTestId('mock-button')
+    const submitButton = screen.getByText('Save changes')
     fireEvent.click(submitButton)
 
     await waitFor(() => {
@@ -284,7 +319,7 @@ describe('RiskForm', () => {
 
     render(<RiskForm {...defaultProps} />)
 
-    const submitButton = screen.getByTestId('mock-button')
+    const submitButton = screen.getByText('Add risk')
     expect(submitButton).toBeDisabled()
   })
 

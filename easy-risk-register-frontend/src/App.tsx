@@ -6,6 +6,7 @@ import {
 } from './components/layout/DashboardSidebar'
 import { RiskSummaryCards } from './components/risk/RiskSummaryCards'
 import { RiskForm, type RiskFormValues } from './components/risk/RiskForm'
+import { RiskDetailModal } from './components/risk/RiskDetailModal'
 import { RiskList } from './components/risk/RiskList'
 import { RiskMatrix } from './components/risk/RiskMatrix'
 import { RiskFiltersBar } from './components/risk/RiskFilters'
@@ -42,9 +43,11 @@ function App() {
   const { risks, stats, filters, categories, actions } = useRiskManagement()
   const toast = useToast()
   const [editingRisk, setEditingRisk] = useState<Risk | null>(null)
+  const [viewingRisk, setViewingRisk] = useState<Risk | null>(null)
   const [matrixSelection, setMatrixSelection] = useState<MatrixSelection | null>(null)
   const [activeView, setActiveView] = useState<DashboardView>('overview')
   const [isFormModalOpen, setIsFormModalOpen] = useState(false)
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
@@ -83,6 +86,21 @@ function App() {
   const handleEditRisk = (risk: Risk) => {
     setEditingRisk(risk)
     setIsFormModalOpen(true)
+  }
+
+  const handleViewRisk = (risk: Risk) => {
+    setViewingRisk(risk)
+    setIsDetailModalOpen(true)
+  }
+
+  const handleCloseDetailModal = () => {
+    setViewingRisk(null)
+    setIsDetailModalOpen(false)
+  }
+
+  const handleEditFromDetail = (risk: Risk) => {
+    handleCloseDetailModal()
+    handleEditRisk(risk)
   }
 
   const handleCloseModal = () => {
@@ -307,7 +325,7 @@ function App() {
                 <div className="rr-panel flex flex-wrap items-center justify-between gap-3 p-4 text-sm text-text-high">
                   <div>
                     <span className="font-semibold text-text-high">Matrix filter active:</span>{' '}
-                    Probability {matrixSelection.probability} x Impact {matrixSelection.impact}{' '}
+                    Likelihood {matrixSelection.probability} x Impact {matrixSelection.impact}{' '}
                     <span className="text-text-low">({matrixSelection.severity})</span>
                   </div>
                   <Button
@@ -325,7 +343,7 @@ function App() {
                 risks={visibleRisks}
                 onEdit={handleEditRisk}
                 onDelete={handleDelete}
-                onView={handleEditRisk}
+                onView={handleViewRisk}
                 emptyState={listEmptyState}
               />
 
@@ -351,12 +369,19 @@ function App() {
               risks={risks}
               onEdit={handleEditRisk}
               onDelete={handleDelete}
-              onView={handleEditRisk}
+              onView={handleViewRisk}
               emptyState={tableEmptyState}
             />
           )}
         </div>
       </div>
+
+      <RiskDetailModal
+        risk={viewingRisk}
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseDetailModal}
+        onEdit={handleEditFromDetail}
+      />
 
       <Modal
         isOpen={isFormModalOpen}
@@ -376,6 +401,7 @@ function App() {
             categories={categories}
             defaultValues={editingRisk ?? undefined}
             onSubmit={handleSubmit}
+            onAddCategory={actions.addCategory}
             onCancel={handleCloseModal}
             className="border-0 bg-transparent p-0 shadow-none"
           />

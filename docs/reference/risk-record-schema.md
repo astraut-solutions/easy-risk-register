@@ -13,6 +13,8 @@ This document describes the **risk record fields** used by Easy Risk Register, i
 - `category` (string)
 - `status` (enum: `open` | `accepted` | `mitigated` | `closed`)
 
+Categories support both predefined and user-defined values. Custom categories are persisted locally.
+
 **Accountability & review**
 - `owner` (string, required; can be empty)
 - `ownerTeam` (string, optional)
@@ -48,4 +50,3 @@ Each evidence entry:
 ## Migration / backwards compatibility
 
 When the persisted LocalStorage schema version changes, existing stored risks are migrated by backfilling default values for new fields (for example: `riskResponse: "treat"`, `evidence: []`, `mitigationSteps: []`).
-

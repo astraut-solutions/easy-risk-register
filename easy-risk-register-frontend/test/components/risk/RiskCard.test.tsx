@@ -24,7 +24,7 @@ vi.mock('../../../src/design-system', async () => {
   }
 })
 
-const mockRisk: Risk = {
+const makeRisk = (overrides: Partial<Risk>): Risk => ({
   id: '1',
   title: 'Test Risk',
   description: 'This is a test risk description',
@@ -34,9 +34,19 @@ const mockRisk: Risk = {
   category: 'Security',
   status: 'open',
   mitigationPlan: 'Test mitigation plan',
+  mitigationSteps: [],
+  owner: 'Alice',
+  riskResponse: 'treat',
+  ownerResponse: '',
+  securityAdvisorComment: '',
+  vendorResponse: '',
+  evidence: [],
   creationDate: '2023-01-01T00:00:00.000Z',
   lastModified: '2023-01-02T00:00:00.000Z',
-}
+  ...overrides,
+})
+
+const mockRisk: Risk = makeRisk({})
 
 const getRiskScoreBadge = () => screen.getByTestId('risk-score-badge')
 
@@ -62,12 +72,12 @@ describe('RiskCard', () => {
     expect(getRiskScoreBadge()).toHaveAttribute('tone', 'danger')
 
     // Test medium severity (score 5)
-    const mediumRisk = { ...mockRisk, riskScore: 5 }
+    const mediumRisk = makeRisk({ riskScore: 5 })
     rerender(<RiskCard risk={mediumRisk} onEdit={vi.fn()} onDelete={vi.fn()} />)
     expect(getRiskScoreBadge()).toHaveAttribute('tone', 'warning')
 
     // Test low severity (score 2)
-    const lowRisk = { ...mockRisk, riskScore: 2 }
+    const lowRisk = makeRisk({ riskScore: 2 })
     rerender(<RiskCard risk={lowRisk} onEdit={vi.fn()} onDelete={vi.fn()} />)
     expect(getRiskScoreBadge()).toHaveAttribute('tone', 'success')
   })
@@ -152,19 +162,19 @@ describe('RiskCard', () => {
     render(<RiskCard {...defaultProps} />)
 
     // Should display a formatted date (will vary by locale but should contain the date)
-    expect(screen.getByText(/Jan|January/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Jan|January/).length).toBeGreaterThan(0)
   })
 
   it('capitalizes status correctly', () => {
-    const riskWithCapitalizedStatus = { ...mockRisk, status: 'mitigated' }
+    const riskWithCapitalizedStatus = makeRisk({ status: 'mitigated' })
     render(<RiskCard risk={riskWithCapitalizedStatus} onEdit={vi.fn()} onDelete={vi.fn()} />)
 
     expect(screen.getByText('mitigated')).toBeInTheDocument()
   })
 
   it('maps boundary risk scores to the expected severity tone', () => {
-    const lowBoundaryRisk = { ...mockRisk, riskScore: 3 }
-    const mediumBoundaryRisk = { ...mockRisk, riskScore: 6 }
+    const lowBoundaryRisk = makeRisk({ riskScore: 3 })
+    const mediumBoundaryRisk = makeRisk({ riskScore: 6 })
 
     const { unmount } = render(
       <RiskCard risk={lowBoundaryRisk} onEdit={vi.fn()} onDelete={vi.fn()} />

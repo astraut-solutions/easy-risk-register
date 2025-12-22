@@ -28,6 +28,13 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
   year: 'numeric',
 })
 
+const formatMaybeDate = (value?: string) => {
+  if (!value) return '—'
+  const parsed = Date.parse(value)
+  if (Number.isNaN(parsed)) return '—'
+  return dateFormatter.format(new Date(parsed))
+}
+
 const getSeverityTone = (score: number): BadgeTone => {
   if (score <= 3) return 'success'
   if (score <= 6) return 'warning'
@@ -56,7 +63,7 @@ export const RiskTable = ({
   }
 
   return (
-    <div className="rr-panel overflow-hidden p-0" role="region" aria-labelledby="risk-table-title">
+    <div className="rr-panel overflow-x-auto p-0" role="region" aria-labelledby="risk-table-title">
       <h3 id="risk-table-title" className="sr-only">Risk Table</h3>
       <Table
         className="[&_th]:whitespace-nowrap"
@@ -67,9 +74,14 @@ export const RiskTable = ({
           <TableRow role="row">
             <TableHead role="columnheader">Risk</TableHead>
             <TableHead role="columnheader">Category</TableHead>
-            <TableHead role="columnheader" className="text-center">Probability</TableHead>
+            <TableHead role="columnheader" className="text-center">Likelihood</TableHead>
             <TableHead role="columnheader" className="text-center">Impact</TableHead>
             <TableHead role="columnheader" className="text-center">Score</TableHead>
+            <TableHead role="columnheader">Owner</TableHead>
+            <TableHead role="columnheader">Due</TableHead>
+            <TableHead role="columnheader">Next review</TableHead>
+            <TableHead role="columnheader">Response</TableHead>
+            <TableHead role="columnheader" className="text-center">Evidence</TableHead>
             <TableHead role="columnheader">Status</TableHead>
             <TableHead role="columnheader">Last updated</TableHead>
             <TableHead role="columnheader" className="text-right">Actions</TableHead>
@@ -101,6 +113,29 @@ export const RiskTable = ({
                   aria-label={`Risk score: ${risk.riskScore}, ${getSeverityTone(risk.riskScore)} severity`}
                 >
                   {risk.riskScore}
+                </Badge>
+              </TableCell>
+              <TableCell role="cell">
+                <span className="text-sm text-text-high">{risk.owner || '—'}</span>
+                {risk.ownerTeam ? (
+                  <p className="text-xs text-text-low">{risk.ownerTeam}</p>
+                ) : null}
+              </TableCell>
+              <TableCell role="cell" aria-label={`Due date: ${formatMaybeDate(risk.dueDate)}`}>
+                {formatMaybeDate(risk.dueDate)}
+              </TableCell>
+              <TableCell role="cell" aria-label={`Next review: ${formatMaybeDate(risk.reviewDate)}`}>
+                <span>{formatMaybeDate(risk.reviewDate)}</span>
+                {risk.reviewCadence ? (
+                  <span className="ml-1 text-xs text-text-low">({risk.reviewCadence})</span>
+                ) : null}
+              </TableCell>
+              <TableCell role="cell" aria-label={`Response: ${risk.riskResponse}`}>
+                <span className="capitalize">{risk.riskResponse}</span>
+              </TableCell>
+              <TableCell className="text-center" role="cell" aria-label={`Evidence count: ${risk.evidence.length}`}>
+                <Badge tone="neutral" className="rounded-full px-3 py-1 text-xs font-semibold">
+                  {risk.evidence.length}
                 </Badge>
               </TableCell>
               <TableCell role="cell" aria-label={`Status: ${risk.status}`}>

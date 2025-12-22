@@ -6,6 +6,13 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
 })
 
+const formatMaybeDate = (value?: string) => {
+  if (!value) return '—'
+  const parsed = Date.parse(value)
+  if (Number.isNaN(parsed)) return '—'
+  return dateFormatter.format(new Date(parsed))
+}
+
 interface RiskCardProps {
   risk: Risk
   onEdit: (risk: Risk) => void
@@ -60,12 +67,41 @@ export const RiskCard = ({ risk, onEdit, onDelete, onView }: RiskCardProps) => {
           >
             {risk.category}
           </Badge>
+          <Badge
+            tone="neutral"
+            className="text-xs font-medium px-2 py-1 rounded-lg capitalize"
+            aria-label={`Response: ${risk.riskResponse}`}
+          >
+            {risk.riskResponse}
+          </Badge>
+          <Badge
+            tone="neutral"
+            className="text-xs font-medium px-2 py-1 rounded-lg"
+            aria-label={`Evidence count: ${risk.evidence.length}`}
+          >
+            Evidence {risk.evidence.length}
+          </Badge>
           <span className="text-xs text-text-low" aria-label={`Last modified: ${dateFormatter.format(new Date(risk.lastModified))}`}>
             {dateFormatter.format(new Date(risk.lastModified))}
           </span>
           <span className="ml-auto text-xs font-semibold capitalize text-text-low" aria-label={`Status: ${risk.status}`}>
             {risk.status}
           </span>
+        </div>
+
+        <div className="grid gap-2 rounded-2xl border border-border-faint bg-surface-secondary/10 p-3 text-xs text-text-low">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-semibold text-text-high">Owner</span>
+            <span className="text-text-low">{risk.owner || '—'}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-semibold text-text-high">Due</span>
+            <span className="text-text-low">{formatMaybeDate(risk.dueDate)}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-semibold text-text-high">Next review</span>
+            <span className="text-text-low">{formatMaybeDate(risk.reviewDate)}</span>
+          </div>
         </div>
 
         <div className="flex flex-wrap justify-end gap-2 border-t border-border-faint pt-4">

@@ -51,7 +51,29 @@ vi.mock('../../../src/design-system', async () => {
   }
 })
 
-const mockRisk1: Risk = {
+const makeRisk = (overrides: Partial<Risk>): Risk => ({
+  id: '1',
+  title: 'Test Risk',
+  description: 'Test description',
+  probability: 3,
+  impact: 3,
+  riskScore: 9,
+  category: 'Security',
+  status: 'open',
+  mitigationPlan: '',
+  mitigationSteps: [],
+  owner: '',
+  riskResponse: 'treat',
+  ownerResponse: '',
+  securityAdvisorComment: '',
+  vendorResponse: '',
+  evidence: [],
+  creationDate: '2023-01-01T00:00:00.000Z',
+  lastModified: '2023-01-02T00:00:00.000Z',
+  ...overrides,
+})
+
+const mockRisk1: Risk = makeRisk({
   id: '1',
   title: 'Test Risk 1',
   description: 'First test risk description',
@@ -61,11 +83,15 @@ const mockRisk1: Risk = {
   category: 'Security',
   status: 'open',
   mitigationPlan: 'First mitigation plan',
-  creationDate: '2023-01-01T00:00:00.000Z',
-  lastModified: '2023-01-02T00:00:00.000Z',
-}
+  owner: 'Alice',
+  dueDate: '2023-01-15T00:00:00.000Z',
+  reviewDate: '2023-01-20T00:00:00.000Z',
+  reviewCadence: 'monthly',
+  riskResponse: 'treat',
+  evidence: [],
+})
 
-const mockRisk2: Risk = {
+const mockRisk2: Risk = makeRisk({
   id: '2',
   title: 'Test Risk 2',
   description: 'Second test risk description',
@@ -75,9 +101,13 @@ const mockRisk2: Risk = {
   category: 'Compliance',
   status: 'mitigated',
   mitigationPlan: 'Second mitigation plan',
-  creationDate: '2023-02-01T00:00:00.000Z',
-  lastModified: '2023-02-02T00:00:00.000Z',
-}
+  owner: 'Bob',
+  dueDate: '2023-02-15T00:00:00.000Z',
+  reviewDate: '2023-02-20T00:00:00.000Z',
+  reviewCadence: 'quarterly',
+  riskResponse: 'transfer',
+  evidence: [{ type: 'link', url: 'https://example.com', addedAt: '2023-02-10T00:00:00.000Z' }],
+})
 
 describe('RiskTable', () => {
   const defaultProps = {
@@ -91,9 +121,14 @@ describe('RiskTable', () => {
 
     expect(screen.getByText('Risk')).toBeInTheDocument()
     expect(screen.getByText('Category')).toBeInTheDocument()
-    expect(screen.getByText('Probability')).toBeInTheDocument()
+    expect(screen.getByText('Likelihood')).toBeInTheDocument()
     expect(screen.getByText('Impact')).toBeInTheDocument()
     expect(screen.getByText('Score')).toBeInTheDocument()
+    expect(screen.getByText('Owner')).toBeInTheDocument()
+    expect(screen.getByText('Due')).toBeInTheDocument()
+    expect(screen.getByText('Next review')).toBeInTheDocument()
+    expect(screen.getByText('Response')).toBeInTheDocument()
+    expect(screen.getByText('Evidence')).toBeInTheDocument()
     expect(screen.getByText('Status')).toBeInTheDocument()
     expect(screen.getByText('Last updated')).toBeInTheDocument()
     expect(screen.getByText('Actions')).toBeInTheDocument()
@@ -215,8 +250,8 @@ describe('RiskTable', () => {
     render(<RiskTable {...defaultProps} />)
 
     // Should display formatted dates (will vary by locale but should contain the date)
-    expect(screen.getByText(/Jan|January/)).toBeInTheDocument()
-    expect(screen.getByText(/Feb|February/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Jan|January/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Feb|February/).length).toBeGreaterThan(0)
   })
 
   it('capitalizes status correctly', () => {

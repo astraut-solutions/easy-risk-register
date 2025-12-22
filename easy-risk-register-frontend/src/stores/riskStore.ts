@@ -606,11 +606,24 @@ export const useRiskStore = create<RiskStoreState>()(
           ? state.risks.map((risk: any) => normalizeStoredRisk(risk))
           : []
 
+        const categories: string[] = Array.isArray(state.categories)
+          ? Array.from(
+              new Set(
+                [...DEFAULT_CATEGORIES, ...state.categories]
+                  .map((category) =>
+                    typeof category === 'string' ? sanitizeTextInput(category).trim() : '',
+                  )
+                  .filter(Boolean),
+              ),
+            )
+          : [...DEFAULT_CATEGORIES]
+
         const filters = state.filters ?? { ...DEFAULT_FILTERS }
 
         return {
           ...state,
           risks,
+          categories,
           filters,
           filteredRisks: filterRisks(risks, filters),
           stats: computeRiskStats(risks),

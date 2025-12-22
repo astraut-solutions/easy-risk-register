@@ -24,17 +24,17 @@ Use this checklist to track the work needed to support claims around **ownership
 - [x] Implement LocalStorage schema versioning + migration for existing stored risks
 
 ### Categories
-- [ ] Add support for user-defined/custom categories (in addition to predefined ones)
-- [ ] Persist custom categories in LocalStorage
+- [x] Add support for user-defined/custom categories (in addition to predefined ones)
+- [x] Persist custom categories in LocalStorage
 
 ### UI/UX
-- [ ] Update risk create/edit form to capture new accountability fields (owner/team/due/review/cadence/response)
-- [ ] Add UI to manage evidence entries (add/edit/remove; validate URL)
-- [ ] Add UI to manage `mitigationSteps` (add/reorder/complete; optional owner/due date)
-- [ ] Update risk list/table view to display key fields (owner, due date, next review, response, evidence count)
-- [ ] Update risk detail view to display all new fields clearly
-- [ ] Update matrix tooltip/quick view to include owner + next review + acceptance status
-- [ ] Ensure labels match user language (Likelihood = Probability; Severity derived from score bands)
+- [x] Update risk create/edit form to capture new accountability fields (owner/team/due/review/cadence/response)
+- [x] Add UI to manage evidence entries (add/edit/remove; validate URL)
+- [x] Add UI to manage `mitigationSteps` (add/reorder/complete; optional owner/due date)
+- [x] Update risk list/table view to display key fields (owner, due date, next review, response, evidence count)
+- [x] Update risk detail view to display all new fields clearly
+- [x] Update matrix tooltip/quick view to include owner + next review + acceptance status
+- [x] Ensure labels match user language (Likelihood = Probability; Severity derived from score bands)
 
 ### Import/Export
 - [ ] Define a stable CSV column spec for the new fields (versioned)

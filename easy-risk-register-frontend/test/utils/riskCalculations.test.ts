@@ -8,6 +8,28 @@ import {
 } from '../../src/utils/riskCalculations';
 import type { Risk } from '../../src/types/risk';
 
+const makeRisk = (overrides: Partial<Risk>): Risk => ({
+  id: 'risk-id',
+  title: 'Risk title',
+  description: 'Risk description',
+  probability: 3,
+  impact: 3,
+  riskScore: 9,
+  category: 'Operational',
+  status: 'open',
+  mitigationPlan: '',
+  mitigationSteps: [],
+  owner: '',
+  riskResponse: 'treat',
+  ownerResponse: '',
+  securityAdvisorComment: '',
+  vendorResponse: '',
+  evidence: [],
+  creationDate: new Date().toISOString(),
+  lastModified: new Date().toISOString(),
+  ...overrides,
+});
+
 describe('riskCalculations', () => {
   describe('DEFAULT_FILTERS', () => {
     it('should have default filter values', () => {
@@ -69,7 +91,7 @@ describe('riskCalculations', () => {
 
   describe('filterRisks', () => {
     const sampleRisks: Risk[] = [
-      {
+      makeRisk({
         id: '1',
         title: 'High Security Risk',
         description: 'A critical security vulnerability',
@@ -78,10 +100,8 @@ describe('riskCalculations', () => {
         riskScore: 20,
         category: 'Security',
         status: 'open',
-        creationDate: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-      },
-      {
+      }),
+      makeRisk({
         id: '2',
         title: 'Low Operational Risk',
         description: 'Minor operational issue',
@@ -90,10 +110,8 @@ describe('riskCalculations', () => {
         riskScore: 2,
         category: 'Operational',
         status: 'mitigated',
-        creationDate: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-      },
-      {
+      }),
+      makeRisk({
         id: '3',
         title: 'Medium Compliance Risk',
         description: 'Potential compliance issue',
@@ -102,9 +120,7 @@ describe('riskCalculations', () => {
         riskScore: 6,
         category: 'Compliance',
         status: 'closed',
-        creationDate: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-      }
+      }),
     ];
 
     it('should return all risks when no filters are applied', () => {
@@ -182,7 +198,7 @@ describe('riskCalculations', () => {
       const result = computeRiskStats([]);
       
       expect(result.total).toBe(0);
-      expect(result.byStatus).toEqual({ open: 0, mitigated: 0, closed: 0 });
+      expect(result.byStatus).toEqual({ open: 0, mitigated: 0, closed: 0, accepted: 0 });
       expect(result.bySeverity).toEqual({ low: 0, medium: 0, high: 0 });
       expect(result.averageScore).toBe(0);
       expect(result.maxScore).toBe(0);
@@ -191,23 +207,23 @@ describe('riskCalculations', () => {
     });
 
     it('should calculate stats for a single risk', () => {
-      const singleRisk: Risk[] = [{
-        id: '1',
-        title: 'Test Risk',
-        description: 'Test Description',
-        probability: 3,
-        impact: 4,
-        riskScore: 12, // 3 * 4 = 12
-        category: 'Security',
-        status: 'open',
-        creationDate: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-      }];
+      const singleRisk: Risk[] = [
+        makeRisk({
+          id: '1',
+          title: 'Test Risk',
+          description: 'Test Description',
+          probability: 3,
+          impact: 4,
+          riskScore: 12, // 3 * 4 = 12
+          category: 'Security',
+          status: 'open',
+        }),
+      ];
 
       const result = computeRiskStats(singleRisk);
       
       expect(result.total).toBe(1);
-      expect(result.byStatus).toEqual({ open: 1, mitigated: 0, closed: 0 });
+      expect(result.byStatus).toEqual({ open: 1, mitigated: 0, closed: 0, accepted: 0 });
       expect(result.bySeverity).toEqual({ low: 0, medium: 0, high: 1 }); // 12 = high
       expect(result.averageScore).toBe(12);
       expect(result.maxScore).toBe(12);
@@ -215,7 +231,7 @@ describe('riskCalculations', () => {
 
     it('should calculate stats for multiple risks', () => {
       const multipleRisks: Risk[] = [
-        {
+        makeRisk({
           id: '1',
           title: 'Low Risk',
           description: 'Low Description',
@@ -224,10 +240,8 @@ describe('riskCalculations', () => {
           riskScore: 2, // low severity
           category: 'Security',
           status: 'open',
-          creationDate: new Date().toISOString(),
-          lastModified: new Date().toISOString(),
-        },
-        {
+        }),
+        makeRisk({
           id: '2',
           title: 'Medium Risk',
           description: 'Medium Description',
@@ -236,10 +250,8 @@ describe('riskCalculations', () => {
           riskScore: 6, // medium severity
           category: 'Operational',
           status: 'mitigated',
-          creationDate: new Date().toISOString(),
-          lastModified: new Date().toISOString(),
-        },
-        {
+        }),
+        makeRisk({
           id: '3',
           title: 'High Risk',
           description: 'High Description',
@@ -248,15 +260,13 @@ describe('riskCalculations', () => {
           riskScore: 20, // high severity
           category: 'Compliance',
           status: 'closed',
-          creationDate: new Date().toISOString(),
-          lastModified: new Date().toISOString(),
-        }
+        }),
       ];
 
       const result = computeRiskStats(multipleRisks);
       
       expect(result.total).toBe(3);
-      expect(result.byStatus).toEqual({ open: 1, mitigated: 1, closed: 1 });
+      expect(result.byStatus).toEqual({ open: 1, mitigated: 1, closed: 1, accepted: 0 });
       expect(result.bySeverity).toEqual({ low: 1, medium: 1, high: 1 });
       expect(result.averageScore).toBe(9.33); // (2 + 6 + 20) / 3 = 9.33
       expect(result.maxScore).toBe(20);
@@ -264,7 +274,7 @@ describe('riskCalculations', () => {
 
     it('should handle risks with different statuses properly', () => {
       const risksWithStatuses: Risk[] = [
-        {
+        makeRisk({
           id: '1',
           title: 'Open Risk',
           description: 'Open Description',
@@ -273,10 +283,8 @@ describe('riskCalculations', () => {
           riskScore: 4, // medium severity
           category: 'Security',
           status: 'open',
-          creationDate: new Date().toISOString(),
-          lastModified: new Date().toISOString(),
-        },
-        {
+        }),
+        makeRisk({
           id: '2',
           title: 'Mitigated Risk',
           description: 'Mitigated Description',
@@ -285,26 +293,22 @@ describe('riskCalculations', () => {
           riskScore: 4, // medium severity
           category: 'Operational',
           status: 'mitigated',
-          creationDate: new Date().toISOString(),
-          lastModified: new Date().toISOString(),
-        },
-        {
+        }),
+        makeRisk({
           id: '3',
-          title: 'Closed Risk',
-          description: 'Closed Description',
+          title: 'Accepted Risk',
+          description: 'Accepted Description',
           probability: 2,
           impact: 2,
           riskScore: 4, // medium severity
           category: 'Compliance',
-          status: 'closed',
-          creationDate: new Date().toISOString(),
-          lastModified: new Date().toISOString(),
-        }
+          status: 'accepted',
+        }),
       ];
 
       const result = computeRiskStats(risksWithStatuses);
       
-      expect(result.byStatus).toEqual({ open: 1, mitigated: 1, closed: 1 });
+      expect(result.byStatus).toEqual({ open: 1, mitigated: 1, closed: 0, accepted: 1 });
       expect(result.bySeverity).toEqual({ low: 0, medium: 3, high: 0 });
       expect(result.averageScore).toBe(4);
       expect(result.maxScore).toBe(4);
