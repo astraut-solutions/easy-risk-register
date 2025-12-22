@@ -104,11 +104,23 @@ const toCSV = (risks: Risk[]): string => {
   return [header.join(','), ...rows].join('\n')
 }
 
-const fromCSV = (csv: string): Risk[] => {
+export type CSVImportFailureReason =
+  | 'empty'
+  | 'invalid_content'
+  | 'parse_error'
+  | 'no_valid_rows'
+
+export type CSVImportResult = { imported: number; reason?: CSVImportFailureReason }
+
+const fromCSV = (csv: string): { risks: Risk[]; reason?: CSVImportFailureReason } => {
+  if (!csv.trim()) {
+    return { risks: [], reason: 'empty' }
+  }
+
   // Validate CSV content for potential injection attacks
   if (!validateCSVContent(csv)) {
     console.error('CSV validation failed: Potential injection attack detected');
-    return [];
+    return { risks: [], reason: 'invalid_content' }
   }
 
   // Use papaparse to securely parse the CSV
@@ -126,7 +138,9 @@ const fromCSV = (csv: string): Risk[] => {
     // Continue processing even if there are errors - just log them
   }
 
-  return results.data
+  const hadRows = Array.isArray(results.data) && results.data.length > 0
+
+  const risks = results.data
     .map((row: any) => {
       // Cast to any since papaparse returns unknown for parsed objects
       if (!row.title || !row.description) return null;
@@ -146,6 +160,16 @@ const fromCSV = (csv: string): Risk[] => {
       } satisfies Risk
     })
     .filter((risk): risk is Risk => Boolean(risk))
+
+  if (!risks.length) {
+    if (results.errors && results.errors.length > 0) {
+      return { risks: [], reason: 'parse_error' }
+    }
+
+    return { risks: [], reason: hadRows ? 'no_valid_rows' : 'empty' }
+  }
+
+  return { risks }
 }
 
 export interface RiskStoreState {
@@ -165,7 +189,7 @@ export interface RiskStoreState {
   setFilters: (updates: Partial<RiskFilters>) => void
   bulkImport: (risks: Risk[]) => void
   exportToCSV: () => string
-  importFromCSV: (csv: string) => number
+  importFromCSV: (csv: string) => CSVImportResult
   seedDemoData: () => number
 }
 
@@ -295,10 +319,12 @@ export const useRiskStore = create<RiskStoreState>()(
         return toCSV(state.risks)
       },
       importFromCSV: (csv) => {
-        const parsed = fromCSV(csv)
-        if (!parsed.length) return 0
-        set((state) => recalc([...parsed, ...state.risks], state.filters))
-        return parsed.length
+        const { risks, reason } = fromCSV(csv)
+        if (!risks.length) {
+          return { imported: 0, reason: reason ?? 'empty' }
+        }
+        set((state) => recalc([...risks, ...state.risks], state.filters))
+        return { imported: risks.length }
       },
       seedDemoData: () => {
         const state = get()

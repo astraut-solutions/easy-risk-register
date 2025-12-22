@@ -28,16 +28,16 @@ This checklist maps the “Security Improvements Report” items to the current 
 - [x] Console warnings when truncating oversized fields (`easy-risk-register-frontend/src/utils/sanitization.ts`).
 - [x] Console error when CSV validation fails (`easy-risk-register-frontend/src/stores/riskStore.ts`).
 
+### CSV UX and robustness
+- [x] Replace `alert()` with an in-app notification/toast pattern for better UX.
+- [x] Return structured import results so the UI can distinguish "invalid CSV" from "valid but empty/mismatched CSV".
+
 ### Storage protection (optional encryption)
 - [x] AES-GCM encryption for persisted state when Web Crypto is available.
 - [x] Fallback to unencrypted LocalStorage if Web Crypto is unavailable, and in-memory storage during SSR.
 - [x] Tests exist for sanitization, CSV validation, and encryption utilities (`easy-risk-register-frontend/test/utils/`).
 
 ## To do (Recommended hardening)
-
-### CSV UX and robustness
-- [ ] Replace `alert()` with an in-app notification/toast pattern for better UX.
-- [ ] Consider returning structured import results (e.g., `{ imported, reason }`) so the UI can distinguish "invalid CSV" from "valid but empty/mismatched CSV".
 
 ### Threat model
 - [ ] Document limitations clearly: client-side encryption does not protect against XSS / same-origin code execution, and the key material is stored alongside ciphertext in LocalStorage.

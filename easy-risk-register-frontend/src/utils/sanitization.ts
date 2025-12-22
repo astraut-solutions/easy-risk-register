@@ -88,7 +88,8 @@ export const sanitizeRiskInput = (input: Record<string, any>): Record<string, an
  * @returns True if content is safe, false if potential injection patterns are found
  */
 export const validateCSVContent = (csv: string): boolean => {
-  // Check for potential CSV injection patterns
-  const injectionPatterns = [/^[\s]*[=+\-@]/, /[\r\n][\s]*[=+\-@]/] // Start with =, +, -, @
-  return !injectionPatterns.some(pattern => pattern.test(csv))
+  // Check for potential CSV injection patterns (formulas) at the start of any field.
+  // Quoting does not prevent spreadsheet apps from evaluating formulas, so allow for an optional quote.
+  const injectionPattern = /(^|[,\r\n])\s*["']?\s*[=+\-@]/
+  return !injectionPattern.test(csv)
 }

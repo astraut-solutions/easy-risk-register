@@ -121,8 +121,8 @@ describe('RiskStore', () => {
       const csvData = `id,title,description,probability,impact,riskScore,category,status,mitigationPlan,creationDate,lastModified
 test-id,"Imported Risk","Imported Description",3,4,12,"Financial","open","Imported Plan","2023-01-01T00:00:00.000Z","2023-01-01T00:00:00.000Z"`
 
-      const importedCount = useRiskStore.getState().importFromCSV(csvData)
-      expect(importedCount).toBe(1)
+      const result = useRiskStore.getState().importFromCSV(csvData)
+      expect(result).toEqual({ imported: 1 })
 
       const state = useRiskStore.getState()
       expect(state.risks).toHaveLength(1)
@@ -134,6 +134,22 @@ test-id,"Imported Risk","Imported Description",3,4,12,"Financial","open","Import
       expect(state.risks[0].category).toBe('Financial')
       expect(state.risks[0].status).toBe('open')
       expect(state.risks[0].mitigationPlan).toBe('Imported Plan')
+    })
+
+    it('should return a reason when CSV contains no valid rows', () => {
+      const csvData = `id,name,details
+test-id,"Missing fields","No title/description columns here"`
+
+      const result = useRiskStore.getState().importFromCSV(csvData)
+      expect(result).toEqual({ imported: 0, reason: 'no_valid_rows' })
+    })
+
+    it('should return a reason when CSV validation fails', () => {
+      const csvData = `id,title,description
+1,"=HYPERLINK(\\"http://evil\\",\\"click\\")","Looks fine"`
+
+      const result = useRiskStore.getState().importFromCSV(csvData)
+      expect(result).toEqual({ imported: 0, reason: 'invalid_content' })
     })
   })
 

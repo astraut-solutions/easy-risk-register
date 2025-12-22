@@ -15,6 +15,7 @@ import type { Risk, RiskSeverity } from './types/risk'
 import { DEFAULT_FILTERS, getRiskSeverity } from './utils/riskCalculations'
 import { Button, Modal, SectionHeader } from './design-system'
 import { cn } from './utils/cn'
+import { useToast } from './components/feedback/ToastProvider'
 
 type MatrixSelection = {
   probability: number
@@ -39,6 +40,7 @@ const NAV_ITEMS: SidebarNavItem[] = [
 
 function App() {
   const { risks, stats, filters, categories, actions } = useRiskManagement()
+  const toast = useToast()
   const [editingRisk, setEditingRisk] = useState<Risk | null>(null)
   const [matrixSelection, setMatrixSelection] = useState<MatrixSelection | null>(null)
   const [activeView, setActiveView] = useState<DashboardView>('overview')
@@ -129,9 +131,38 @@ function App() {
     reader.onload = (loadEvent) => {
       const content = loadEvent.target?.result
       if (typeof content === 'string') {
-        const importedCount = actions.importFromCSV(content)
-        if (importedCount === 0) {
-          alert('No risks were imported. The CSV file may contain invalid content or potential injection attempts.')
+        const result = actions.importFromCSV(content)
+        if (result.imported > 0) {
+          toast.notify({
+            title: 'CSV import complete',
+            description: `Imported ${result.imported} risk${result.imported === 1 ? '' : 's'}.`,
+            variant: 'success',
+          })
+        } else if (result.reason === 'invalid_content') {
+          toast.notify({
+            title: 'CSV blocked for safety',
+            description:
+              'The file appears to contain spreadsheet injection patterns (cells starting with =, +, -, or @).',
+            variant: 'danger',
+          })
+        } else if (result.reason === 'parse_error') {
+          toast.notify({
+            title: 'Unable to read CSV',
+            description: 'The CSV could not be parsed. Confirm it is valid CSV with a header row.',
+            variant: 'danger',
+          })
+        } else if (result.reason === 'no_valid_rows') {
+          toast.notify({
+            title: 'No valid risks found',
+            description: 'No rows contained the required fields (title and description).',
+            variant: 'warning',
+          })
+        } else {
+          toast.notify({
+            title: 'Nothing to import',
+            description: 'The CSV file appears to be empty.',
+            variant: 'info',
+          })
         }
       }
     }

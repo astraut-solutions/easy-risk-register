@@ -7,6 +7,7 @@ import App from '../../src/App'
 import { useRiskStore } from '../../src/stores/riskStore'
 import { DEFAULT_CATEGORIES } from '../../src/constants/risk'
 import { DEFAULT_FILTERS, computeRiskStats } from '../../src/utils/riskCalculations'
+import { ToastProvider } from '../../src/components/feedback/ToastProvider'
 
 // Framer Motion adds animation wrappers that we don't need for integration smoke tests.
 // This mock keeps the DOM tree predictable while allowing refs to continue working.
@@ -77,7 +78,11 @@ describe('App integration', () => {
 
   it('seeds demo data and filters the risk list through the toolbar controls', async () => {
     const user = userEvent.setup()
-    render(<App />)
+    render(
+      <ToastProvider>
+        <App />
+      </ToastProvider>,
+    )
 
     await waitForRiskCards(3)
     expect(screen.getByText(/Payment processor outage/i)).toBeInTheDocument()
@@ -95,7 +100,11 @@ describe('App integration', () => {
 
   it('creates a new risk from the modal and surfaces it inside the table view', async () => {
     const user = userEvent.setup()
-    render(<App />)
+    render(
+      <ToastProvider>
+        <App />
+      </ToastProvider>,
+    )
 
     await waitForRiskCards(3)
 
