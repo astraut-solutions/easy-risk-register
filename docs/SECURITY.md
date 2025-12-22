@@ -48,6 +48,10 @@ Persisted risk data can be encrypted in browser local storage:
 - The encryption key is stored in LocalStorage under `easy-risk-register-key` (base64-encoded raw key material)
 - When Web Crypto is unavailable, the app falls back to unencrypted LocalStorage (and uses in-memory storage during SSR)
 
+Limitations / threat model notes:
+- Client-side encryption does not protect against attackers who can execute code in the same origin (for example via XSS).
+- The encryption key is stored in LocalStorage alongside encrypted data, so an attacker who can read LocalStorage can read both the ciphertext and the key material.
+
 For details, see `docs/architecture/secure-data-storage.md`.
 
 ### CSV Import Security

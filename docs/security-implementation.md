@@ -2,8 +2,6 @@
 
 This document outlines the security measures implemented in the Easy Risk Register application to protect against common web vulnerabilities.
 
-For a “done vs. recommended” checklist, see `docs/security-improvements-checklist.md`.
-
 ## Content Security Policy (CSP)
 
 The application implements a Content Security Policy (CSP) to reduce the risk of XSS (Cross-Site Scripting) and other code injection attacks.
@@ -78,6 +76,15 @@ As a client-side only application:
 - All data is stored locally in browser storage with no server transmission by default
 - No external API calls are required for core functionality
 - Sanitization is applied before persistence to reduce the risk of storing malicious content
+
+## Client-Side Encryption Limitations
+
+The optional encrypted storage feature is a defense-in-depth measure for data at rest in browser storage, not a protection against active script execution:
+
+- Client-side encryption does not protect against attackers who can execute code in the same origin (for example via XSS).
+- The encryption key is stored in LocalStorage alongside encrypted data, so an attacker who can read LocalStorage can read both the ciphertext and the key material.
+
+For full details, see `docs/architecture/secure-data-storage.md`.
 
 ## Security Testing
 
