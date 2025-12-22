@@ -149,6 +149,7 @@ export const RiskForm = ({
                     error={errors.status?.message?.toString()}
                     options={[
                       { value: 'open', label: 'Open' },
+                      { value: 'accepted', label: 'Accepted' },
                       { value: 'mitigated', label: 'Mitigated' },
                       { value: 'closed', label: 'Closed' },
                     ]}

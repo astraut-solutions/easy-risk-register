@@ -13,6 +13,7 @@ interface RiskFiltersProps {
 const statusOptions = [
   { label: 'All statuses', value: 'all' },
   { label: 'Open', value: 'open' },
+  { label: 'Accepted', value: 'accepted' },
   { label: 'Mitigated', value: 'mitigated' },
   { label: 'Closed', value: 'closed' },
 ]

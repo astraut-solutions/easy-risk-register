@@ -65,7 +65,7 @@ export const filterRisks = (risks: Risk[], filters: RiskFilters): Risk[] =>
  * @param risks - Array of risks to analyze
  * @returns RiskStats object containing various statistics:
  *          - total number of risks
- *          - count by status (open, mitigated, closed)
+ *          - count by status (open, mitigated, closed, accepted)
  *          - count by severity (low, medium, high)
  *          - average risk score
  *          - maximum risk score
@@ -74,7 +74,7 @@ export const filterRisks = (risks: Risk[], filters: RiskFilters): Risk[] =>
 export const computeRiskStats = (risks: Risk[]): RiskStats => {
   const stats: RiskStats = {
     total: risks.length,
-    byStatus: { open: 0, mitigated: 0, closed: 0 },
+    byStatus: { open: 0, mitigated: 0, closed: 0, accepted: 0 },
     bySeverity: { low: 0, medium: 0, high: 0 },
     averageScore: 0,
     maxScore: 0,

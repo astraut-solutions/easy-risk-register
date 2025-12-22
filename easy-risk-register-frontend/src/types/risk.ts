@@ -1,6 +1,37 @@
-export type RiskStatus = 'open' | 'mitigated' | 'closed'
+export type RiskStatus = 'open' | 'mitigated' | 'closed' | 'accepted'
 
 export type RiskSeverity = 'low' | 'medium' | 'high'
+
+export type RiskResponse = 'treat' | 'transfer' | 'tolerate' | 'terminate'
+
+export type ReviewCadence =
+  | 'weekly'
+  | 'monthly'
+  | 'quarterly'
+  | 'semiannual'
+  | 'annual'
+  | 'ad-hoc'
+
+export type EvidenceType = 'link' | 'ticket' | 'doc' | 'other'
+
+export interface RiskEvidence {
+  type: EvidenceType
+  url: string
+  description?: string
+  addedAt: string // ISO
+}
+
+export type MitigationStepStatus = 'open' | 'done'
+
+export interface RiskMitigationStep {
+  id: string
+  description: string
+  owner?: string
+  dueDate?: string // ISO
+  status: MitigationStepStatus
+  createdAt: string // ISO
+  completedAt?: string // ISO
+}
 
 export interface Risk {
   id: string
@@ -12,6 +43,18 @@ export interface Risk {
   category: string
   status: RiskStatus
   mitigationPlan: string
+  mitigationSteps: RiskMitigationStep[]
+  owner: string
+  ownerTeam?: string
+  dueDate?: string // ISO
+  reviewDate?: string // ISO
+  reviewCadence?: ReviewCadence
+  riskResponse: RiskResponse
+  ownerResponse: string
+  securityAdvisorComment: string
+  vendorResponse: string
+  notes?: string
+  evidence: RiskEvidence[]
   creationDate: string // ISO
   lastModified: string // ISO
 }
@@ -24,6 +67,18 @@ export interface RiskInput {
   category: string
   status?: RiskStatus
   mitigationPlan?: string
+  mitigationSteps?: RiskMitigationStep[]
+  owner?: string
+  ownerTeam?: string
+  dueDate?: string
+  reviewDate?: string
+  reviewCadence?: ReviewCadence
+  riskResponse?: RiskResponse
+  ownerResponse?: string
+  securityAdvisorComment?: string
+  vendorResponse?: string
+  notes?: string
+  evidence?: RiskEvidence[]
 }
 
 export interface RiskFilters {
