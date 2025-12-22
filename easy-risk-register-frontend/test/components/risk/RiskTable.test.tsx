@@ -186,12 +186,12 @@ describe('RiskTable', () => {
     expect(mediumSeverityBadge).toHaveAttribute('tone', 'warning')
   })
 
-  it('calls onEdit when edit button is clicked', () => {
+  it('calls onEdit when View/Edit button is clicked', () => {
     const onEditSpy = vi.fn()
     render(<RiskTable {...defaultProps} onEdit={onEditSpy} />)
 
-    const editButtons = screen.getAllByText('Edit')
-    fireEvent.click(editButtons[0])
+    const viewEditButtons = screen.getAllByText('View/Edit')
+    fireEvent.click(viewEditButtons[0])
 
     expect(onEditSpy).toHaveBeenCalledWith(mockRisk1)
   })

@@ -121,10 +121,19 @@ describe('RiskForm', () => {
     expect(screen.getByLabelText(/category/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/description/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/status/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/mitigation plan/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/likelihood/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/impact/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/^owner$/i)).toBeInTheDocument()
+    expect(screen.getByText('Details (optional)')).toBeInTheDocument()
+  })
+
+  it('collapses optional details by default', () => {
+    render(<RiskForm {...defaultProps} />)
+
+    const summary = screen.getByText('Details (optional)')
+    const details = summary.closest('details')
+
+    expect(details).not.toBeNull()
+    expect(details).not.toHaveAttribute('open')
   })
 
   it('displays correct mode button text', () => {

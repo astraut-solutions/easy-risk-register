@@ -216,15 +216,19 @@ export const RiskForm = ({
       <div className="flex flex-1 flex-col gap-4 pb-1">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
           <section className="space-y-4 rounded-[20px] border border-border-faint/70 bg-surface-primary/95 p-4 shadow-[0_28px_56px_rgba(15,23,42,0.08)]">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-text-high">Essentials</h3>
+              <span className="text-xs font-medium text-text-low">Required fields marked *</span>
+            </div>
+
             <div className="grid gap-2.5 md:grid-cols-[minmax(0,0.6fr)_minmax(0,0.4fr)]">
               <Input
-                label="Title"
+                label="Title *"
                 helperText="Keep it sharp so execs can scan quickly."
                 error={errors.title?.message?.toString()}
                 placeholder="Supply chain disruption"
                 className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-2.5 text-sm focus:ring-brand-primary/30"
                 {...register('title', { required: 'Title is required' })}
-                aria-describedby={errors.title ? 'title-error' : undefined}
               />
               <Controller
                 name="category"
@@ -234,7 +238,8 @@ export const RiskForm = ({
                 render={({ field }) => (
                   <div className="space-y-2">
                     <Select
-                      label="Category"
+                      label="Category *"
+                      helperText="Use broad buckets for reporting and filtering."
                       error={errors.category?.message?.toString()}
                       options={categories.map((category) => ({
                         value: category,
@@ -245,7 +250,6 @@ export const RiskForm = ({
                       onBlur={field.onBlur}
                       name={field.name}
                       placeholder="Select a category"
-                      aria-describedby={errors.category ? 'category-error' : undefined}
                     />
 
                     {onAddCategory && !isAddingCategory && (
@@ -285,14 +289,13 @@ export const RiskForm = ({
             </div>
 
             <Textarea
-              label="Description"
+              label="Description *"
               error={errors.description?.message?.toString()}
               helperText="Capture context, trigger, and business impact in 2-3 sentences."
               placeholder="Describe the risk context and impact..."
               rows={3}
               className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-2.5 text-sm focus:ring-brand-primary/30"
               {...register('description', { required: 'Description is required' })}
-              aria-describedby={errors.description ? 'description-error' : undefined}
             />
 
             <div className="grid gap-2.5 md:grid-cols-[minmax(0,0.35fr)_minmax(0,0.65fr)]">
@@ -303,7 +306,8 @@ export const RiskForm = ({
                 rules={{ required: 'Status is required' }}
                 render={({ field }) => (
                   <Select
-                    label="Status"
+                    label="Status *"
+                    helperText="Keep open risks actionable; close only when resolved."
                     error={errors.status?.message?.toString()}
                     options={[
                       { value: 'open', label: 'Open' },
@@ -315,7 +319,6 @@ export const RiskForm = ({
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     name={field.name}
-                    aria-describedby={errors.status ? 'status-error' : undefined}
                   />
                 )}
               />
@@ -326,36 +329,43 @@ export const RiskForm = ({
           </section>
 
           <section className="flex flex-col gap-3 rounded-[20px] border border-border-faint/60 bg-gradient-to-b from-surface-primary/90 to-surface-secondary/20 p-4 shadow-[0_28px_56px_rgba(15,23,42,0.08)]">
+            <details className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
+              <summary className="cursor-pointer select-none text-sm font-semibold text-text-high">
+                Details (optional)
+              </summary>
+              <div className="mt-3 space-y-3">
             <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
               <Textarea
                 label="Mitigation plan"
                 placeholder="Outline mitigation actions, owners, or milestones..."
-                helperText="Optional, but it keeps downstream owners aligned."
+                helperText="Optional. Keeps downstream owners aligned."
                 rows={2}
                 className="rounded-xl border-border-faint bg-surface-secondary/10 px-3.5 py-2 text-sm focus:ring-brand-primary/30"
                 {...register('mitigationPlan')}
               />
             </div>
 
-            <details className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm" open>
+            <details className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
               <summary className="cursor-pointer select-none text-sm font-semibold text-text-high">
                 Accountability
               </summary>
               <div className="mt-3 grid gap-3 md:grid-cols-2">
                 <Input
                   label="Owner"
+                  helperText="Optional. Who is accountable for next actions."
                   placeholder="Name or role (e.g. SecOps lead)"
                   {...register('owner')}
                 />
                 <Input
                   label="Owner team"
+                  helperText="Optional. Helps routing and reporting."
                   placeholder="Team (optional)"
                   {...register('ownerTeam')}
                 />
                 <Input
                   type="date"
                   label="Due date"
-                  helperText="Optional target date for mitigation or decision."
+                  helperText="Optional. Target date for mitigation or decision."
                   {...register('dueDate')}
                 />
               </div>
@@ -369,7 +379,7 @@ export const RiskForm = ({
                 <Input
                   type="date"
                   label="Next review date"
-                  helperText="Optional. Keep the register active, not audit-only."
+                  helperText="Optional. Set a concrete date for the next review."
                   {...register('reviewDate')}
                 />
                 <Controller
@@ -378,6 +388,7 @@ export const RiskForm = ({
                   render={({ field }) => (
                     <Select
                       label="Cadence"
+                      helperText="Optional. How often this risk should be reviewed."
                       options={reviewCadenceOptions.map((option) => ({
                         value: option.value,
                         label: option.label,
@@ -404,6 +415,7 @@ export const RiskForm = ({
                   render={({ field }) => (
                     <Select
                       label="Response"
+                      helperText="Optional. Choose a default response strategy."
                       options={riskResponseOptions.map((option) => ({
                         value: option.value,
                         label: option.label,
@@ -418,18 +430,21 @@ export const RiskForm = ({
 
                 <Textarea
                   label="Owner response"
+                  helperText="Optional. One sentence capturing the owner's stance."
                   rows={2}
                   placeholder="Short owner response (optional)"
                   {...register('ownerResponse')}
                 />
                 <Textarea
                   label="Security advisor comment"
+                  helperText="Optional. Note security guidance or constraints."
                   rows={2}
                   placeholder="Short security advisor comment (optional)"
                   {...register('securityAdvisorComment')}
                 />
                 <Textarea
                   label="Vendor response"
+                  helperText="Optional. Record vendor confirmation or commitments."
                   rows={2}
                   placeholder="Short vendor response (optional)"
                   {...register('vendorResponse')}
@@ -492,6 +507,7 @@ export const RiskForm = ({
                       <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
                         <Input
                           label="Description"
+                          helperText="Optional. Add context so reviewers know why this link matters."
                           placeholder="Optional context for this evidence link"
                           {...register(`${base}.description`)}
                         />
@@ -538,7 +554,7 @@ export const RiskForm = ({
               <div className="mt-3 space-y-3">
                 {mitigationStepsArray.fields.length === 0 ? (
                   <p className="text-xs text-text-low">
-                    Track mitigation as actionable steps (optional). Use the summary plan above for quick context.
+                    Track mitigation as actionable steps with owners and due dates.
                   </p>
                 ) : null}
 
@@ -572,6 +588,7 @@ export const RiskForm = ({
                         <div className="grid gap-3">
                           <Input
                             label="Step"
+                            helperText="Required for each step. Keep it short and actionable."
                             placeholder="Describe the mitigation action"
                             error={stepErrors?.description?.message?.toString()}
                             {...register(`${base}.description`, {
@@ -580,13 +597,15 @@ export const RiskForm = ({
                           />
                           <div className="grid gap-3 md:grid-cols-2">
                             <Input
-                              label="Owner (optional)"
+                              label="Owner"
+                              helperText="Optional. Who will execute this step."
                               placeholder="Who owns this step?"
                               {...register(`${base}.owner`)}
                             />
                             <Input
                               type="date"
-                              label="Due date (optional)"
+                              label="Due date"
+                              helperText="Optional. Target completion date."
                               {...register(`${base}.dueDate`)}
                             />
                           </div>
@@ -658,10 +677,13 @@ export const RiskForm = ({
               <div className="mt-3">
                 <Textarea
                   label="Notes"
+                  helperText="Optional. Use for audit context, assumptions, or decision rationale."
                   rows={3}
                   placeholder="Optional long-form notes"
                   {...register('notes')}
                 />
+              </div>
+            </details>
               </div>
             </details>
 
@@ -669,7 +691,7 @@ export const RiskForm = ({
               <div className="space-y-3">
                 <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
                   <div className="flex items-center justify-between text-xs font-medium text-text-high">
-                    <span>Likelihood</span>
+                    <span>Likelihood *</span>
                     <span className="rounded-full bg-surface-secondary/30 px-3 py-0.5 text-[11px] font-semibold text-text-high">
                       {probability} / 5
                     </span>
@@ -694,7 +716,7 @@ export const RiskForm = ({
 
                 <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
                   <div className="flex items-center justify-between text-xs font-medium text-text-high">
-                    <span>Impact</span>
+                    <span>Impact *</span>
                     <span className="rounded-full bg-surface-secondary/30 px-3 py-0.5 text-[11px] font-semibold text-text-high">
                       {impact} / 5
                     </span>

@@ -8,17 +8,57 @@ status: draft
 # UX/UI Improvement Plan (Risk Workspace)
 
 ## 1) Audit (baseline)
-- [ ] Capture current screenshots (desktop + tablet + mobile)
-- [ ] List top 10 UX issues (scrolling, hierarchy, copy, actions, accessibility)
-- [ ] Identify required fields + validation rules
-- [ ] Confirm target breakpoints (e.g., 375 / 768 / 1024 / 1280)
-- [ ] Define success metrics (time-to-create, scroll count, abandonment)
+- [x] Capture current screenshots (desktop + tablet + mobile)
+- [x] List top 10 UX issues (scrolling, hierarchy, copy, actions, accessibility)
+- [x] Identify required fields + validation rules
+- [x] Confirm target breakpoints (e.g., 375 / 768 / 1024 / 1280)
+- [x] Define success metrics (time-to-create, scroll count, abandonment)
+
+### Baseline artifacts
+- Screenshots (overview + create modal): `docs/ux-baseline/baseline-2025-12-22/`
+
+### Top 10 UX issues (baseline)
+1. Modal has nested scrolling (overlay + modal body), increasing “where am I scrolling?” confusion.
+2. No sticky modal footer; primary action lives at the end of a long form, increasing scroll-to-submit.
+3. Create flow lacks an explicit in-form Cancel/Close near the action area (only header Close), adding travel on long scroll.
+4. Required fields are not visually marked; users discover requirements only after submit errors.
+5. Submit button is not gated by validity; errors are surfaced only on submit (react-hook-form default `onSubmit`).
+6. Modal does not handle `Esc` to close (design docs expect ESC close); close affordance is click-only.
+7. Mobile modal is not a true full-screen sheet (large padding + rounded corners), reducing usable space.
+8. “Live score” communicates label but lacks semantic color and “why” explanation, so severity isn’t actionable.
+9. Information architecture mixes essentials and optional sections; advanced “Responses/Evidence/Steps/Notes” aren’t clearly summarized when collapsed.
+10. Destructive actions (Delete) are always one click away in list/table; no confirm step increases accidental deletion risk.
+
+### Required fields + validation rules (current)
+- Required (create/edit): `title`, `category`, `description`, `status`, `probability` (1–5), `impact` (1–5)
+- Evidence (only when added): `evidence[i].url` required + must be valid `http(s)` URL
+- Mitigation steps (only when added): `mitigationSteps[i].description` required
+- CSV import: row must include `title` + `description` (others default/sanitized)
+- Sanitization/limits (store-level): text fields are trimmed/sanitized and truncated (e.g., title 200, description 5000, notes 10000); URLs must be `http(s)`; CSV blocks spreadsheet injection patterns.
+
+### Target breakpoints (confirmed)
+- Mobile: 375px baseline (design system supports 320–767)
+- Tablet: 768px
+- Desktop: 1024px
+- Wide desktop: 1280px (plus 1440px+ as “wide” per design docs)
+
+### Success metrics (baseline -> post-change)
+- Time-to-create: click `New risk` -> successful `Add risk` submit (median + p95)
+- Scroll-to-submit: number of scroll gestures / total scroll distance within modal before submit
+- Completion rate: `open modal` -> `submit` (%)
+- Abandonment: `open modal` -> `close without submit` (%), plus time-to-abandon
+- Validation friction: count of validation errors per attempt; most common failing fields
 
 ## 2) Information architecture (progressive disclosure)
-- [ ] Define “Essentials” fields (always visible)
-- [ ] Define “Details” fields (collapsed by default)
-- [ ] Decide if “Responses / Evidence / Steps / Notes” become tabs vs accordions
-- [ ] Write concise, consistent labels + helper text (1 sentence max)
+- [x] Define "Essentials" fields (always visible)
+- [x] Define "Details" fields (collapsed by default)
+- [x] Decide if "Responses / Evidence / Steps / Notes" become tabs vs accordions
+- [x] Write concise, consistent labels + helper text (1 sentence max)
+
+### IA decisions (implemented)
+- Essentials (always visible): Title*, Category*, Description*, Status*, Likelihood*, Impact*, Live score
+- Details (collapsed by default): Mitigation plan, Accountability, Review cadence, Responses, Evidence, Mitigation steps, Notes
+- Pattern choice: accordions (native `<details>`), grouped under a single "Details (optional)" disclosure
 
 ## 3) Modal layout (remove friction)
 - [ ] Eliminate double scroll (background locked; single modal scroll container)
@@ -71,5 +111,5 @@ status: draft
 - [ ] Essentials fields:
 - [ ] Details fields:
 - [ ] Tabs vs accordions decision:
-- [ ] Breakpoints:
-- [ ] Validation rules:
+- [x] Breakpoints: 375 / 768 / 1024 / 1280 (+ 1440 wide)
+- [x] Validation rules: required `title/category/description/status/probability/impact`; evidence URL must be valid http(s); mitigation step requires description
