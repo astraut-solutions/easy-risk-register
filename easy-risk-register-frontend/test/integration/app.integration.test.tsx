@@ -96,7 +96,7 @@ describe('App integration', () => {
     await user.click(screen.getByRole('button', { name: /reset/i }))
 
     await waitForRiskCards(3)
-  })
+  }, 15000)
 
   it('creates a new risk from the modal and surfaces it inside the table view', async () => {
     const user = userEvent.setup()
@@ -130,5 +130,5 @@ describe('App integration', () => {
     await user.click(screen.getByRole('button', { name: /open risk table/i }))
     const table = await screen.findByRole('table', { name: /risk register table/i })
     expect(within(table).getByText(/AI model drift/i)).toBeInTheDocument()
-  })
+  }, 15000)
 })

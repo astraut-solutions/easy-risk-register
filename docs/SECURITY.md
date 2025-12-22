@@ -39,6 +39,8 @@ The application implements comprehensive input sanitization to prevent XSS attac
 - Attributes are stripped by default and dangerous tags/attributes are explicitly forbidden
 - Risk inputs are sanitized before persistence and oversized fields are truncated as a fallback
 
+Search/filter logic uses simple string matching (not dynamically-constructed regular expressions) to avoid regex-related injection risks.
+
 ### Data Encryption
 
 Persisted risk data can be encrypted in browser local storage:
@@ -54,12 +56,19 @@ Limitations / threat model notes:
 
 For details, see `docs/architecture/secure-data-storage.md`.
 
-### CSV Import Security
+### CSV Import/Export Security
 
 The CSV import functionality includes security measures:
 - Uses the `papaparse` library for secure CSV parsing instead of regex-based splitting
 - Validates against CSV injection patterns that start with `=`, `+`, `-`, or `@`
 - All imported data is processed through the same sanitization as manual entries
+
+The CSV export functionality also includes security measures:
+- Uses PapaParse CSV generation with `escapeFormulae` enabled to prevent spreadsheet formula injection on exported cells
+
+### Why SQL injection is not applicable
+
+Easy Risk Register is a client-side app with no database and no SQL query execution, so SQL injection is not applicable. CSV and XSS risks still apply (spreadsheets can evaluate exported cells as formulas, and web UIs can be exposed to injection if content is not sanitized).
 
 ## Supported Versions
 

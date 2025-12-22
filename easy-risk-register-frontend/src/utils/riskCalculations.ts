@@ -41,10 +41,11 @@ export const getRiskSeverity = (score: number): RiskSeverity => {
  */
 export const filterRisks = (risks: Risk[], filters: RiskFilters): Risk[] =>
   risks.filter((risk) => {
+    const normalizedSearch = filters.search.trim().toLowerCase()
     const matchesSearch =
-      !filters.search ||
-      risk.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-      risk.description.toLowerCase().includes(filters.search.toLowerCase())
+      !normalizedSearch ||
+      risk.title.toLowerCase().includes(normalizedSearch) ||
+      risk.description.toLowerCase().includes(normalizedSearch)
 
     const matchesCategory =
       filters.category === 'all' ||

@@ -37,43 +37,43 @@ Use this checklist to track the work needed to support claims around **ownership
 - [x] Ensure labels match user language (Likelihood = Probability; Severity derived from score bands)
 
 ### Import/Export
-- [ ] Define a stable CSV column spec for the new fields (versioned)
-- [ ] Extend CSV export to include new fields
-- [ ] Make CSV import backward-compatible (accept older exports without new columns)
-- [ ] Ensure custom categories round-trip correctly via CSV
-- [ ] Add “Audit pack” export option (CSV variant including evidence URLs + review/acceptance metadata)
-- [ ] Add CSV/Excel formula injection protection on export (e.g. prefix `=`, `+`, `-`, `@` values)
+- [x] Define a stable CSV column spec for the new fields (versioned)
+- [x] Extend CSV export to include new fields
+- [x] Make CSV import backward-compatible (accept older exports without new columns)
+- [x] Ensure custom categories round-trip correctly via CSV
+- [x] Add "Audit pack" export option (CSV variant including evidence URLs + review/acceptance metadata)
+- [x] Add CSV/Excel formula injection protection on export (e.g. prefix `=`, `+`, `-`, `@` values)
 
 ### Security & validation
 - [x] Extend sanitization/validation limits for new text fields (`notes`, responses, evidence descriptions)
 - [x] Validate and normalize evidence URLs (allowlist `http`/`https`)
-- [ ] Avoid unsafe dynamic regex construction in search/filter logic
-- [ ] Confirm CSP/XSS hardening remains consistent with existing patterns
-- [ ] Document why SQL injection is not applicable (no backend) but CSV/XSS risks still are
+- [x] Avoid unsafe dynamic regex construction in search/filter logic
+- [x] Confirm CSP/XSS hardening remains consistent with existing patterns
+- [x] Document why SQL injection is not applicable (no backend) but CSV/XSS risks still are
 
 ### Tests
-- [ ] Add unit tests for migration logic (old LocalStorage → new schema)
-- [ ] Add unit tests for CSV import/export round-trips (old + new formats)
-- [ ] Add unit tests for validation edge cases (dates, URLs, missing owner, long text)
-- [ ] Update demo seed data to include realistic owners + evidence + acceptance examples
+- [x] Add unit tests for migration logic (old LocalStorage → new schema)
+- [x] Add unit tests for CSV import/export round-trips (old + new formats)
+- [x] Add unit tests for validation edge cases (dates, URLs, missing owner, long text)
+- [x] Update demo seed data to include realistic owners + evidence + acceptance examples
 
 ## Documentation
 
 ### New docs pages
-- [ ] Add `docs/guides/audit-ready-workflow.md` (owners, reviews, evidence, audit pack export)
-- [ ] Add `docs/guides/evidence-guidance.md` (what counts as evidence, naming conventions, retention reminders)
-- [ ] Add `docs/frameworks/iso-27001-mapping.md` (how records/exports support evidence; avoid “certified/compliant” wording)
-- [ ] Add `docs/frameworks/soc2-mapping.md` (practical mapping guidance + example evidence artifacts)
+- [x] Add `docs/guides/audit-ready-workflow.md` (owners, reviews, evidence, audit pack export)
+- [x] Add `docs/guides/evidence-guidance.md` (what counts as evidence, naming conventions, retention reminders)
+- [x] Add `docs/frameworks/iso-27001-mapping.md` (how records/exports support evidence; avoid "certified/compliant" wording)
+- [x] Add `docs/frameworks/soc2-mapping.md` (practical mapping guidance + example evidence artifacts)
 
 ### Update existing docs
-- [ ] Update `README.md` to reflect new ownership + evidence + audit-pack features
-- [ ] Update docs index/navigation (MkDocs / GitHub Pages) to include the new pages
-- [ ] Add a wording note: “supports audit evidence preparation for ISO 27001 / SOC 2” (do not claim certification)
+- [x] Update `README.md` to reflect new ownership + evidence + audit-pack features
+- [x] Update docs index/navigation (MkDocs / GitHub Pages) to include the new pages
+- [x] Add a wording note: "supports audit evidence preparation for ISO 27001 / SOC 2" (do not claim certification)
 
 ## Definition of done
-- [ ] A risk can be assigned to an owner and tracked with due/review dates
-- [ ] Evidence links can be added, displayed, and exported
-- [ ] Mitigation can be tracked as steps (not only free text)
-- [ ] Risk acceptance can be recorded and surfaced in views/exports
-- [ ] CSV import/export works across old/new versions
-- [ ] Docs include clear, non-misleading ISO 27001 / SOC 2 mapping guidance
+- [x] A risk can be assigned to an owner and tracked with due/review dates
+- [x] Evidence links can be added, displayed, and exported
+- [x] Mitigation can be tracked as steps (not only free text)
+- [x] Risk acceptance can be recorded and surfaced in views/exports
+- [x] CSV import/export works across old/new versions
+- [x] Docs include clear, non-misleading ISO 27001 / SOC 2 mapping guidance

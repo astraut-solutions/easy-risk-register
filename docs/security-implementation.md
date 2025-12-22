@@ -69,6 +69,10 @@ CSV import is validated and sanitized:
 - Imported values are trimmed and passed through the same sanitization pipeline as manual entries
 - The UI shows a user-facing message when no risks are imported (for example when validation fails)
 
+CSV export also includes spreadsheet injection protection:
+
+- Exported cells are generated via PapaParse with `escapeFormulae` enabled, which escapes values that begin with `=`, `+`, `-`, or `@`
+
 ## Client-Side Security Architecture
 
 As a client-side only application:
@@ -76,6 +80,17 @@ As a client-side only application:
 - All data is stored locally in browser storage with no server transmission by default
 - No external API calls are required for core functionality
 - Sanitization is applied before persistence to reduce the risk of storing malicious content
+
+### Search/filter safety (no dynamic regex)
+
+Search and filtering are implemented using simple string comparisons (`.includes()` on lowercased text) rather than dynamically-constructed regular expressions. This avoids regex-injection risks and reduces the likelihood of catastrophic backtracking from user-provided input.
+
+### Why SQL injection is not applicable (but CSV/XSS still are)
+
+SQL injection is not applicable because Easy Risk Register does not execute SQL queries and does not include a backend database layer. However:
+
+- **XSS** remains relevant in any web UI, so user text is sanitized and CSP is enforced.
+- **CSV/spreadsheet injection** remains relevant when exporting/importing to spreadsheets, so CSV validation and export escaping are implemented.
 
 ## Client-Side Encryption Limitations
 

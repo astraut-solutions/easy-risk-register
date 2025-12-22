@@ -257,38 +257,110 @@ const safeStorage = () => {
   return window.localStorage
 }
 
-const toCSV = (risks: Risk[]): string => {
-  const header = [
-    'id',
-    'title',
-    'description',
-    'probability',
-    'impact',
-    'riskScore',
-    'category',
-    'status',
-    'mitigationPlan',
-    'creationDate',
-    'lastModified',
-  ]
+export type CSVExportVariant = 'standard' | 'audit_pack'
 
-  const rows = risks.map((risk) =>
-    [
-      risk.id,
-      `"${risk.title.replace(/"/g, '""')}"`,
-      `"${risk.description.replace(/"/g, '""')}"`,
-      risk.probability,
-      risk.impact,
-      risk.riskScore,
-      risk.category,
-      risk.status,
-      `"${risk.mitigationPlan.replace(/"/g, '""')}"`,
-      risk.creationDate,
-      risk.lastModified,
-    ].join(','),
-  )
+const CSV_SPEC_VERSION = 1 as const
 
-  return [header.join(','), ...rows].join('\n')
+const CSV_STANDARD_COLUMNS = [
+  'csvSpecVersion',
+  'csvVariant',
+  'id',
+  'title',
+  'description',
+  'probability',
+  'impact',
+  'riskScore',
+  'category',
+  'status',
+  'mitigationPlan',
+  'owner',
+  'ownerTeam',
+  'dueDate',
+  'reviewDate',
+  'reviewCadence',
+  'riskResponse',
+  'ownerResponse',
+  'securityAdvisorComment',
+  'vendorResponse',
+  'notes',
+  'evidenceJson',
+  'mitigationStepsJson',
+  'creationDate',
+  'lastModified',
+] as const
+
+const CSV_AUDIT_PACK_COLUMNS = [
+  ...CSV_STANDARD_COLUMNS,
+  'evidenceCount',
+  'evidenceUrls',
+  'evidenceTypes',
+  'evidenceAddedAt',
+  'mitigationStepsOpenCount',
+  'mitigationStepsDoneCount',
+] as const
+
+type CSVColumnStandard = (typeof CSV_STANDARD_COLUMNS)[number]
+type CSVColumnAuditPack = (typeof CSV_AUDIT_PACK_COLUMNS)[number]
+
+const toCSV = (risks: Risk[], variant: CSVExportVariant = 'standard'): string => {
+  const columns = variant === 'audit_pack' ? CSV_AUDIT_PACK_COLUMNS : CSV_STANDARD_COLUMNS
+
+  const data = risks.map((risk) => {
+    const base: Record<CSVColumnStandard, string | number> = {
+      csvSpecVersion: CSV_SPEC_VERSION,
+      csvVariant: variant,
+      id: risk.id,
+      title: risk.title,
+      description: risk.description,
+      probability: risk.probability,
+      impact: risk.impact,
+      riskScore: risk.riskScore,
+      category: risk.category,
+      status: risk.status,
+      mitigationPlan: risk.mitigationPlan,
+      owner: risk.owner,
+      ownerTeam: risk.ownerTeam ?? '',
+      dueDate: risk.dueDate ?? '',
+      reviewDate: risk.reviewDate ?? '',
+      reviewCadence: risk.reviewCadence ?? '',
+      riskResponse: risk.riskResponse,
+      ownerResponse: risk.ownerResponse,
+      securityAdvisorComment: risk.securityAdvisorComment,
+      vendorResponse: risk.vendorResponse,
+      notes: risk.notes ?? '',
+      evidenceJson: JSON.stringify(risk.evidence ?? []),
+      mitigationStepsJson: JSON.stringify(risk.mitigationSteps ?? []),
+      creationDate: risk.creationDate,
+      lastModified: risk.lastModified,
+    }
+
+    if (variant !== 'audit_pack') {
+      return base
+    }
+
+    const openSteps = (risk.mitigationSteps ?? []).filter((step) => step.status !== 'done').length
+    const doneSteps = (risk.mitigationSteps ?? []).filter((step) => step.status === 'done').length
+
+    const audit: Record<CSVColumnAuditPack, string | number> = {
+      ...(base as Record<CSVColumnAuditPack, string | number>),
+      evidenceCount: (risk.evidence ?? []).length,
+      evidenceUrls: (risk.evidence ?? []).map((entry) => entry.url).join(' '),
+      evidenceTypes: (risk.evidence ?? []).map((entry) => entry.type).join(' '),
+      evidenceAddedAt: (risk.evidence ?? []).map((entry) => entry.addedAt).join(' '),
+      mitigationStepsOpenCount: openSteps,
+      mitigationStepsDoneCount: doneSteps,
+    }
+
+    return audit
+  })
+
+  return Papa.unparse(data, {
+    columns: [...columns],
+    header: true,
+    newline: '\n',
+    quotes: true,
+    escapeFormulae: true,
+  })
 }
 
 export type CSVImportFailureReason =
@@ -298,6 +370,19 @@ export type CSVImportFailureReason =
   | 'no_valid_rows'
 
 export type CSVImportResult = { imported: number; reason?: CSVImportFailureReason }
+
+const parseJsonArray = <T,>(value: unknown): T[] => {
+  if (typeof value !== 'string') return []
+  const trimmed = value.trim()
+  if (!trimmed) return []
+
+  try {
+    const parsed = JSON.parse(trimmed) as unknown
+    return Array.isArray(parsed) ? (parsed as T[]) : []
+  } catch {
+    return []
+  }
+}
 
 const fromCSV = (csv: string): { risks: Risk[]; reason?: CSVImportFailureReason } => {
   if (!csv.trim()) {
@@ -333,26 +418,49 @@ const fromCSV = (csv: string): { risks: Risk[]; reason?: CSVImportFailureReason 
       if (!row.title || !row.description) return null;
 
       const now = new Date().toISOString()
-      return {
+
+      const evidenceJson = row.evidenceJson ?? row.evidence ?? ''
+      const mitigationStepsJson = row.mitigationStepsJson ?? row.mitigationSteps ?? ''
+
+      const evidenceFromJson = parseJsonArray<Risk['evidence'][number]>(evidenceJson)
+      const mitigationStepsFromJson =
+        parseJsonArray<Risk['mitigationSteps'][number]>(mitigationStepsJson)
+
+      const evidenceFromUrls =
+        !evidenceFromJson.length && typeof row.evidenceUrls === 'string' && row.evidenceUrls.trim()
+          ? row.evidenceUrls
+              .split(/\s+/)
+              .filter(Boolean)
+              .map((url: string) => ({ type: 'link', url, addedAt: now }))
+          : []
+
+      const importedRaw = {
         id: row.id || nanoid(12),
-        title: sanitizeTextInput(row.title ? row.title.toString().replace(/""/g, '"') : ''),
-        description: sanitizeTextInput(row.description ? row.description.toString().replace(/""/g, '"') : ''),
-        probability: clampScore(Number(row.probability) || 1),
-        impact: clampScore(Number(row.impact) || 1),
-        riskScore: calculateRiskScore(Number(row.probability) || 1, Number(row.impact) || 1),
-        category: sanitizeTextInput(row.category || DEFAULT_CATEGORIES[0]),
-        status: (row.status as Risk['status']) || 'open',
-        mitigationPlan: sanitizeTextInput(row.mitigationPlan || ''),
-        mitigationSteps: [],
-        owner: '',
-        riskResponse: 'treat',
-        ownerResponse: '',
-        securityAdvisorComment: '',
-        vendorResponse: '',
-        evidence: [],
+        title: row.title,
+        description: row.description,
+        probability: Number(row.probability) || 1,
+        impact: Number(row.impact) || 1,
+        category: row.category || DEFAULT_CATEGORIES[0],
+        status: row.status,
+        mitigationPlan: row.mitigationPlan || '',
+        mitigationSteps: mitigationStepsFromJson,
+        owner: row.owner || '',
+        ownerTeam: row.ownerTeam || undefined,
+        dueDate: row.dueDate || undefined,
+        reviewDate: row.reviewDate || undefined,
+        reviewCadence: row.reviewCadence || undefined,
+        riskResponse: row.riskResponse || undefined,
+        ownerResponse: row.ownerResponse || '',
+        securityAdvisorComment: row.securityAdvisorComment || '',
+        vendorResponse: row.vendorResponse || '',
+        notes: row.notes || undefined,
+        evidence: evidenceFromJson.length ? evidenceFromJson : evidenceFromUrls,
         creationDate: row.creationDate || now,
         lastModified: row.lastModified || row.creationDate || now,
-      } satisfies Risk
+      }
+
+      const normalized = normalizeStoredRisk(importedRaw)
+      return normalized satisfies Risk
     })
     .filter((risk): risk is Risk => Boolean(risk))
 
@@ -383,7 +491,7 @@ export interface RiskStoreState {
   addCategory: (category: string) => void
   setFilters: (updates: Partial<RiskFilters>) => void
   bulkImport: (risks: Risk[]) => void
-  exportToCSV: () => string
+  exportToCSV: (variant?: CSVExportVariant) => string
   importFromCSV: (csv: string) => CSVImportResult
   seedDemoData: () => number
 }
@@ -403,6 +511,36 @@ const seedData: RiskInput[] = [
     category: 'Operational',
     status: 'open',
     mitigationPlan: 'Add backup PSP integration and automated smoke tests.',
+    owner: 'Finance Ops Lead',
+    ownerTeam: 'Finance',
+    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
+    reviewCadence: 'monthly',
+    evidence: [
+      {
+        type: 'ticket',
+        url: 'https://example.com/tickets/psp-failover',
+        description: 'Tracking failover workstream',
+        addedAt: new Date().toISOString(),
+      },
+    ],
+    mitigationSteps: [
+      {
+        id: 'seed-psp-1',
+        description: 'Identify secondary PSP and contract terms',
+        owner: 'Procurement',
+        dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString(),
+        status: 'open',
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'seed-psp-2',
+        description: 'Implement health checks and smoke tests',
+        owner: 'Engineering',
+        dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 21).toISOString(),
+        status: 'open',
+        createdAt: new Date().toISOString(),
+      },
+    ],
   },
   {
     title: 'Vendor compliance gap',
@@ -410,8 +548,22 @@ const seedData: RiskInput[] = [
     probability: 2,
     impact: 4,
     category: 'Compliance',
-    status: 'mitigated',
+    status: 'accepted',
     mitigationPlan: 'Legal review scheduled and updated contract template drafted.',
+    owner: 'Vendor Manager',
+    ownerTeam: 'Legal',
+    reviewDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 60).toISOString(),
+    reviewCadence: 'quarterly',
+    ownerResponse: 'Temporary acceptance until contract update is executed.',
+    securityAdvisorComment: 'Ensure vendor SOC 2 report is obtained annually.',
+    evidence: [
+      {
+        type: 'doc',
+        url: 'https://example.com/docs/vendor-dpa-redline',
+        description: 'Draft DPA redline',
+        addedAt: new Date().toISOString(),
+      },
+    ],
   },
   {
     title: 'Phishing vulnerability',
@@ -421,6 +573,19 @@ const seedData: RiskInput[] = [
     category: 'Security',
     status: 'open',
     mitigationPlan: 'Roll out quarterly training and MFA hardening.',
+    owner: 'Security Lead',
+    ownerTeam: 'Security',
+    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 45).toISOString(),
+    reviewCadence: 'monthly',
+    vendorResponse: 'MFA enforcement is supported by the IdP vendor.',
+    evidence: [
+      {
+        type: 'link',
+        url: 'https://example.com/runbooks/phishing-response',
+        description: 'Incident response runbook',
+        addedAt: new Date().toISOString(),
+      },
+    ],
   },
 ]
 
@@ -565,16 +730,26 @@ export const useRiskStore = create<RiskStoreState>()(
           const merged = [...risks, ...state.risks]
           return recalc(merged, state.filters)
         }),
-      exportToCSV: () => {
+      exportToCSV: (variant) => {
         const state = get()
-        return toCSV(state.risks)
+        return toCSV(state.risks, variant ?? 'standard')
       },
       importFromCSV: (csv) => {
         const { risks, reason } = fromCSV(csv)
         if (!risks.length) {
           return { imported: 0, reason: reason ?? 'empty' }
         }
-        set((state) => recalc([...risks, ...state.risks], state.filters))
+        set((state) => {
+          const mergedRisks = [...risks, ...state.risks]
+          const baseCategories =
+            state.categories && state.categories.length
+              ? state.categories
+              : [...DEFAULT_CATEGORIES]
+          const categories = Array.from(
+            new Set([...baseCategories, ...risks.map((risk) => risk.category)].filter(Boolean)),
+          )
+          return { ...recalc(mergedRisks, state.filters), categories }
+        })
         return { imported: risks.length }
       },
       seedDemoData: () => {

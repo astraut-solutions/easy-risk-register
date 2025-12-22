@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 
 import type { Risk, RiskFilters, RiskInput } from '../types/risk'
 import { useRiskStore } from '../stores/riskStore'
+import type { CSVExportVariant } from '../stores/riskStore'
 
 /**
  * Risk service providing centralized access to risk management operations
@@ -36,7 +37,7 @@ export const riskService = {
     useRiskStore.getState().setFilters(updates),
 
   /** Exports all risks to CSV format for external use */
-  exportCSV: () => useRiskStore.getState().exportToCSV(),
+  exportCSV: (variant?: CSVExportVariant) => useRiskStore.getState().exportToCSV(variant),
 
   /** Imports risks from a CSV string and adds them to the store */
   importCSV: (csv: string) => useRiskStore.getState().importFromCSV(csv),

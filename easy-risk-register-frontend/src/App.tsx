@@ -13,6 +13,7 @@ import { RiskFiltersBar } from './components/risk/RiskFilters'
 import { RiskTable } from './components/risk/RiskTable'
 import { useRiskManagement } from './services/riskService'
 import type { Risk, RiskSeverity } from './types/risk'
+import type { CSVExportVariant } from './stores/riskStore'
 import { DEFAULT_FILTERS, getRiskSeverity } from './utils/riskCalculations'
 import { Button, Modal, SectionHeader } from './design-system'
 import { cn } from './utils/cn'
@@ -48,6 +49,8 @@ function App() {
   const [activeView, setActiveView] = useState<DashboardView>('overview')
   const [isFormModalOpen, setIsFormModalOpen] = useState(false)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false)
+  const [exportVariant, setExportVariant] = useState<CSVExportVariant>('standard')
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
@@ -132,14 +135,20 @@ function App() {
   }
 
   const handleExport = () => {
-    const csvContent = actions.exportToCSV()
+    setIsExportModalOpen(true)
+  }
+
+  const handleDownloadExport = () => {
+    const csvContent = actions.exportToCSV(exportVariant)
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `risk-register-${new Date().toISOString().split('T')[0]}.csv`
+    const suffix = exportVariant === 'audit_pack' ? '-audit-pack' : ''
+    link.download = `risk-register${suffix}-${new Date().toISOString().split('T')[0]}.csv`
     link.click()
     URL.revokeObjectURL(url)
+    setIsExportModalOpen(false)
   }
 
   const handleImport = (event: ChangeEvent<HTMLInputElement>) => {
@@ -405,6 +414,76 @@ function App() {
             onCancel={handleCloseModal}
             className="border-0 bg-transparent p-0 shadow-none"
           />
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        title="Export CSV"
+        eyebrow="Import/Export"
+        description="Choose a standard export for re-import, or an audit pack variant that adds explicit evidence URL columns."
+        size="sm"
+      >
+        <div className="space-y-5">
+          <div className="space-y-3" role="radiogroup" aria-label="Export format">
+            <label
+              className={cn(
+                'flex cursor-pointer items-start gap-3 rounded-2xl border p-4 text-left transition',
+                exportVariant === 'standard'
+                  ? 'border-brand-primary bg-brand-primary-light/40'
+                  : 'border-border-faint bg-surface-secondary/40 hover:border-border-subtle',
+              )}
+            >
+              <input
+                type="radio"
+                name="exportVariant"
+                value="standard"
+                checked={exportVariant === 'standard'}
+                onChange={() => setExportVariant('standard')}
+                className="mt-1"
+              />
+              <span className="space-y-1">
+                <span className="block text-sm font-semibold text-text-high">Standard CSV</span>
+                <span className="block text-sm text-text-low">
+                  Includes all risk fields. Evidence and mitigation steps are included as JSON columns for reliable round-trips.
+                </span>
+              </span>
+            </label>
+
+            <label
+              className={cn(
+                'flex cursor-pointer items-start gap-3 rounded-2xl border p-4 text-left transition',
+                exportVariant === 'audit_pack'
+                  ? 'border-brand-primary bg-brand-primary-light/40'
+                  : 'border-border-faint bg-surface-secondary/40 hover:border-border-subtle',
+              )}
+            >
+              <input
+                type="radio"
+                name="exportVariant"
+                value="audit_pack"
+                checked={exportVariant === 'audit_pack'}
+                onChange={() => setExportVariant('audit_pack')}
+                className="mt-1"
+              />
+              <span className="space-y-1">
+                <span className="block text-sm font-semibold text-text-high">Audit pack CSV</span>
+                <span className="block text-sm text-text-low">
+                  Adds evidence URL columns and review/acceptance metadata for audit evidence preparation. May include sensitive links.
+                </span>
+              </span>
+            </label>
+          </div>
+
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button variant="ghost" onClick={() => setIsExportModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="secondary" onClick={handleDownloadExport}>
+              Download CSV
+            </Button>
+          </div>
         </div>
       </Modal>
 

@@ -163,7 +163,7 @@ export const RiskDetailModal = ({ risk, isOpen, onClose, onEdit }: RiskDetailMod
                         className="text-sm font-semibold text-brand-primary hover:underline break-all"
                         href={entry.url}
                         target="_blank"
-                        rel="noreferrer"
+                        rel="noreferrer noopener"
                       >
                         {entry.url}
                       </a>
@@ -204,4 +204,3 @@ export const RiskDetailModal = ({ risk, isOpen, onClose, onEdit }: RiskDetailMod
 }
 
 export default RiskDetailModal
-

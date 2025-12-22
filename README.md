@@ -43,12 +43,19 @@ A regional financial advisor firm manages risks including market volatility, cyb
 - Automatic risk scoring using probability x impact calculations
 - Interactive probability-impact matrix visualization
 - Responsive design that works across devices
-- CSV import/export functionality for reporting and backups
+- Ownership + accountability fields (owner/team, due/review dates, review cadence, risk response)
+- Evidence tracking (URLs + descriptions) and structured mitigation steps
+- Risk acceptance status support (`accepted`)
+- CSV import/export functionality for reporting and backups (backward-compatible across versions)
+- “Audit pack” CSV export variant for audit evidence preparation (includes evidence URL columns + review/acceptance metadata)
+- CSV/Excel formula injection protection on export (cells starting with `=`, `+`, `-`, `@` are escaped)
 - Real-time updates for risk scores and visualizations
 - Optional client-side encryption for persisted state (AES-GCM via Web Crypto, when available)
 - WCAG 2.1 AA compliant accessibility features
 - Content Security Policy (CSP) implementation for enhanced security
 - 100% compliance with product requirements
+
+Wording note: Easy Risk Register **supports audit evidence preparation for ISO 27001 / SOC 2** but does not provide certification or guarantee compliance.
 
 ## Architecture
 
@@ -208,8 +215,12 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | | [Testing Guide](docs/guides/testing.md) | How to run and write tests |
 | | [Development Workflow](docs/guides/development-workflow.md) | Standard development process and commands |
 | | [Code Style Guide](docs/guides/code-style.md) | Coding standards and best practices |
+| | [Audit-ready workflow](docs/guides/audit-ready-workflow.md) | Owners, reviews, evidence, and audit pack exports |
+| | [Evidence guidance](docs/guides/evidence-guidance.md) | What counts as evidence and how to capture it |
 | **Reference** | [System Diagrams](docs/reference/diagrams.md) | Visual representations of system architecture and data flows |
 | | [High-level Overview](docs/reference/high-level.md) | Product overview + current implementation summary |
+| | [Risk record schema](docs/reference/risk-record-schema.md) | Field definitions for risk records |
+| | [Risk CSV specification](docs/reference/risk-csv-spec.md) | Versioned CSV columns + import/export behavior |
 | **Design** | [Design System](docs/design/design-system/) | Style guide and component specifications |
 | | [Features Documentation](docs/design/features/) | Feature-specific implementation guides |
 | | [Accessibility Guidelines](docs/design/accessibility/) | Inclusive design standards |
@@ -217,6 +228,8 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | | [Requirements Mapping](docs/design/requirements-mapping.md) | Mapping of requirements to design elements |
 | **Product** | [Product Requirements](docs/product/product-requirements.md) | Complete feature specifications and requirements |
 | | [Tech Stack Preferences](docs/product/tech-stack-pref.md) | Technology stack preferences and decisions |
+| **Frameworks** | [ISO 27001 mapping guidance](docs/frameworks/iso-27001-mapping.md) | Evidence preparation mapping (avoid certification claims) |
+| | [SOC 2 mapping guidance](docs/frameworks/soc2-mapping.md) | Practical evidence mapping + examples |
 | **Security** | [Security Policy](docs/SECURITY.md) | Security policy and overview |
 | | [Security Implementation](docs/security-implementation.md) | CSP directives, sanitization, and storage hardening |
 

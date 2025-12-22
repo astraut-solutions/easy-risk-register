@@ -108,6 +108,10 @@ describe('RiskStore', () => {
       useRiskStore.getState().addRisk(newRisk)
       const csv = useRiskStore.getState().exportToCSV()
 
+      expect(csv.split('\n')[0]).toContain('csvSpecVersion')
+      expect(csv.split('\n')[0]).toContain('owner')
+      expect(csv.split('\n')[0]).toContain('evidenceJson')
+      expect(csv.split('\n')[0]).toContain('mitigationStepsJson')
       expect(csv).toContain('CSV Test Risk')
       expect(csv).toContain('CSV Test Description')
       expect(csv).toContain('2')
@@ -115,6 +119,56 @@ describe('RiskStore', () => {
       expect(csv).toContain('6') // risk score
       expect(csv).toContain('Compliance')
       expect(csv).toContain('Test mitigation')
+    })
+
+    it('should protect against CSV/Excel formula injection on export', () => {
+      useRiskStore.getState().addRisk({
+        title: '=2+2',
+        description: 'Formula-like title',
+        probability: 1,
+        impact: 1,
+        category: 'Security',
+      })
+
+      const csv = useRiskStore.getState().exportToCSV()
+      expect(csv).toContain("'=2+2")
+    })
+
+    it('should export an audit pack CSV with evidence URL columns', () => {
+      useRiskStore.getState().addRisk({
+        title: 'Audit pack risk',
+        description: 'Includes evidence',
+        probability: 3,
+        impact: 3,
+        category: 'Custom Audit Category',
+        evidence: [
+          {
+            type: 'link',
+            url: 'https://example.com/evidence',
+            addedAt: '2023-01-01T00:00:00.000Z',
+            description: 'Example evidence',
+          },
+        ],
+        mitigationSteps: [
+          {
+            id: 'step-1',
+            description: 'Do thing',
+            status: 'open',
+            createdAt: '2023-01-01T00:00:00.000Z',
+          },
+          {
+            id: 'step-2',
+            description: 'Done thing',
+            status: 'done',
+            createdAt: '2023-01-02T00:00:00.000Z',
+            completedAt: '2023-01-03T00:00:00.000Z',
+          },
+        ],
+      })
+
+      const csv = useRiskStore.getState().exportToCSV('audit_pack')
+      expect(csv.split('\n')[0]).toContain('evidenceUrls')
+      expect(csv).toContain('https://example.com/evidence')
     })
 
     it('should import risks from CSV format', () => {
@@ -134,6 +188,108 @@ test-id,"Imported Risk","Imported Description",3,4,12,"Financial","open","Import
       expect(state.risks[0].category).toBe('Financial')
       expect(state.risks[0].status).toBe('open')
       expect(state.risks[0].mitigationPlan).toBe('Imported Plan')
+      expect(state.categories).toContain('Financial')
+    })
+
+    it('should import new-format CSV columns (including evidence JSON) when present', () => {
+      const evidenceJson = '[{""type"":""link"",""url"":""https://example.com/evidence"",""addedAt"":""2023-01-01T00:00:00.000Z""}]'
+      const mitigationStepsJson = '[{""id"":""step-1"",""description"":""Step"",""status"":""open"",""createdAt"":""2023-01-01T00:00:00.000Z""}]'
+
+      const csvData =
+        `csvSpecVersion,csvVariant,id,title,description,probability,impact,category,status,mitigationPlan,owner,reviewCadence,evidenceJson,mitigationStepsJson,creationDate,lastModified\n` +
+        `1,standard,test-id,"Imported Risk","Imported Description",3,4,"CustomCat","accepted","Imported Plan","Owner Name","monthly","${evidenceJson}","${mitigationStepsJson}","2023-01-01T00:00:00.000Z","2023-01-01T00:00:00.000Z"`
+
+      const result = useRiskStore.getState().importFromCSV(csvData)
+      expect(result).toEqual({ imported: 1 })
+
+      const state = useRiskStore.getState()
+      expect(state.risks).toHaveLength(1)
+      expect(state.risks[0].status).toBe('accepted')
+      expect(state.risks[0].owner).toBe('Owner Name')
+      expect(state.risks[0].reviewCadence).toBe('monthly')
+      expect(state.risks[0].evidence).toHaveLength(1)
+      expect(state.risks[0].evidence[0].url).toBe('https://example.com/evidence')
+      expect(state.risks[0].mitigationSteps).toHaveLength(1)
+      expect(state.categories).toContain('CustomCat')
+    })
+
+    it('should round-trip standard CSV exports (new format) with evidence and mitigation steps', () => {
+      useRiskStore.getState().addRisk({
+        title: 'Roundtrip risk',
+        description: 'Roundtrip description',
+        probability: 4,
+        impact: 4,
+        category: 'Roundtrip Category',
+        status: 'accepted',
+        owner: 'Jane Riskowner',
+        ownerTeam: 'Security',
+        dueDate: '2024-12-01',
+        reviewCadence: 'quarterly',
+        evidence: [
+          {
+            type: 'ticket',
+            url: 'https://example.com/ticket/123',
+            description: 'Tracked in ticket',
+            addedAt: '2024-01-01T00:00:00.000Z',
+          },
+        ],
+        mitigationSteps: [
+          {
+            id: 'step-1',
+            description: 'Patch thing',
+            owner: 'Ops',
+            dueDate: '2024-02-01',
+            status: 'open',
+            createdAt: '2024-01-10T00:00:00.000Z',
+          },
+        ],
+        notes: 'Some longer notes',
+      })
+
+      const csv = useRiskStore.getState().exportToCSV()
+
+      useRiskStore.setState({
+        risks: [],
+        filteredRisks: [],
+        categories: [],
+        filters: { search: '', category: 'all', status: 'all', severity: 'all' },
+        stats: {
+          total: 0,
+          byStatus: { open: 0, mitigated: 0, closed: 0, accepted: 0 },
+          bySeverity: { low: 0, medium: 0, high: 0 },
+          averageScore: 0,
+          maxScore: 0,
+          updatedAt: new Date().toISOString(),
+        },
+      })
+
+      const result = useRiskStore.getState().importFromCSV(csv)
+      expect(result).toEqual({ imported: 1 })
+
+      const state = useRiskStore.getState()
+      expect(state.risks).toHaveLength(1)
+      expect(state.risks[0].title).toBe('Roundtrip risk')
+      expect(state.risks[0].status).toBe('accepted')
+      expect(state.risks[0].owner).toBe('Jane Riskowner')
+      expect(state.risks[0].reviewCadence).toBe('quarterly')
+      expect(state.risks[0].evidence).toHaveLength(1)
+      expect(state.risks[0].evidence[0].url).toBe('https://example.com/ticket/123')
+      expect(state.risks[0].mitigationSteps).toHaveLength(1)
+      expect(state.categories).toContain('Roundtrip Category')
+    })
+
+    it('should round-trip legacy CSV imports by exporting as the new versioned format', () => {
+      const legacyCsv =
+        'id,title,description,probability,impact,riskScore,category,status,mitigationPlan,creationDate,lastModified\n' +
+        'legacy-1,"Legacy Risk","Legacy Desc",2,3,6,"LegacyCat","open","Legacy Plan","2023-01-01T00:00:00.000Z","2023-01-02T00:00:00.000Z"'
+
+      const imported = useRiskStore.getState().importFromCSV(legacyCsv)
+      expect(imported).toEqual({ imported: 1 })
+
+      const exported = useRiskStore.getState().exportToCSV()
+      expect(exported.split('\n')[0]).toContain('csvSpecVersion')
+      expect(exported).toContain('Legacy Risk')
+      expect(useRiskStore.getState().categories).toContain('LegacyCat')
     })
 
     it('should return a reason when CSV contains no valid rows', () => {
@@ -225,6 +381,64 @@ test-id,"Missing fields","No title/description columns here"`
       const state = useRiskStore.getState()
       expect(state.filteredRisks).toHaveLength(1)
       expect(state.filteredRisks[0].title).toBe('High Risk')
+    })
+  })
+
+  describe('Validation edge cases', () => {
+    it('should drop invalid evidence URLs when adding a risk', () => {
+      useRiskStore.getState().addRisk({
+        title: 'Evidence URL validation',
+        description: 'Evidence should be validated',
+        probability: 2,
+        impact: 2,
+        category: 'Security',
+        evidence: [
+          { type: 'link', url: 'javascript:alert(1)', addedAt: '2023-01-01T00:00:00.000Z' },
+          { type: 'link', url: 'https://example.com/ok', addedAt: '2023-01-01T00:00:00.000Z' },
+        ],
+      })
+
+      const state = useRiskStore.getState()
+      expect(state.risks[0].evidence).toHaveLength(1)
+      expect(state.risks[0].evidence[0].url).toBe('https://example.com/ok')
+    })
+
+    it('should ignore invalid ISO-like dates on import', () => {
+      const csvData =
+        `csvSpecVersion,csvVariant,id,title,description,probability,impact,category,status,mitigationPlan,owner,dueDate,reviewDate,creationDate,lastModified\n` +
+        `1,standard,test-id,"Date Risk","Bad dates",3,4,"Security","open","Plan","","not-a-date","also-bad","2023-01-01T00:00:00.000Z","2023-01-01T00:00:00.000Z"`
+
+      const result = useRiskStore.getState().importFromCSV(csvData)
+      expect(result).toEqual({ imported: 1 })
+
+      const state = useRiskStore.getState()
+      expect(state.risks[0].dueDate).toBeUndefined()
+      expect(state.risks[0].reviewDate).toBeUndefined()
+    })
+
+    it('should default missing owner to empty string', () => {
+      const legacyCsv =
+        'id,title,description,probability,impact,riskScore,category,status,mitigationPlan,creationDate,lastModified\n' +
+        'legacy-2,"No owner","Legacy Desc",2,3,6,"Ops","open","Plan","2023-01-01T00:00:00.000Z","2023-01-02T00:00:00.000Z"'
+
+      const result = useRiskStore.getState().importFromCSV(legacyCsv)
+      expect(result).toEqual({ imported: 1 })
+      expect(useRiskStore.getState().risks[0].owner).toBe('')
+    })
+
+    it('should truncate long notes to the configured maximum length', () => {
+      const longNotes = 'a'.repeat(11000)
+      useRiskStore.getState().addRisk({
+        title: 'Long notes',
+        description: 'Should truncate notes',
+        probability: 2,
+        impact: 2,
+        category: 'Operational',
+        notes: longNotes,
+      })
+
+      const state = useRiskStore.getState()
+      expect(state.risks[0].notes?.length).toBe(10000)
     })
   })
 
