@@ -206,14 +206,24 @@ describe('RiskTable', () => {
     expect(onDeleteSpy).toHaveBeenCalledWith('2')
   })
 
-  it('calls onView when view button is clicked if onView prop is provided', () => {
+  it('calls onView when View/Edit button is clicked if onView prop is provided', () => {
     const onViewSpy = vi.fn()
     render(<RiskTable {...defaultProps} onView={onViewSpy} />)
 
-    const viewButtons = screen.getAllByText('View')
-    fireEvent.click(viewButtons[0])
+    const viewEditButtons = screen.getAllByText('View/Edit')
+    fireEvent.click(viewEditButtons[0])
 
     expect(onViewSpy).toHaveBeenCalledWith(mockRisk1)
+  })
+
+  it('falls back to onEdit when View/Edit button is clicked and onView is not provided', () => {
+    const onEditSpy = vi.fn()
+    render(<RiskTable {...defaultProps} onEdit={onEditSpy} />)
+
+    const viewEditButtons = screen.getAllByText('View/Edit')
+    fireEvent.click(viewEditButtons[0])
+
+    expect(onEditSpy).toHaveBeenCalledWith(mockRisk1)
   })
 
   it('shows empty state when no risks are provided', () => {

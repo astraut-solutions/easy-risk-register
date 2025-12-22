@@ -105,25 +105,14 @@ export const RiskCard = ({ risk, onEdit, onDelete, onView }: RiskCardProps) => {
         </div>
 
         <div className="flex flex-wrap justify-end gap-2 border-t border-border-faint pt-4">
-          {onView && (
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => onView(risk)}
-              aria-label={`View risk details for ${risk.title}`}
-            >
-              View
-            </Button>
-          )}
           <Button
             type="button"
             size="sm"
             variant="ghost"
-            onClick={() => onEdit(risk)}
-            aria-label={`Edit risk: ${risk.title}`}
+            onClick={() => (onView ? onView(risk) : onEdit(risk))}
+            aria-label={`View or edit risk: ${risk.title}`}
           >
-            Edit
+            View/Edit
           </Button>
           <Button
             type="button"

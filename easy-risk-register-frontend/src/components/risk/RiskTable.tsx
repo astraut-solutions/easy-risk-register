@@ -146,19 +146,14 @@ export const RiskTable = ({
               </TableCell>
               <TableCell className="text-right" role="cell">
                 <div className="flex flex-wrap justify-end gap-2" role="group" aria-label={`Actions for risk ${risk.title}`}>
-                  {onView && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => onView(risk)}
-                      aria-label={`View risk: ${risk.title}`}
-                    >
-                      View
-                    </Button>
-                  )}
-                  <Button type="button" size="sm" variant="ghost" onClick={() => onEdit(risk)} aria-label={`Edit risk: ${risk.title}`}>
-                    Edit
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => (onView ? onView(risk) : onEdit(risk))}
+                    aria-label={`View or edit risk: ${risk.title}`}
+                  >
+                    View/Edit
                   </Button>
                   <Button
                     type="button"

@@ -7,9 +7,8 @@ vi.mock('../../../src/components/risk/RiskCard', () => ({
   RiskCard: ({ risk, onEdit, onDelete, onView }: any) => (
     <div data-testid={`risk-card-${risk.id}`}>
       <span>{risk.title}</span>
-      <button onClick={() => onEdit(risk)} data-testid={`edit-${risk.id}`}>Edit</button>
+      <button onClick={() => (onView ? onView(risk) : onEdit(risk))} data-testid={`view-edit-${risk.id}`}>View/Edit</button>
       <button onClick={() => onDelete(risk.id)} data-testid={`delete-${risk.id}`}>Delete</button>
-      {onView && <button onClick={() => onView(risk)} data-testid={`view-${risk.id}`}>View</button>}
     </div>
   )
 }))
@@ -103,19 +102,17 @@ describe('RiskList', () => {
     )
 
     // Check that RiskCard components have the expected buttons
-    expect(screen.getByTestId('edit-1')).toBeInTheDocument()
+    expect(screen.getByTestId('view-edit-1')).toBeInTheDocument()
     expect(screen.getByTestId('delete-1')).toBeInTheDocument()
-    expect(screen.getByTestId('view-1')).toBeInTheDocument()
-    expect(screen.getByTestId('edit-2')).toBeInTheDocument()
+    expect(screen.getByTestId('view-edit-2')).toBeInTheDocument()
     expect(screen.getByTestId('delete-2')).toBeInTheDocument()
-    expect(screen.getByTestId('view-2')).toBeInTheDocument()
   })
 
-  it('does not render view button when onView is not provided', () => {
+  it('renders View/Edit button even when onView is not provided', () => {
     render(<RiskList risks={mockRisks} onEdit={vi.fn()} onDelete={vi.fn()} />)
 
-    expect(screen.queryByTestId('view-1')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('view-2')).not.toBeInTheDocument()
+    expect(screen.getByTestId('view-edit-1')).toBeInTheDocument()
+    expect(screen.getByTestId('view-edit-2')).toBeInTheDocument()
   })
 
   it('renders correct number of cards based on risk count', () => {
@@ -141,7 +138,7 @@ describe('RiskList', () => {
     expect(screen.getByTestId('risk-card-1')).toBeInTheDocument()
     expect(screen.getByTestId('risk-card-2')).toBeInTheDocument()
     expect(screen.getByTestId('risk-card-3')).toBeInTheDocument()
-    expect(screen.getAllByRole('button')).toHaveLength(9) // 3 risks * 3 buttons each
+    expect(screen.getAllByRole('button')).toHaveLength(6) // 3 risks * 2 buttons each
   })
 
   it('applies correct grid classes for responsive layout', () => {
