@@ -149,7 +149,7 @@ describe('RiskForm', () => {
     expect(screen.getByText('Add risk')).toBeInTheDocument()
 
     rerender(<RiskForm {...defaultProps} mode="edit" />)
-    expect(screen.getByText('Save changes')).toBeInTheDocument()
+    expect(screen.getByText('Update risk')).toBeInTheDocument()
   })
 
   it('shows risk score calculation', () => {
@@ -311,7 +311,7 @@ describe('RiskForm', () => {
 
     render(<RiskForm {...defaultProps} mode="edit" onSubmit={() => {}} />)
 
-    const submitButton = screen.getByText('Save changes')
+    const submitButton = screen.getByText('Update risk')
     const form = submitButton.closest('form')
     expect(form).not.toBeNull()
     fireEvent.submit(form!)

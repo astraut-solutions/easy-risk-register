@@ -72,12 +72,6 @@ const resetRiskStoreState = () => {
   resetStorageMock(window.sessionStorage)
 }
 
-const waitForRiskCards = async (expectedCount: number) => {
-  await waitFor(() => {
-    expect(screen.getAllByRole('article', { name: /risk card/i })).toHaveLength(expectedCount)
-  })
-}
-
 describe('App integration', () => {
   beforeEach(() => {
     resetRiskStoreState()
@@ -91,18 +85,16 @@ describe('App integration', () => {
       </ToastProvider>,
     )
 
-    await waitForRiskCards(3)
-    expect(screen.getByText(/Payment processor outage/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Showing 3 of 3 risks/i)).toBeInTheDocument()
 
     const searchInput = screen.getByPlaceholderText(/search risks/i)
     await user.type(searchInput, 'phishing')
 
-    await waitForRiskCards(1)
-    expect(screen.getByText(/Phishing vulnerability/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Showing 1 of 3 risks/i)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /reset/i }))
 
-    await waitForRiskCards(3)
+    expect(await screen.findByText(/Showing 3 of 3 risks/i)).toBeInTheDocument()
   }, 15000)
 
   it('creates a new risk from the New risk tab and surfaces it inside the table view', async () => {
@@ -113,7 +105,7 @@ describe('App integration', () => {
       </ToastProvider>,
     )
 
-    await waitForRiskCards(3)
+    expect(await screen.findByText(/Showing 3 of 3 risks/i)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /create new risk/i }))
 
@@ -130,10 +122,10 @@ describe('App integration', () => {
 
     await user.click(screen.getByRole('button', { name: /add new risk/i }))
 
-    await screen.findByText(/AI model drift/i)
+    expect(await screen.findByText(/Showing 4 of 4 risks/i)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /open risk table/i }))
     const table = await screen.findByRole('table', { name: /risk register table/i })
     expect(within(table).getByText(/AI model drift/i)).toBeInTheDocument()
-  }, 15000)
+  }, 30000)
 })

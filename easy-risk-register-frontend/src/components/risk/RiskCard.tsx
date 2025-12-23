@@ -121,9 +121,9 @@ export const RiskCard = ({ risk, onEdit, onDelete, onView }: RiskCardProps) => {
             size="sm"
             variant="ghost"
             onClick={() => onEdit(risk)}
-            aria-label={`Edit risk: ${risk.title}`}
+            aria-label={`View or edit risk: ${risk.title}`}
           >
-            Edit
+            View/Edit
           </Button>
           <Button
             type="button"

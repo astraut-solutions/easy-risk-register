@@ -29,7 +29,7 @@ export const StatCard = ({
 }: StatCardProps) => (
   <div
     className={cn(
-      'rounded-2xl border border-border-faint bg-gradient-to-br from-surface-primary to-surface-secondary/60 p-6 shadow-card-soft',
+      'flex h-full min-h-[152px] flex-col justify-between rounded-2xl border border-border-faint bg-gradient-to-br from-surface-primary to-surface-secondary/60 p-6 shadow-sm',
       className,
     )}
     {...props}
@@ -47,7 +47,7 @@ export const StatCard = ({
         </div>
       )}
     </div>
-    {description && <p className="mt-2 text-sm text-text-low">{description}</p>}
+    {description && <p className="mt-4 line-clamp-2 text-sm text-text-low">{description}</p>}
   </div>
 )
 

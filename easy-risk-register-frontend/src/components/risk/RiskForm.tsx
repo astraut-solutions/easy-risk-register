@@ -25,6 +25,13 @@ interface RiskFormProps {
   onCancel?: () => void
   onSaveDraft?: (values: RiskFormValues) => void
   onDirtyChange?: (isDirty: boolean) => void
+  onMetaChange?: (meta: {
+    isDirty: boolean
+    isSubmitting: boolean
+    isValid: boolean
+    missingRequiredFields: string[]
+    isPrimaryDisabled: boolean
+  }) => void
   formId?: string
   showActions?: boolean
   className?: string
@@ -39,6 +46,7 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
   onCancel,
   onSaveDraft,
   onDirtyChange,
+  onMetaChange,
   formId,
   showActions = true,
   className,
@@ -130,6 +138,16 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
   useEffect(() => {
     onDirtyChange?.(isDirty)
   }, [isDirty, onDirtyChange])
+
+  useEffect(() => {
+    onMetaChange?.({
+      isDirty,
+      isSubmitting,
+      isValid,
+      missingRequiredFields,
+      isPrimaryDisabled,
+    })
+  }, [isDirty, isPrimaryDisabled, isSubmitting, isValid, missingRequiredFields, onMetaChange])
 
   const [isAddingCategory, setIsAddingCategory] = useState(false)
   const [newCategory, setNewCategory] = useState('')
@@ -420,11 +438,11 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
               {...descriptionField}
             />
 
-            <div className="grid gap-3 md:grid-cols-[minmax(0,0.35fr)_minmax(0,0.65fr)]">
-              <Controller
-                name="status"
-                control={control}
-                defaultValue="open"
+              <div className="grid gap-3 md:grid-cols-[minmax(0,0.35fr)_minmax(0,0.65fr)]">
+                <Controller
+                  name="status"
+                  control={control}
+                  defaultValue="open"
                 rules={{ required: 'Select a status.' }}
                 render={({ field }) => (
                   <Select
@@ -445,11 +463,71 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                   />
                 )}
               />
-              <div className="flex items-center rounded-2xl border border-dashed border-border-faint bg-surface-secondary/20 px-4 py-3 text-[11px] text-text-low">
-                Likelihood x Impact updates instantly so you can gauge severity before committing changes.
+                <div className="flex items-center rounded-2xl border border-dashed border-border-faint bg-surface-secondary/20 px-4 py-3 text-[11px] text-text-low">
+                  Likelihood x Impact updates instantly so you can gauge severity before committing changes.
+                </div>
               </div>
-            </div>
-          </section>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-4 shadow-sm">
+                  <div className="flex items-center justify-between text-xs font-medium text-text-high">
+                    <span>Likelihood *</span>
+                    <span className="rounded-full bg-surface-secondary/30 px-3 py-0.5 text-[11px] font-semibold text-text-high">
+                      {probability} / 5
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={5}
+                    step={1}
+                    {...register('probability', {
+                      required: true,
+                      valueAsNumber: true,
+                    })}
+                    className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-gradient-to-r from-brand-primary/20 via-brand-primary/10 to-brand-primary/5 accent-brand-primary focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/25"
+                    aria-label="Likelihood (1-5)"
+                    aria-describedby="likelihood-help"
+                    aria-valuemin={1}
+                    aria-valuemax={5}
+                    aria-valuenow={probability}
+                    aria-valuetext={`${probability} of 5`}
+                  />
+                  <p id="likelihood-help" className="mt-2 text-[11px] text-text-low">
+                    Estimate likelihood from 1 (rare) to 5 (almost certain).
+                  </p>
+                </div>
+
+                <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-4 shadow-sm">
+                  <div className="flex items-center justify-between text-xs font-medium text-text-high">
+                    <span>Impact *</span>
+                    <span className="rounded-full bg-surface-secondary/30 px-3 py-0.5 text-[11px] font-semibold text-text-high">
+                      {impact} / 5
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={5}
+                    step={1}
+                    {...register('impact', {
+                      required: true,
+                      valueAsNumber: true,
+                    })}
+                    className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-gradient-to-r from-status-danger/20 via-status-danger/10 to-status-danger/5 accent-status-danger focus:outline-none focus-visible:ring-4 focus-visible:ring-status-danger/25"
+                    aria-label="Impact (1-5)"
+                    aria-describedby="impact-help"
+                    aria-valuemin={1}
+                    aria-valuemax={5}
+                    aria-valuenow={impact}
+                    aria-valuetext={`${impact} of 5`}
+                  />
+                  <p id="impact-help" className="mt-2 text-[11px] text-text-low">
+                    Gauge downstream effect from 1 (minimal) to 5 (critical).
+                  </p>
+                </div>
+              </div>
+            </section>
 
           <section className="flex flex-col gap-3 rounded-[20px] border border-border-faint/60 bg-gradient-to-b from-surface-primary/90 to-surface-secondary/20 p-4 shadow-[0_28px_56px_rgba(15,23,42,0.08)]">
             <details className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-4 shadow-sm">
@@ -802,165 +880,95 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
               </div>
             </details>
 
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,0.45fr)]">
+            <aside
+              className={cn(
+                'flex h-full flex-col gap-3 rounded-[18px] border bg-surface-primary p-4 text-text-high shadow-sm',
+                severityMeta.cardTone,
+              )}
+              aria-label="Live score"
+            >
               <div className="space-y-3">
-                <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-4 shadow-sm">
-                  <div className="flex items-center justify-between text-xs font-medium text-text-high">
-                    <span>Likelihood *</span>
-                    <span className="rounded-full bg-surface-secondary/30 px-3 py-0.5 text-[11px] font-semibold text-text-high">
-                      {probability} / 5
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-text-low">
+                  Live score
+                </p>
+
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-4xl font-bold" aria-label={`Risk score: ${riskScore}`}>
+                      {riskScore}
                     </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={1}
-                    max={5}
-                    step={1}
-                    {...register('probability', {
-                      required: true,
-                      valueAsNumber: true,
-                    })}
-                    className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-gradient-to-r from-brand-primary/20 via-brand-primary/10 to-brand-primary/5 accent-brand-primary focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/25"
-                    aria-label="Likelihood (1-5)"
-                    aria-describedby="likelihood-help"
-                    aria-valuemin={1}
-                    aria-valuemax={5}
-                    aria-valuenow={probability}
-                    aria-valuetext={`${probability} of 5`}
-                  />
-                  <p id="likelihood-help" className="mt-2 text-[11px] text-text-low">
-                    Estimate likelihood from 1 (rare) to 5 (almost certain).
-                  </p>
-                </div>
-
-                <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-4 shadow-sm">
-                  <div className="flex items-center justify-between text-xs font-medium text-text-high">
-                    <span>Impact *</span>
-                    <span className="rounded-full bg-surface-secondary/30 px-3 py-0.5 text-[11px] font-semibold text-text-high">
-                      {impact} / 5
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={1}
-                    max={5}
-                    step={1}
-                    {...register('impact', {
-                      required: true,
-                      valueAsNumber: true,
-                    })}
-                    className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-gradient-to-r from-status-danger/20 via-status-danger/10 to-status-danger/5 accent-status-danger focus:outline-none focus-visible:ring-4 focus-visible:ring-status-danger/25"
-                    aria-label="Impact (1-5)"
-                    aria-describedby="impact-help"
-                    aria-valuemin={1}
-                    aria-valuemax={5}
-                    aria-valuenow={impact}
-                    aria-valuetext={`${impact} of 5`}
-                  />
-                  <p id="impact-help" className="mt-2 text-[11px] text-text-low">
-                    Gauge downstream effect from 1 (minimal) to 5 (critical).
-                  </p>
-                </div>
-              </div>
-
-              <aside
-                className={cn(
-                  'flex h-full flex-col gap-3 rounded-[18px] border bg-surface-primary p-4 text-text-high shadow-sm',
-                  severityMeta.cardTone,
-                )}
-                aria-label="Live score"
-              >
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-text-low">
-                    Live score
-                  </p>
-
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-baseline gap-3">
-                      <span
-                        className="text-4xl font-bold"
-                        aria-label={`Risk score: ${riskScore}`}
-                      >
-                        {riskScore}
-                      </span>
-                      <span
-                        className={cn(
-                          'rounded-full border px-3 py-0.5 text-xs font-semibold',
-                          severityMeta.pillTone,
-                        )}
-                        aria-label={`Risk severity: ${severityMeta.label.toUpperCase()}`}
-                      >
-                        {severityMeta.label.toUpperCase()}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-text-low">
-                      <span className="rounded-full border border-border-faint/70 bg-surface-primary/70 px-3 py-1">
-                        Likelihood: <span className="text-text-high">{probability}/5</span>
-                      </span>
-                      <span className="rounded-full border border-border-faint/70 bg-surface-primary/70 px-3 py-1">
-                        Impact: <span className="text-text-high">{impact}/5</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-text-low">
-                    {severityMeta.why}{' '}
-                    <span className="font-semibold text-text-high">
-                      {riskScore} = {probability}×{impact}
-                    </span>
-                    .
-                  </p>
-                </div>
-
-                <div className="mt-auto rounded-2xl border border-border-faint/60 bg-surface-primary/70 p-3 text-xs text-text-low">
-                  <p className="font-semibold text-text-high">Recommended next step</p>
-                  <p className="mt-1">{severityMeta.nudge}</p>
-                </div>
-              </aside>
-            </div>
-
-            {showActions ? (
-              <div className="sticky bottom-0 -mx-4 mt-3 border-t border-border-faint/70 bg-surface-primary/95 px-4 pb-[calc(env(safe-area-inset-bottom)+0.375rem)] pt-3 backdrop-blur">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  {onCancel ? (
-                    <Button type="button" variant="ghost" onClick={onCancel}>
-                      Cancel
-                    </Button>
-                  ) : (
-                    <span />
-                  )}
-                  <div className="flex flex-wrap justify-end gap-2">
-                    {mode === 'create' && onSaveDraft ? (
-                    <Button type="button" variant="secondary" onClick={handleSaveDraft}>
-                      Save draft
-                    </Button>
-                  ) : null}
-                    <Button
-                      type="submit"
-                      disabled={isPrimaryDisabled}
-                      className="px-6"
-                      aria-label={mode === 'create' ? 'Add new risk' : 'Save risk changes'}
-                      aria-describedby={
-                        isPrimaryDisabled ? 'risk-form-submit-help' : undefined
-                      }
+                    <span
+                      className={cn(
+                        'rounded-full border px-3 py-0.5 text-xs font-semibold',
+                        severityMeta.pillTone,
+                      )}
+                      aria-label={`Risk severity: ${severityMeta.label.toUpperCase()}`}
                     >
-                      {mode === 'create' ? 'Add risk' : 'Save changes'}
-                    </Button>
+                      {severityMeta.label.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-text-low">
+                    <span className="rounded-full border border-border-faint/70 bg-surface-primary/70 px-3 py-1">
+                      Likelihood: <span className="text-text-high">{probability}/5</span>
+                    </span>
+                    <span className="rounded-full border border-border-faint/70 bg-surface-primary/70 px-3 py-1">
+                      Impact: <span className="text-text-high">{impact}/5</span>
+                    </span>
                   </div>
                 </div>
-                {isPrimaryDisabled ? (
-                  <p id="risk-form-submit-help" className="mt-2 text-xs text-text-low">
-                    {missingRequiredFields.length
-                      ? `Complete required fields: ${missingRequiredFields.join(', ')}.`
-                      : 'Complete required fields marked * to enable submission.'}
-                  </p>
-                ) : null}
+
+                <p className="text-xs text-text-low">
+                  {severityMeta.why}{' '}
+                  <span className="font-semibold text-text-high">
+                    {riskScore} = {probability}×{impact}
+                  </span>
+                  .
+                </p>
               </div>
-            ) : null}
+
+              <div className="mt-auto rounded-2xl border border-border-faint/60 bg-surface-primary/70 p-3 text-xs text-text-low">
+                <p className="font-semibold text-text-high">Recommended next step</p>
+                <p className="mt-1">{severityMeta.nudge}</p>
+              </div>
+            </aside>
+
           </section>
         </div>
       </div>
+
+      {showActions ? (
+        <div className="-mx-1 mt-6 border-t border-border-faint/70 bg-surface-primary px-1 pb-[calc(env(safe-area-inset-bottom)+0.375rem)] pt-4">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {onCancel ? (
+              <Button type="button" variant="ghost" onClick={onCancel}>
+                Cancel
+              </Button>
+            ) : null}
+            {mode === 'create' && onSaveDraft ? (
+              <Button type="button" variant="secondary" onClick={handleSaveDraft}>
+                Save draft
+              </Button>
+            ) : null}
+            <Button
+              type="submit"
+              disabled={isPrimaryDisabled}
+              className="px-6"
+              aria-label={mode === 'create' ? 'Add new risk' : 'Update risk'}
+              aria-describedby={isPrimaryDisabled ? 'risk-form-submit-help' : undefined}
+            >
+              {mode === 'create' ? 'Add risk' : 'Update risk'}
+            </Button>
+          </div>
+          {isPrimaryDisabled ? (
+            <p id="risk-form-submit-help" className="mt-2 text-xs text-text-low" aria-live="polite">
+              {missingRequiredFields.length
+                ? `Complete required fields: ${missingRequiredFields.join(', ')}.`
+                : 'Complete required fields marked * to enable submission.'}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </form>
   )
 })

@@ -68,20 +68,15 @@ export const RiskTable = ({
       <Table
         className="[&_th]:whitespace-nowrap"
         role="table"
-        aria-label="Risk register table showing all risks with their details"
+        aria-label="Risk register table showing key risk details"
       >
         <TableHeader className="bg-surface-secondary/60">
           <TableRow role="row">
             <TableHead role="columnheader">Risk</TableHead>
             <TableHead role="columnheader">Category</TableHead>
-            <TableHead role="columnheader" className="text-center">Likelihood</TableHead>
-            <TableHead role="columnheader" className="text-center">Impact</TableHead>
             <TableHead role="columnheader" className="text-center">Score</TableHead>
             <TableHead role="columnheader">Owner</TableHead>
             <TableHead role="columnheader">Due</TableHead>
-            <TableHead role="columnheader">Next review</TableHead>
-            <TableHead role="columnheader">Response</TableHead>
-            <TableHead role="columnheader" className="text-center">Evidence</TableHead>
             <TableHead role="columnheader">Status</TableHead>
             <TableHead role="columnheader">Last updated</TableHead>
             <TableHead role="columnheader" className="text-right">Actions</TableHead>
@@ -90,7 +85,7 @@ export const RiskTable = ({
         <TableBody>
           {risks.map((risk) => (
               <TableRow key={risk.id} role="row">
-              <TableCell className="max-w-[240px]" role="cell">
+              <TableCell className="max-w-[320px]" role="cell">
                 {onView ? (
                   <button
                     type="button"
@@ -110,12 +105,6 @@ export const RiskTable = ({
                   {risk.category}
                 </Badge>
               </TableCell>
-              <TableCell className="text-center font-semibold text-text-high" role="cell">
-                {risk.probability}
-              </TableCell>
-              <TableCell className="text-center font-semibold text-text-high" role="cell">
-                {risk.impact}
-              </TableCell>
               <TableCell className="text-center" role="cell">
                 <Badge
                   tone={getSeverityTone(risk.riskScore)}
@@ -125,29 +114,18 @@ export const RiskTable = ({
                 >
                   {risk.riskScore}
                 </Badge>
+                <p className="mt-1 text-[11px] font-semibold text-text-muted" aria-hidden="true">
+                  {risk.probability}×{risk.impact}
+                </p>
               </TableCell>
               <TableCell role="cell">
-                <span className="text-sm text-text-high">{risk.owner || '—'}</span>
+                <span className="text-sm text-text-high">{risk.owner || '-'}</span>
                 {risk.ownerTeam ? (
                   <p className="text-xs text-text-low">{risk.ownerTeam}</p>
                 ) : null}
               </TableCell>
               <TableCell role="cell" aria-label={`Due date: ${formatMaybeDate(risk.dueDate)}`}>
                 {formatMaybeDate(risk.dueDate)}
-              </TableCell>
-              <TableCell role="cell" aria-label={`Next review: ${formatMaybeDate(risk.reviewDate)}`}>
-                <span>{formatMaybeDate(risk.reviewDate)}</span>
-                {risk.reviewCadence ? (
-                  <span className="ml-1 text-xs text-text-low">({risk.reviewCadence})</span>
-                ) : null}
-              </TableCell>
-              <TableCell role="cell" aria-label={`Response: ${risk.riskResponse}`}>
-                <span className="capitalize">{risk.riskResponse}</span>
-              </TableCell>
-              <TableCell className="text-center" role="cell" aria-label={`Evidence count: ${risk.evidence.length}`}>
-                <Badge tone="neutral" className="rounded-full px-3 py-1 text-xs font-semibold">
-                  {risk.evidence.length}
-                </Badge>
               </TableCell>
               <TableCell role="cell" aria-label={`Status: ${risk.status}`}>
                 <span className="capitalize">{risk.status}</span>
@@ -162,9 +140,9 @@ export const RiskTable = ({
                     size="sm"
                     variant="ghost"
                     onClick={() => onEdit(risk)}
-                    aria-label={`Edit risk: ${risk.title}`}
+                    aria-label={`View or edit risk: ${risk.title}`}
                   >
-                    Edit
+                    View/Edit
                   </Button>
                   <Button
                     type="button"

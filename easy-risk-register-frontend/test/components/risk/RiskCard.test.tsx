@@ -105,8 +105,8 @@ describe('RiskCard', () => {
     const onEditSpy = vi.fn()
     render(<RiskCard {...defaultProps} onEdit={onEditSpy} />)
 
-    const editButton = screen.getByText('Edit')
-    fireEvent.click(editButton)
+    const viewEditButton = screen.getByText('View/Edit')
+    fireEvent.click(viewEditButton)
 
     expect(onEditSpy).toHaveBeenCalledWith(mockRisk)
   })
@@ -185,7 +185,7 @@ describe('RiskCard', () => {
     render(<RiskCard {...defaultProps} onView={vi.fn()} />)
 
     expect(
-      screen.getByLabelText('Edit risk: Test Risk')
+      screen.getByLabelText('View or edit risk: Test Risk')
     ).toBeInTheDocument()
     expect(screen.getByLabelText('Delete risk: Test Risk')).toBeInTheDocument()
   })

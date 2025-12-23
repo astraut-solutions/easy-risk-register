@@ -121,14 +121,9 @@ describe('RiskTable', () => {
 
     expect(screen.getByText('Risk')).toBeInTheDocument()
     expect(screen.getByText('Category')).toBeInTheDocument()
-    expect(screen.getByText('Likelihood')).toBeInTheDocument()
-    expect(screen.getByText('Impact')).toBeInTheDocument()
     expect(screen.getByText('Score')).toBeInTheDocument()
     expect(screen.getByText('Owner')).toBeInTheDocument()
     expect(screen.getByText('Due')).toBeInTheDocument()
-    expect(screen.getByText('Next review')).toBeInTheDocument()
-    expect(screen.getByText('Response')).toBeInTheDocument()
-    expect(screen.getByText('Evidence')).toBeInTheDocument()
     expect(screen.getByText('Status')).toBeInTheDocument()
     expect(screen.getByText('Last updated')).toBeInTheDocument()
     expect(screen.getByText('Actions')).toBeInTheDocument()
@@ -145,9 +140,8 @@ describe('RiskTable', () => {
     expect(firstRowQueries.getByText('Test Risk 1')).toBeInTheDocument()
     expect(firstRowQueries.getByText('First test risk description')).toBeInTheDocument()
     expect(firstRowQueries.getByText('Security')).toBeInTheDocument()
-    expect(firstRowQueries.getByText('4')).toBeInTheDocument()
-    expect(firstRowQueries.getByText('3')).toBeInTheDocument()
     expect(firstRowQueries.getByText('12')).toBeInTheDocument()
+    expect(firstRowQueries.getByText('4×3')).toBeInTheDocument()
     expect(firstRowQueries.getByText('open')).toBeInTheDocument()
 
     // Check second risk
@@ -155,9 +149,8 @@ describe('RiskTable', () => {
     expect(secondRowQueries.getByText('Test Risk 2')).toBeInTheDocument()
     expect(secondRowQueries.getByText('Second test risk description')).toBeInTheDocument()
     expect(secondRowQueries.getByText('Compliance')).toBeInTheDocument()
-    expect(secondRowQueries.getByText('2')).toBeInTheDocument()
-    expect(secondRowQueries.getByText('4')).toBeInTheDocument()
     expect(secondRowQueries.getByText('8')).toBeInTheDocument()
+    expect(secondRowQueries.getByText('2×4')).toBeInTheDocument()
     expect(secondRowQueries.getByText('mitigated')).toBeInTheDocument()
   })
 
@@ -190,8 +183,8 @@ describe('RiskTable', () => {
     const onEditSpy = vi.fn()
     render(<RiskTable {...defaultProps} onEdit={onEditSpy} />)
 
-    const editButtons = screen.getAllByText('Edit')
-    fireEvent.click(editButtons[0])
+    const viewEditButtons = screen.getAllByText('View/Edit')
+    fireEvent.click(viewEditButtons[0])
 
     expect(onEditSpy).toHaveBeenCalledWith(mockRisk1)
   })
@@ -280,7 +273,7 @@ describe('RiskTable', () => {
 
     // Check table ARIA label
     const table = screen.getByTestId('mock-table')
-    expect(table).toHaveAttribute('aria-label', 'Risk register table showing all risks with their details')
+    expect(table).toHaveAttribute('aria-label', 'Risk register table showing key risk details')
 
     // Check ARIA label for actions group
     const actionGroups = screen.getAllByRole('group')

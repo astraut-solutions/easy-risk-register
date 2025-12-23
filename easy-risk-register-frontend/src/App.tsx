@@ -7,7 +7,6 @@ import {
 import { RiskSummaryCards } from './components/risk/RiskSummaryCards'
 import { RiskForm, type RiskFormValues } from './components/risk/RiskForm'
 import { RiskDetailModal } from './components/risk/RiskDetailModal'
-import { RiskList } from './components/risk/RiskList'
 import { RiskMatrix } from './components/risk/RiskMatrix'
 import { RiskFiltersBar } from './components/risk/RiskFilters'
 import { RiskTable } from './components/risk/RiskTable'
@@ -391,26 +390,6 @@ function App() {
     )
   }, [matrixSelection, risks])
 
-  const listEmptyState = useMemo(() => {
-    if (visibleRisks.length > 0) return undefined
-
-    if (matrixSelection) {
-      return {
-        title: 'No risks in this matrix cell',
-        description: 'Adjust the matrix selection or clear it to explore other risks.',
-      }
-    }
-
-    if (stats.total > 0) {
-      return {
-        title: 'No risks match the current filters',
-        description: 'Try broadening or resetting your filters to see additional risks.',
-      }
-    }
-
-    return undefined
-  }, [matrixSelection, stats.total, visibleRisks.length])
-
   const tableEmptyState = useMemo(() => {
     if (stats.total === 0) {
       return {
@@ -446,36 +425,11 @@ function App() {
           <SectionHeader
             eyebrow="Easy Risk Register"
             title="Risk management workspace"
-            description="Switch between an executive dashboard, a spreadsheet-style table, and a focused New risk tab without leaving the page. Export reports or narrow the data with filters."
-            actions={
-              <div className="flex flex-wrap gap-3">
-                {isMetricsUiEnabled ? (
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setAnalyticsEnabled(true)
-                      setIsMetricsModalOpen(true)
-                    }}
-                    aria-label="Open metrics and feedback"
-                  >
-                    Metrics
-                  </Button>
-                ) : null}
+             description="Switch between an executive dashboard, a spreadsheet-style table, and a focused New risk tab without leaving the page. Export reports or narrow the data with filters."
+             actions={
+              <div className="flex flex-wrap items-center gap-3">
                 <Button
-                  variant="ghost"
-                  onClick={() => fileInputRef.current?.click()}
-                  aria-label="Import CSV file"
-                >
-                  Import CSV
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={handleExport}
-                  aria-label="Export CSV file"
-                >
-                  Export CSV
-                </Button>
-                <Button
+                  size="sm"
                   onClick={() => {
                     if (activeView === 'new') {
                       requestNavigate(returnView)
@@ -489,9 +443,38 @@ function App() {
                 >
                   {activeView === 'new' ? 'Back to overview' : 'New risk'}
                 </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleExport}
+                  aria-label="Export CSV file"
+                >
+                  Export CSV
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => fileInputRef.current?.click()}
+                  aria-label="Import CSV file"
+                >
+                  Import CSV
+                </Button>
+                {isMetricsUiEnabled ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setAnalyticsEnabled(true)
+                      setIsMetricsModalOpen(true)
+                    }}
+                    aria-label="Open metrics and feedback"
+                  >
+                    Metrics
+                  </Button>
+                ) : null}
               </div>
-            }
-          />
+              }
+            />
 
           <div className="flex flex-wrap gap-3 lg:hidden">
             {NAV_ITEMS.map((item) => {
@@ -563,7 +546,7 @@ function App() {
 
               {activeView === 'overview' ? (
                 <div className="flex flex-col gap-6">
-                  <RiskMatrix risks={risks} onSelect={handleMatrixSelect} />
+                  <RiskMatrix risks={visibleRisks} onSelect={handleMatrixSelect} />
 
                   {matrixSelection && (
                     <div className="rr-panel flex flex-wrap items-center justify-between gap-3 p-4 text-sm text-text-high">
@@ -583,30 +566,32 @@ function App() {
                     </div>
                   )}
 
-                  <RiskList
-                    risks={visibleRisks}
-                    onEdit={handleEditRisk}
-                    onDelete={handleDelete}
-                    onView={handleViewRisk}
-                    emptyState={listEmptyState}
-                  />
-
                   <div className="rr-panel flex flex-wrap items-center justify-between gap-4 p-4">
-                    <div>
-                      <p className="text-sm font-semibold text-text-high">Prefer a spreadsheet?</p>
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-text-high">
+                        Showing {visibleRisks.length} of {stats.total} risk{stats.total === 1 ? '' : 's'}
+                      </p>
                       <p className="text-xs text-text-low">
-                        Jump into the full-width risk table for bulk reviews and sorting.
+                        Executive overview focuses on KPIs and the matrix. Use the risk table to review individual items.
                       </p>
                     </div>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => requestNavigate('table')}
-                    >
-                      Open risk table
-                    </Button>
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      {visibleRisks.length === 0 ? (
+                        <Button type="button" variant="ghost" size="sm" onClick={handleResetFilters}>
+                          Reset filters
+                        </Button>
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => requestNavigate('table')}
+                      >
+                        Open risk table
+                      </Button>
+                    </div>
                   </div>
+
                 </div>
               ) : (
                 <RiskTable
@@ -656,7 +641,7 @@ function App() {
         <div className="space-y-3 text-sm text-text-low">
           {editingRisk ? (
             <p>
-              Tip: Use <span className="font-semibold text-text-high">Save changes</span> if you
+              Tip: Use <span className="font-semibold text-text-high">Update risk</span> if you
               want to keep your edits before leaving.
             </p>
           ) : (
