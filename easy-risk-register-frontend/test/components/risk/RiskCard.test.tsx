@@ -105,8 +105,8 @@ describe('RiskCard', () => {
     const onEditSpy = vi.fn()
     render(<RiskCard {...defaultProps} onEdit={onEditSpy} />)
 
-    const viewEditButton = screen.getByText('View/Edit')
-    fireEvent.click(viewEditButton)
+    const editButton = screen.getByText('Edit')
+    fireEvent.click(editButton)
 
     expect(onEditSpy).toHaveBeenCalledWith(mockRisk)
   })
@@ -121,24 +121,14 @@ describe('RiskCard', () => {
     expect(onDeleteSpy).toHaveBeenCalledWith('1')
   })
 
-  it('calls onView when View/Edit button is clicked if onView prop is provided', () => {
+  it('calls onView when the title is clicked if onView prop is provided', () => {
     const onViewSpy = vi.fn()
     render(<RiskCard {...defaultProps} onView={onViewSpy} />)
 
-    const viewEditButton = screen.getByText('View/Edit')
-    fireEvent.click(viewEditButton)
+    const titleButton = screen.getByRole('button', { name: 'View details for risk: Test Risk' })
+    fireEvent.click(titleButton)
 
     expect(onViewSpy).toHaveBeenCalledWith(mockRisk)
-  })
-
-  it('falls back to onEdit when onView is not provided', () => {
-    const onEditSpy = vi.fn()
-    render(<RiskCard {...defaultProps} onEdit={onEditSpy} />)
-
-    const viewEditButton = screen.getByText('View/Edit')
-    fireEvent.click(viewEditButton)
-
-    expect(onEditSpy).toHaveBeenCalledWith(mockRisk)
   })
 
   it('displays proper ARIA labels for accessibility', () => {
@@ -195,7 +185,7 @@ describe('RiskCard', () => {
     render(<RiskCard {...defaultProps} onView={vi.fn()} />)
 
     expect(
-      screen.getByLabelText('View or edit risk: Test Risk')
+      screen.getByLabelText('Edit risk: Test Risk')
     ).toBeInTheDocument()
     expect(screen.getByLabelText('Delete risk: Test Risk')).toBeInTheDocument()
   })

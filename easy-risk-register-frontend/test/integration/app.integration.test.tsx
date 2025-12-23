@@ -105,7 +105,7 @@ describe('App integration', () => {
     await waitForRiskCards(3)
   }, 15000)
 
-  it('creates a new risk from the modal and surfaces it inside the table view', async () => {
+  it('creates a new risk from the New risk tab and surfaces it inside the table view', async () => {
     const user = userEvent.setup()
     render(
       <ToastProvider>
@@ -115,7 +115,9 @@ describe('App integration', () => {
 
     await waitForRiskCards(3)
 
-    await user.click(screen.getByRole('button', { name: /new risk/i }))
+    await user.click(screen.getByRole('button', { name: /create new risk/i }))
+
+    expect(await screen.findByText(/Create risk/i)).toBeInTheDocument()
 
     const titleInput = await screen.findByLabelText(/title/i)
     await user.type(titleInput, 'AI model drift')
@@ -127,10 +129,6 @@ describe('App integration', () => {
     await user.type(mitigationInput, 'Add monitoring and retraining automation.')
 
     await user.click(screen.getByRole('button', { name: /add new risk/i }))
-
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    })
 
     await screen.findByText(/AI model drift/i)
 

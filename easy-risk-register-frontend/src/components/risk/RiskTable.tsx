@@ -89,9 +89,20 @@ export const RiskTable = ({
         </TableHeader>
         <TableBody>
           {risks.map((risk) => (
-            <TableRow key={risk.id} role="row">
+              <TableRow key={risk.id} role="row">
               <TableCell className="max-w-[240px]" role="cell">
-                <p className="font-semibold text-text-high">{risk.title}</p>
+                {onView ? (
+                  <button
+                    type="button"
+                    onClick={() => onView(risk)}
+                    className="text-left font-semibold text-brand-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-primary rounded-md"
+                    aria-label={`View details for risk: ${risk.title}`}
+                  >
+                    {risk.title}
+                  </button>
+                ) : (
+                  <p className="font-semibold text-text-high">{risk.title}</p>
+                )}
                 <p className="line-clamp-2 text-sm text-text-low">{risk.description}</p>
               </TableCell>
               <TableCell role="cell">
@@ -150,10 +161,10 @@ export const RiskTable = ({
                     type="button"
                     size="sm"
                     variant="ghost"
-                    onClick={() => (onView ? onView(risk) : onEdit(risk))}
-                    aria-label={`View or edit risk: ${risk.title}`}
+                    onClick={() => onEdit(risk)}
+                    aria-label={`Edit risk: ${risk.title}`}
                   >
-                    View/Edit
+                    Edit
                   </Button>
                   <Button
                     type="button"

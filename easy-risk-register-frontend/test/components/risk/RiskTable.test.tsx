@@ -186,12 +186,12 @@ describe('RiskTable', () => {
     expect(mediumSeverityBadge).toHaveAttribute('tone', 'warning')
   })
 
-  it('calls onEdit when View/Edit button is clicked', () => {
+  it('calls onEdit when Edit button is clicked', () => {
     const onEditSpy = vi.fn()
     render(<RiskTable {...defaultProps} onEdit={onEditSpy} />)
 
-    const viewEditButtons = screen.getAllByText('View/Edit')
-    fireEvent.click(viewEditButtons[0])
+    const editButtons = screen.getAllByText('Edit')
+    fireEvent.click(editButtons[0])
 
     expect(onEditSpy).toHaveBeenCalledWith(mockRisk1)
   })
@@ -206,24 +206,14 @@ describe('RiskTable', () => {
     expect(onDeleteSpy).toHaveBeenCalledWith('2')
   })
 
-  it('calls onView when View/Edit button is clicked if onView prop is provided', () => {
+  it('calls onView when the risk title is clicked if onView prop is provided', () => {
     const onViewSpy = vi.fn()
     render(<RiskTable {...defaultProps} onView={onViewSpy} />)
 
-    const viewEditButtons = screen.getAllByText('View/Edit')
-    fireEvent.click(viewEditButtons[0])
+    const titleButton = screen.getByRole('button', { name: 'View details for risk: Test Risk 1' })
+    fireEvent.click(titleButton)
 
     expect(onViewSpy).toHaveBeenCalledWith(mockRisk1)
-  })
-
-  it('falls back to onEdit when View/Edit button is clicked and onView is not provided', () => {
-    const onEditSpy = vi.fn()
-    render(<RiskTable {...defaultProps} onEdit={onEditSpy} />)
-
-    const viewEditButtons = screen.getAllByText('View/Edit')
-    fireEvent.click(viewEditButtons[0])
-
-    expect(onEditSpy).toHaveBeenCalledWith(mockRisk1)
   })
 
   it('shows empty state when no risks are provided', () => {

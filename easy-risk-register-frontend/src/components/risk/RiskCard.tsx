@@ -41,9 +41,20 @@ export const RiskCard = ({ risk, onEdit, onDelete, onView }: RiskCardProps) => {
     >
       <div className="flex-1">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-lg font-semibold text-text-high group-hover:text-brand-primary transition-colors">
-            {risk.title}
-          </h3>
+          {onView ? (
+            <button
+              type="button"
+              onClick={() => onView(risk)}
+              className="text-left text-lg font-semibold text-text-high group-hover:text-brand-primary transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-primary rounded-md"
+              aria-label={`View details for risk: ${risk.title}`}
+            >
+              {risk.title}
+            </button>
+          ) : (
+            <h3 className="text-lg font-semibold text-text-high group-hover:text-brand-primary transition-colors">
+              {risk.title}
+            </h3>
+          )}
           <Badge
             tone={severityTone}
             subtle={false}
@@ -109,10 +120,10 @@ export const RiskCard = ({ risk, onEdit, onDelete, onView }: RiskCardProps) => {
             type="button"
             size="sm"
             variant="ghost"
-            onClick={() => (onView ? onView(risk) : onEdit(risk))}
-            aria-label={`View or edit risk: ${risk.title}`}
+            onClick={() => onEdit(risk)}
+            aria-label={`Edit risk: ${risk.title}`}
           >
-            View/Edit
+            Edit
           </Button>
           <Button
             type="button"

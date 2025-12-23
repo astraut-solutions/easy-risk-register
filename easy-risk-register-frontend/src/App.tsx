@@ -27,7 +27,7 @@ type MatrixSelection = {
   severity: RiskSeverity
 }
 
-type DashboardView = 'overview' | 'table'
+type DashboardView = 'overview' | 'table' | 'new'
 
 const RISK_FORM_DRAFT_KEY = 'easy-risk-register:risk-form-draft'
 
@@ -36,6 +36,11 @@ const NAV_ITEMS: SidebarNavItem[] = [
     id: 'overview',
     label: 'Executive overview',
     description: 'KPIs, filters, and the interactive matrix',
+  },
+  {
+    id: 'new',
+    label: 'New risk',
+    description: 'Focused create flow with drafts',
   },
   {
     id: 'table',
@@ -51,11 +56,12 @@ function App() {
   const [viewingRisk, setViewingRisk] = useState<Risk | null>(null)
   const [matrixSelection, setMatrixSelection] = useState<MatrixSelection | null>(null)
   const [activeView, setActiveView] = useState<DashboardView>('overview')
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false)
   const [isRiskFormDirty, setIsRiskFormDirty] = useState(false)
   const [riskDraft, setRiskDraft] = useState<Partial<RiskFormValues> | null>(null)
+  const [pendingView, setPendingView] = useState<DashboardView | null>(null)
+  const [returnView, setReturnView] = useState<DashboardView>('overview')
   const [isExportModalOpen, setIsExportModalOpen] = useState(false)
   const [exportVariant, setExportVariant] = useState<CSVExportVariant>('standard')
   const [isMetricsModalOpen, setIsMetricsModalOpen] = useState(false)
@@ -112,48 +118,59 @@ function App() {
     }
   }, [activeView, matrixSelection])
 
-  const handleSubmit = (values: RiskFormValues) => {
-    formModalDidSubmitRef.current = true
-    const durationMs =
-      formModalOpenedAtRef.current === null ? null : Date.now() - formModalOpenedAtRef.current
+  const requestNavigate = (nextView: DashboardView) => {
+    if (nextView === activeView) return
 
-    if (editingRisk) {
-      actions.updateRisk(editingRisk.id, values)
-    } else {
-      actions.addRisk(values)
-      clearRiskDraft()
-      setRiskDraft(null)
+    if (nextView === 'new') {
+      startCreateRisk()
+      return
     }
 
-    trackEvent('risk_modal_submit', {
-      mode: editingRisk ? 'edit' : 'create',
-      durationMs,
-      wasDraft: formModalOpenedFromDraftRef.current,
-      view: activeView,
-    })
+    if (activeView === 'new' && isRiskFormDirty) {
+      setPendingView(nextView)
+      setIsDiscardConfirmOpen(true)
+      return
+    }
+
+    if (activeView === 'new') {
+      leaveNewRiskView(nextView)
+      return
+    }
+
+    setActiveView(nextView)
+  }
+
+  const leaveNewRiskView = (nextView: DashboardView) => {
+    if (!formModalDidSubmitRef.current) {
+      const durationMs =
+        formModalOpenedAtRef.current === null ? null : Date.now() - formModalOpenedAtRef.current
+
+      trackEvent('risk_modal_abandon', {
+        mode: formModalModeRef.current ?? (editingRisk ? 'edit' : 'create'),
+        durationMs,
+        dirty: isRiskFormDirty,
+        view: activeView,
+      })
+    }
 
     setEditingRisk(null)
-    setIsFormModalOpen(false)
     setIsRiskFormDirty(false)
     formModalOpenedAtRef.current = null
     formModalModeRef.current = null
     formModalOpenedFromDraftRef.current = false
+    formModalDidSubmitRef.current = false
+    setPendingView(null)
+    setActiveView(nextView)
   }
 
-  const handleDelete = (id: string) => {
-    actions.deleteRisk(id)
-    if (editingRisk?.id === id) {
-      setEditingRisk(null)
-      setIsFormModalOpen(false)
-      setIsRiskFormDirty(false)
-    }
-  }
-
-  const handleOpenCreateModal = () => {
+  const startCreateRisk = () => {
     setEditingRisk(null)
+    setReturnView(activeView === 'new' ? 'overview' : activeView)
     setIsRiskFormDirty(false)
+
     const draft = loadRiskDraft()
     setRiskDraft(draft)
+
     formModalOpenedAtRef.current = Date.now()
     formModalModeRef.current = 'create'
     formModalDidSubmitRef.current = false
@@ -164,6 +181,7 @@ function App() {
       view: activeView,
       hasDraft: Boolean(draft),
     })
+
     if (draft) {
       toast.notify({
         title: 'Draft loaded',
@@ -171,13 +189,16 @@ function App() {
         variant: 'info',
       })
     }
-    setIsFormModalOpen(true)
+
+    setActiveView('new')
   }
 
-  const handleEditRisk = (risk: Risk) => {
+  const startEditRisk = (risk: Risk) => {
     setEditingRisk(risk)
-    setIsRiskFormDirty(false)
     setRiskDraft(null)
+    setReturnView(activeView === 'new' ? 'overview' : activeView)
+    setIsRiskFormDirty(false)
+
     formModalOpenedAtRef.current = Date.now()
     formModalModeRef.current = 'edit'
     formModalDidSubmitRef.current = false
@@ -188,7 +209,59 @@ function App() {
       view: activeView,
       riskId: risk.id,
     })
-    setIsFormModalOpen(true)
+
+    setActiveView('new')
+  }
+
+  const handleSubmit = (values: RiskFormValues) => {
+    formModalDidSubmitRef.current = true
+    const durationMs =
+      formModalOpenedAtRef.current === null ? null : Date.now() - formModalOpenedAtRef.current
+
+    if (editingRisk) {
+      actions.updateRisk(editingRisk.id, values)
+      toast.notify({
+        title: 'Risk updated',
+        description: 'Your changes are saved.',
+        variant: 'success',
+      })
+    } else {
+      actions.addRisk(values)
+      clearRiskDraft()
+      setRiskDraft(null)
+      toast.notify({
+        title: 'Risk added',
+        description: 'Your new risk is now visible in the workspace.',
+        variant: 'success',
+      })
+    }
+
+    trackEvent('risk_modal_submit', {
+      mode: editingRisk ? 'edit' : 'create',
+      durationMs,
+      wasDraft: formModalOpenedFromDraftRef.current,
+      view: activeView,
+    })
+
+    setEditingRisk(null)
+    setIsRiskFormDirty(false)
+    formModalOpenedAtRef.current = null
+    formModalModeRef.current = null
+    formModalOpenedFromDraftRef.current = false
+
+    setActiveView(returnView)
+  }
+
+  const handleDelete = (id: string) => {
+    actions.deleteRisk(id)
+    if (editingRisk?.id === id) {
+      setEditingRisk(null)
+      setIsRiskFormDirty(false)
+    }
+  }
+
+  const handleEditRisk = (risk: Risk) => {
+    startEditRisk(risk)
   }
 
   const handleViewRisk = (risk: Risk) => {
@@ -203,38 +276,7 @@ function App() {
 
   const handleEditFromDetail = (risk: Risk) => {
     handleCloseDetailModal()
-    handleEditRisk(risk)
-  }
-
-  const handleCloseModal = () => {
-    if (isFormModalOpen && !formModalDidSubmitRef.current) {
-      const durationMs =
-        formModalOpenedAtRef.current === null ? null : Date.now() - formModalOpenedAtRef.current
-
-      trackEvent('risk_modal_abandon', {
-        mode: formModalModeRef.current ?? (editingRisk ? 'edit' : 'create'),
-        durationMs,
-        dirty: isRiskFormDirty,
-        view: activeView,
-      })
-    }
-
-    setEditingRisk(null)
-    setIsFormModalOpen(false)
-    setIsRiskFormDirty(false)
-    formModalOpenedAtRef.current = null
-    formModalModeRef.current = null
-    formModalOpenedFromDraftRef.current = false
-    formModalDidSubmitRef.current = false
-  }
-
-  const handleRequestCloseModal = () => {
-    if (!isRiskFormDirty) {
-      handleCloseModal()
-      return
-    }
-
-    setIsDiscardConfirmOpen(true)
+    startEditRisk(risk)
   }
 
   const handleSaveDraft = (values: RiskFormValues) => {
@@ -242,7 +284,7 @@ function App() {
     trackEvent('risk_modal_save_draft', { view: activeView })
     toast.notify({
       title: 'Draft saved',
-      description: 'You can close this modal and come back to the draft later.',
+      description: 'You can leave this tab and come back to the draft later.',
       variant: 'success',
     })
   }
@@ -397,32 +439,32 @@ function App() {
         <DashboardSidebar
           items={NAV_ITEMS}
           activeItem={activeView}
-          onSelect={(view) => setActiveView(view as DashboardView)}
+          onSelect={(view) => requestNavigate(view as DashboardView)}
         />
 
         <div id="main-content" className="flex flex-1 flex-col gap-8">
           <SectionHeader
             eyebrow="Easy Risk Register"
             title="Risk management workspace"
-            description="Switch between an executive dashboard and a spreadsheet-style table without leaving the page. Capture risks in a focused modal, export reports, or narrow the data with filters."
-              actions={
-                <div className="flex flex-wrap gap-3">
-                  {isMetricsUiEnabled ? (
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        setAnalyticsEnabled(true)
-                        setIsMetricsModalOpen(true)
-                      }}
-                      aria-label="Open metrics and feedback"
-                    >
-                      Metrics
-                    </Button>
-                  ) : null}
+            description="Switch between an executive dashboard, a spreadsheet-style table, and a focused New risk tab without leaving the page. Export reports or narrow the data with filters."
+            actions={
+              <div className="flex flex-wrap gap-3">
+                {isMetricsUiEnabled ? (
                   <Button
                     variant="ghost"
-                    onClick={() => fileInputRef.current?.click()}
-                    aria-label="Import CSV file"
+                    onClick={() => {
+                      setAnalyticsEnabled(true)
+                      setIsMetricsModalOpen(true)
+                    }}
+                    aria-label="Open metrics and feedback"
+                  >
+                    Metrics
+                  </Button>
+                ) : null}
+                <Button
+                  variant="ghost"
+                  onClick={() => fileInputRef.current?.click()}
+                  aria-label="Import CSV file"
                 >
                   Import CSV
                 </Button>
@@ -434,10 +476,18 @@ function App() {
                   Export CSV
                 </Button>
                 <Button
-                  onClick={handleOpenCreateModal}
-                  aria-label="Create new risk"
+                  onClick={() => {
+                    if (activeView === 'new') {
+                      requestNavigate(returnView)
+                      return
+                    }
+                    startCreateRisk()
+                  }}
+                  aria-label={
+                    activeView === 'new' ? 'Return to workspace overview' : 'Create new risk'
+                  }
                 >
-                  New risk
+                  {activeView === 'new' ? 'Back to overview' : 'New risk'}
                 </Button>
               </div>
             }
@@ -450,7 +500,7 @@ function App() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setActiveView(item.id as DashboardView)}
+                  onClick={() => requestNavigate(item.id as DashboardView)}
                   className={cn(
                     'flex-1 min-w-[160px] rounded-2xl border px-4 py-3 text-left text-sm transition',
                     isActive
@@ -465,70 +515,109 @@ function App() {
             })}
           </div>
 
-          <RiskSummaryCards stats={stats} />
-
-          <RiskFiltersBar
-            filters={filters}
-            categories={categories}
-            onChange={actions.setFilters}
-            onReset={handleResetFilters}
-          />
-
-          {activeView === 'overview' ? (
-            <div className="flex flex-col gap-6">
-              <RiskMatrix risks={risks} onSelect={handleMatrixSelect} />
-
-              {matrixSelection && (
-                <div className="rr-panel flex flex-wrap items-center justify-between gap-3 p-4 text-sm text-text-high">
-                  <div>
-                    <span className="font-semibold text-text-high">Matrix filter active:</span>{' '}
-                    Likelihood {matrixSelection.probability} x Impact {matrixSelection.impact}{' '}
-                    <span className="text-text-low">({matrixSelection.severity})</span>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={clearMatrixSelection}
-                  >
-                    Clear matrix filter
-                  </Button>
-                </div>
-              )}
-
-              <RiskList
-                risks={visibleRisks}
-                onEdit={handleEditRisk}
-                onDelete={handleDelete}
-                onView={handleViewRisk}
-                emptyState={listEmptyState}
-              />
-
-              <div className="rr-panel flex flex-wrap items-center justify-between gap-4 p-4">
+          {activeView === 'new' ? (
+            <div className="rr-panel p-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-text-high">Prefer a spreadsheet?</p>
-                  <p className="text-xs text-text-low">
-                    Jump into the full-width risk table for bulk reviews and sorting.
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-low">
+                    {editingRisk ? 'Edit risk' : 'New risk'}
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold text-text-high">
+                    {editingRisk ? 'Update risk' : 'Create risk'}
+                  </h2>
+                  <p className="mt-1 text-sm text-text-low">
+                    {editingRisk
+                      ? 'Update likelihood, impact, and mitigation details without leaving the workspace.'
+                      : 'Capture likelihood, impact, and mitigation details. Drafts are saved locally.'}
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setActiveView('table')}
-                >
-                  Open risk table
+                <Button type="button" variant="ghost" onClick={() => requestNavigate(returnView)}>
+                  Back
                 </Button>
+              </div>
+
+              <div className="mt-6">
+                <RiskForm
+                  mode={editingRisk ? 'edit' : 'create'}
+                  categories={categories}
+                  defaultValues={editingRisk ?? riskDraft ?? undefined}
+                  onSubmit={handleSubmit}
+                  onAddCategory={actions.addCategory}
+                  onCancel={() => requestNavigate(returnView)}
+                  onSaveDraft={!editingRisk ? handleSaveDraft : undefined}
+                  onDirtyChange={setIsRiskFormDirty}
+                  className="border-0 bg-transparent p-0 shadow-none"
+                />
               </div>
             </div>
           ) : (
-            <RiskTable
-              risks={risks}
-              onEdit={handleEditRisk}
-              onDelete={handleDelete}
-              onView={handleViewRisk}
-              emptyState={tableEmptyState}
-            />
+            <>
+              <RiskSummaryCards stats={stats} />
+
+              <RiskFiltersBar
+                filters={filters}
+                categories={categories}
+                onChange={actions.setFilters}
+                onReset={handleResetFilters}
+              />
+
+              {activeView === 'overview' ? (
+                <div className="flex flex-col gap-6">
+                  <RiskMatrix risks={risks} onSelect={handleMatrixSelect} />
+
+                  {matrixSelection && (
+                    <div className="rr-panel flex flex-wrap items-center justify-between gap-3 p-4 text-sm text-text-high">
+                      <div>
+                        <span className="font-semibold text-text-high">Matrix filter active:</span>{' '}
+                        Likelihood {matrixSelection.probability} x Impact {matrixSelection.impact}{' '}
+                        <span className="text-text-low">({matrixSelection.severity})</span>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={clearMatrixSelection}
+                      >
+                        Clear matrix filter
+                      </Button>
+                    </div>
+                  )}
+
+                  <RiskList
+                    risks={visibleRisks}
+                    onEdit={handleEditRisk}
+                    onDelete={handleDelete}
+                    onView={handleViewRisk}
+                    emptyState={listEmptyState}
+                  />
+
+                  <div className="rr-panel flex flex-wrap items-center justify-between gap-4 p-4">
+                    <div>
+                      <p className="text-sm font-semibold text-text-high">Prefer a spreadsheet?</p>
+                      <p className="text-xs text-text-low">
+                        Jump into the full-width risk table for bulk reviews and sorting.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => requestNavigate('table')}
+                    >
+                      Open risk table
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <RiskTable
+                  risks={risks}
+                  onEdit={handleEditRisk}
+                  onDelete={handleDelete}
+                  onView={handleViewRisk}
+                  emptyState={tableEmptyState}
+                />
+              )}
+            </>
           )}
         </div>
       </div>
@@ -545,7 +634,7 @@ function App() {
         onClose={() => setIsDiscardConfirmOpen(false)}
         title="Discard changes?"
         eyebrow="Unsaved edits"
-        description="You have unsaved changes in this risk form. Discard them and close?"
+        description="You have unsaved changes in this risk form. Discard them and leave this tab?"
         size="sm"
         footer={
           <div className="flex flex-wrap justify-end gap-3">
@@ -556,46 +645,26 @@ function App() {
               variant="destructive"
               onClick={() => {
                 setIsDiscardConfirmOpen(false)
-                handleCloseModal()
+                leaveNewRiskView(pendingView ?? returnView ?? 'overview')
               }}
             >
-              Discard and close
+              Discard and leave
             </Button>
           </div>
         }
       >
         <div className="space-y-3 text-sm text-text-low">
-          <p>
-            Tip: Use <span className="font-semibold text-text-high">Save draft</span> if you want to
-            keep your progress without adding a risk yet.
-          </p>
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={isFormModalOpen}
-        onClose={handleRequestCloseModal}
-        title={editingRisk ? 'Update risk' : 'Create new risk'}
-        eyebrow="Risk workspace"
-        description={
-          editingRisk
-            ? 'Refresh severity, probability, and mitigation context without leaving the dashboard.'
-            : 'Capture probability-impact details with live scoring and mitigation guidance.'
-        }
-        size="full"
-      >
-        <div className="mx-auto w-full max-w-5xl">
-          <RiskForm
-            mode={editingRisk ? 'edit' : 'create'}
-            categories={categories}
-            defaultValues={editingRisk ?? riskDraft ?? undefined}
-            onSubmit={handleSubmit}
-            onAddCategory={actions.addCategory}
-            onCancel={handleRequestCloseModal}
-            onSaveDraft={!editingRisk ? handleSaveDraft : undefined}
-            onDirtyChange={setIsRiskFormDirty}
-            className="border-0 bg-transparent p-0 shadow-none"
-          />
+          {editingRisk ? (
+            <p>
+              Tip: Use <span className="font-semibold text-text-high">Save changes</span> if you
+              want to keep your edits before leaving.
+            </p>
+          ) : (
+            <p>
+              Tip: Use <span className="font-semibold text-text-high">Save draft</span> if you want
+              to keep your progress without adding a risk yet.
+            </p>
+          )}
         </div>
       </Modal>
 

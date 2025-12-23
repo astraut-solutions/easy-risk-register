@@ -7,7 +7,7 @@ vi.mock('../../../src/components/risk/RiskCard', () => ({
   RiskCard: ({ risk, onEdit, onDelete, onView }: any) => (
     <div data-testid={`risk-card-${risk.id}`}>
       <span>{risk.title}</span>
-      <button onClick={() => (onView ? onView(risk) : onEdit(risk))} data-testid={`view-edit-${risk.id}`}>View/Edit</button>
+      <button onClick={() => onEdit(risk)} data-testid={`edit-${risk.id}`}>Edit</button>
       <button onClick={() => onDelete(risk.id)} data-testid={`delete-${risk.id}`}>Delete</button>
     </div>
   )
@@ -102,17 +102,17 @@ describe('RiskList', () => {
     )
 
     // Check that RiskCard components have the expected buttons
-    expect(screen.getByTestId('view-edit-1')).toBeInTheDocument()
+    expect(screen.getByTestId('edit-1')).toBeInTheDocument()
     expect(screen.getByTestId('delete-1')).toBeInTheDocument()
-    expect(screen.getByTestId('view-edit-2')).toBeInTheDocument()
+    expect(screen.getByTestId('edit-2')).toBeInTheDocument()
     expect(screen.getByTestId('delete-2')).toBeInTheDocument()
   })
 
-  it('renders View/Edit button even when onView is not provided', () => {
+  it('renders Edit button even when onView is not provided', () => {
     render(<RiskList risks={mockRisks} onEdit={vi.fn()} onDelete={vi.fn()} />)
 
-    expect(screen.getByTestId('view-edit-1')).toBeInTheDocument()
-    expect(screen.getByTestId('view-edit-2')).toBeInTheDocument()
+    expect(screen.getByTestId('edit-1')).toBeInTheDocument()
+    expect(screen.getByTestId('edit-2')).toBeInTheDocument()
   })
 
   it('renders correct number of cards based on risk count', () => {

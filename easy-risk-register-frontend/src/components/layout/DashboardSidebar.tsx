@@ -65,8 +65,7 @@ export const DashboardSidebar = ({
         </nav>
 
         <div className="mt-auto rounded-2xl border border-dashed border-border-subtle bg-surface-secondary/70 p-4 text-sm text-text-low">
-          Tip: Use the New risk button in the header to open a focused modal.
-          After saving, the modal closes automatically for a smoother workflow.
+          Tip: Use the New risk tab in the header to capture a risk without leaving the workspace. Drafts are saved locally so you can return later.
         </div>
       </div>
     </aside>
