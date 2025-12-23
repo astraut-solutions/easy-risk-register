@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { forwardRef, useEffect, useId, useImperativeHandle, useMemo, useState } from 'react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { nanoid } from 'nanoid'
 
@@ -6,8 +6,15 @@ import type { RiskInput, RiskStatus, ReviewCadence, RiskResponse } from '../../t
 import { calculateRiskScore, getRiskSeverity } from '../../utils/riskCalculations'
 import { Button, Input, Select, Textarea } from '../../design-system'
 import { cn } from '../../utils/cn'
+import { trackEvent } from '../../utils/analytics'
 
 export type RiskFormValues = RiskInput & { status: RiskStatus }
+
+export type RiskFormHandle = {
+  getValues: () => RiskFormValues
+  markClean: () => void
+  submit: () => void
+}
 
 interface RiskFormProps {
   categories: string[]
@@ -16,27 +23,38 @@ interface RiskFormProps {
   onSubmit: (values: RiskFormValues) => void
   onAddCategory?: (category: string) => void
   onCancel?: () => void
+  onSaveDraft?: (values: RiskFormValues) => void
+  onDirtyChange?: (isDirty: boolean) => void
+  formId?: string
+  showActions?: boolean
   className?: string
 }
 
-export const RiskForm = ({
+export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
   categories,
   defaultValues,
   mode = 'create',
   onSubmit,
   onAddCategory,
   onCancel,
+  onSaveDraft,
+  onDirtyChange,
+  formId,
+  showActions = true,
   className,
-}: RiskFormProps) => {
+}: RiskFormProps, ref) => {
   const {
     register,
     handleSubmit,
     watch,
+    getValues,
     reset,
     setValue,
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty, isValid },
   } = useForm<RiskFormValues>({
+    mode: 'onChange',
+    reValidateMode: 'onChange',
     defaultValues: {
       title: '',
       description: '',
@@ -61,9 +79,57 @@ export const RiskForm = ({
     },
   })
 
-  const { probability = 3, impact = 3 } = watch()
+  const formValues = watch()
+  const { probability = 3, impact = 3 } = formValues
   const riskScore = calculateRiskScore(probability, impact)
   const severity = getRiskSeverity(riskScore)
+
+  const missingRequiredFields = useMemo(() => {
+    const missing: string[] = []
+    if (!formValues.title?.trim()) missing.push('Title')
+    if (!formValues.description?.trim()) missing.push('Description')
+    if (!formValues.category?.trim()) missing.push('Category')
+    if (!formValues.status?.trim()) missing.push('Status')
+    return missing
+  }, [formValues.category, formValues.description, formValues.status, formValues.title])
+
+  const isPrimaryDisabled = isSubmitting || !isValid || missingRequiredFields.length > 0
+
+  const severityMeta = useMemo(() => {
+    switch (severity) {
+      case 'low':
+        return {
+          label: 'Low',
+          cardTone: 'border-status-success/30 bg-status-success/10',
+          pillTone: 'border-status-success/40 bg-status-success/15 text-status-success',
+          why: 'Score ≤ 3 is low severity.',
+          nudge: 'Next: Confirm an owner and review cadence.',
+        }
+      case 'medium':
+        return {
+          label: 'Medium',
+          cardTone: 'border-status-warning/30 bg-status-warning/10',
+          pillTone: 'border-status-warning/40 bg-status-warning/15 text-status-warning',
+          why: 'Score 4–6 is medium severity.',
+          nudge: 'Next: Add mitigation steps and a target due date.',
+        }
+      case 'high':
+      default:
+        return {
+          label: 'High',
+          cardTone: 'border-status-danger/30 bg-status-danger/10',
+          pillTone: 'border-status-danger/40 bg-status-danger/15 text-status-danger',
+          why: 'Score > 6 is high severity.',
+          nudge: 'Next: Assign an owner and set a due date.',
+        }
+    }
+  }, [severity])
+
+  const resolvedFormId = formId ?? useId()
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty)
+  }, [isDirty, onDirtyChange])
 
   const [isAddingCategory, setIsAddingCategory] = useState(false)
   const [newCategory, setNewCategory] = useState('')
@@ -127,6 +193,32 @@ export const RiskForm = ({
     }
   }, [categories, defaultValues, reset])
 
+  const collectErrorPaths = (value: unknown, prefix = ''): string[] => {
+    if (!value || typeof value !== 'object') return []
+
+    if ('message' in (value as Record<string, unknown>)) {
+      return prefix ? [prefix] : []
+    }
+
+    if (Array.isArray(value)) {
+      return value.flatMap((entry, index) => collectErrorPaths(entry, `${prefix}[${index}]`))
+    }
+
+    return Object.entries(value as Record<string, unknown>).flatMap(([key, entry]) => {
+      const nextPrefix = prefix ? `${prefix}.${key}` : key
+      return collectErrorPaths(entry, nextPrefix)
+    })
+  }
+
+  const onFormInvalid = (formErrors: unknown) => {
+    const fields = collectErrorPaths(formErrors)
+    trackEvent('risk_modal_validation_error', {
+      mode,
+      errorCount: fields.length,
+      fields,
+    })
+  }
+
   const onFormSubmit = (values: RiskFormValues) => {
     onSubmit({
       ...values,
@@ -158,6 +250,25 @@ export const RiskForm = ({
       })
     }
   }
+
+  const handleSaveDraft = () => {
+    if (!onSaveDraft) return
+    const values = getValues()
+    onSaveDraft(values)
+    reset(values)
+  }
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getValues: () => getValues(),
+      markClean: () => reset(getValues()),
+      submit: () => {
+        void handleSubmit(onFormSubmit)()
+      },
+    }),
+    [getValues, handleSubmit, onFormSubmit, reset],
+  )
 
   const handleStartAddCategory = () => {
     if (!onAddCategory) return
@@ -207,9 +318,18 @@ export const RiskForm = ({
     { value: 'terminate', label: 'Terminate' },
   ]
 
+  const titleField = register('title', {
+    required: 'Add a short, specific title (e.g., “Supply chain disruption”).',
+  })
+  const descriptionField = register('description', {
+    required: 'Add 2–3 sentences describing context and business impact.',
+  })
+  const mitigationPlanField = register('mitigationPlan')
+
   return (
     <form
-      onSubmit={handleSubmit(onFormSubmit)}
+      id={resolvedFormId}
+      onSubmit={handleSubmit(onFormSubmit, onFormInvalid)}
       className={cn('flex h-full min-h-full flex-col gap-4', className)}
       noValidate
     >
@@ -221,36 +341,38 @@ export const RiskForm = ({
               <span className="text-xs font-medium text-text-low">Required fields marked *</span>
             </div>
 
-            <div className="grid gap-2.5 md:grid-cols-[minmax(0,0.6fr)_minmax(0,0.4fr)]">
+            <div className="grid gap-3 md:grid-cols-[minmax(0,0.6fr)_minmax(0,0.4fr)]">
               <Input
                 label="Title *"
                 helperText="Keep it sharp so execs can scan quickly."
                 error={errors.title?.message?.toString()}
                 placeholder="Supply chain disruption"
-                className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-2.5 text-sm focus:ring-brand-primary/30"
-                {...register('title', { required: 'Title is required' })}
+                className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-3 text-sm focus:ring-brand-primary/30"
+                autoFocus
+                {...titleField}
               />
               <Controller
                 name="category"
                 control={control}
-                defaultValue={categories[0] ?? 'Operational'}
-                rules={{ required: 'Category is required' }}
-                render={({ field }) => (
-                  <div className="space-y-2">
-                    <Select
-                      label="Category *"
-                      helperText="Use broad buckets for reporting and filtering."
-                      error={errors.category?.message?.toString()}
+                  defaultValue={categories[0] ?? 'Operational'}
+                  rules={{ required: 'Select a category.' }}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Select
+                        label="Category *"
+                        helperText="Use broad buckets for reporting and filtering."
+                        error={errors.category?.message?.toString()}
                       options={categories.map((category) => ({
                         value: category,
                         label: category,
                       }))}
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      placeholder="Select a category"
-                    />
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        required
+                        placeholder="Select a category"
+                      />
 
                     {onAddCategory && !isAddingCategory && (
                       <div className="flex items-center justify-end">
@@ -262,7 +384,7 @@ export const RiskForm = ({
 
                     {onAddCategory && isAddingCategory && (
                       <div className="rounded-2xl border border-border-faint bg-surface-secondary/10 p-3">
-                        <div className="grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end">
+                        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end">
                           <Input
                             label="New category"
                             value={newCategory}
@@ -272,7 +394,7 @@ export const RiskForm = ({
                             }}
                             error={newCategoryError ?? undefined}
                             placeholder="e.g. Third-party, Privacy, Finance"
-                            className="rounded-xl border-border-faint bg-surface-primary/70 px-4 py-2.5 text-sm focus:ring-brand-primary/30"
+                            className="rounded-xl border-border-faint bg-surface-primary/70 px-4 py-3 text-sm focus:ring-brand-primary/30"
                           />
                           <Button type="button" size="sm" onClick={handleConfirmAddCategory}>
                             Add
@@ -294,16 +416,16 @@ export const RiskForm = ({
               helperText="Capture context, trigger, and business impact in 2-3 sentences."
               placeholder="Describe the risk context and impact..."
               rows={3}
-              className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-2.5 text-sm focus:ring-brand-primary/30"
-              {...register('description', { required: 'Description is required' })}
+              className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-3 text-sm focus:ring-brand-primary/30"
+              {...descriptionField}
             />
 
-            <div className="grid gap-2.5 md:grid-cols-[minmax(0,0.35fr)_minmax(0,0.65fr)]">
+            <div className="grid gap-3 md:grid-cols-[minmax(0,0.35fr)_minmax(0,0.65fr)]">
               <Controller
                 name="status"
                 control={control}
                 defaultValue="open"
-                rules={{ required: 'Status is required' }}
+                rules={{ required: 'Select a status.' }}
                 render={({ field }) => (
                   <Select
                     label="Status *"
@@ -319,67 +441,66 @@ export const RiskForm = ({
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     name={field.name}
+                    required
                   />
                 )}
               />
-              <div className="flex items-center rounded-2xl border border-dashed border-border-faint bg-surface-secondary/20 px-3.5 py-2.5 text-[11px] text-text-low">
+              <div className="flex items-center rounded-2xl border border-dashed border-border-faint bg-surface-secondary/20 px-4 py-3 text-[11px] text-text-low">
                 Likelihood x Impact updates instantly so you can gauge severity before committing changes.
               </div>
             </div>
           </section>
 
           <section className="flex flex-col gap-3 rounded-[20px] border border-border-faint/60 bg-gradient-to-b from-surface-primary/90 to-surface-secondary/20 p-4 shadow-[0_28px_56px_rgba(15,23,42,0.08)]">
-            <details className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
-              <summary className="cursor-pointer select-none text-sm font-semibold text-text-high">
+            <details className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-4 shadow-sm">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
                 Details (optional)
               </summary>
               <div className="mt-3 space-y-3">
-            <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
-              <Textarea
-                label="Mitigation plan"
-                placeholder="Outline mitigation actions, owners, or milestones..."
-                helperText="Optional. Keeps downstream owners aligned."
-                rows={2}
-                className="rounded-xl border-border-faint bg-surface-secondary/10 px-3.5 py-2 text-sm focus:ring-brand-primary/30"
-                {...register('mitigationPlan')}
-              />
-            </div>
+                <Textarea
+                  label="Mitigation plan (optional)"
+                  placeholder="Outline mitigation actions, owners, or milestones..."
+                  helperText="Keeps downstream owners aligned."
+                  rows={2}
+                  className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-3 text-sm focus:ring-brand-primary/30"
+                  {...mitigationPlanField}
+                />
 
-            <details className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
-              <summary className="cursor-pointer select-none text-sm font-semibold text-text-high">
-                Accountability
+            <details className="rounded-2xl bg-surface-secondary/10 p-4">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                Accountability (optional)
               </summary>
               <div className="mt-3 grid gap-3 md:grid-cols-2">
                 <Input
-                  label="Owner"
-                  helperText="Optional. Who is accountable for next actions."
+                  label="Owner (optional)"
+                  helperText="Who is accountable for next actions."
                   placeholder="Name or role (e.g. SecOps lead)"
                   {...register('owner')}
                 />
                 <Input
-                  label="Owner team"
-                  helperText="Optional. Helps routing and reporting."
+                  label="Owner team (optional)"
+                  helperText="Helps routing and reporting."
                   placeholder="Team (optional)"
                   {...register('ownerTeam')}
                 />
                 <Input
                   type="date"
-                  label="Due date"
-                  helperText="Optional. Target date for mitigation or decision."
+                  label="Due date (optional)"
+                  helperText="Target date for mitigation or decision."
                   {...register('dueDate')}
                 />
               </div>
             </details>
 
-            <details className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
-              <summary className="cursor-pointer select-none text-sm font-semibold text-text-high">
-                Review cadence
+            <details className="rounded-2xl bg-surface-secondary/10 p-4">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                Review cadence (optional)
               </summary>
               <div className="mt-3 grid gap-3 md:grid-cols-2">
                 <Input
                   type="date"
-                  label="Next review date"
-                  helperText="Optional. Set a concrete date for the next review."
+                  label="Next review date (optional)"
+                  helperText="Set a concrete date for the next review."
                   {...register('reviewDate')}
                 />
                 <Controller
@@ -387,8 +508,8 @@ export const RiskForm = ({
                   control={control}
                   render={({ field }) => (
                     <Select
-                      label="Cadence"
-                      helperText="Optional. How often this risk should be reviewed."
+                      label="Cadence (optional)"
+                      helperText="How often this risk should be reviewed."
                       options={reviewCadenceOptions.map((option) => ({
                         value: option.value,
                         label: option.label,
@@ -404,9 +525,9 @@ export const RiskForm = ({
               </div>
             </details>
 
-            <details className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
-              <summary className="cursor-pointer select-none text-sm font-semibold text-text-high">
-                Responses
+            <details className="rounded-2xl bg-surface-secondary/10 p-4">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                Responses (optional)
               </summary>
               <div className="mt-3 grid gap-3">
                 <Controller
@@ -414,8 +535,8 @@ export const RiskForm = ({
                   control={control}
                   render={({ field }) => (
                     <Select
-                      label="Response"
-                      helperText="Optional. Choose a default response strategy."
+                      label="Response (optional)"
+                      helperText="Choose a default response strategy."
                       options={riskResponseOptions.map((option) => ({
                         value: option.value,
                         label: option.label,
@@ -429,22 +550,22 @@ export const RiskForm = ({
                 />
 
                 <Textarea
-                  label="Owner response"
-                  helperText="Optional. One sentence capturing the owner's stance."
+                  label="Owner response (optional)"
+                  helperText="One sentence capturing the owner's stance."
                   rows={2}
                   placeholder="Short owner response (optional)"
                   {...register('ownerResponse')}
                 />
                 <Textarea
-                  label="Security advisor comment"
-                  helperText="Optional. Note security guidance or constraints."
+                  label="Security advisor comment (optional)"
+                  helperText="Note security guidance or constraints."
                   rows={2}
                   placeholder="Short security advisor comment (optional)"
                   {...register('securityAdvisorComment')}
                 />
                 <Textarea
-                  label="Vendor response"
-                  helperText="Optional. Record vendor confirmation or commitments."
+                  label="Vendor response (optional)"
+                  helperText="Record vendor confirmation or commitments."
                   rows={2}
                   placeholder="Short vendor response (optional)"
                   {...register('vendorResponse')}
@@ -452,9 +573,9 @@ export const RiskForm = ({
               </div>
             </details>
 
-            <details className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
-              <summary className="cursor-pointer select-none text-sm font-semibold text-text-high">
-                Evidence
+            <details className="rounded-2xl bg-surface-secondary/10 p-4">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                Evidence (optional)
               </summary>
               <div className="mt-3 space-y-3">
                 {evidenceArray.fields.length === 0 ? (
@@ -466,10 +587,7 @@ export const RiskForm = ({
                 {evidenceArray.fields.map((field, index) => {
                   const base = `evidence.${index}` as const
                   return (
-                    <div
-                      key={(field as any)._key}
-                      className="rounded-2xl border border-border-faint bg-surface-secondary/10 p-3"
-                    >
+                    <div key={(field as any)._key} className="rounded-2xl bg-surface-primary/60 p-4">
                       <div className="grid gap-3 md:grid-cols-[minmax(0,0.35fr)_minmax(0,1fr)]">
                         <Controller
                           name={`${base}.type`}
@@ -492,13 +610,13 @@ export const RiskForm = ({
                           )}
                         />
                         <Input
-                          label="URL"
+                          label="URL (required)"
                           placeholder="https://..."
                           error={
                             (errors.evidence as any)?.[index]?.url?.message?.toString()
                           }
                           {...register(`${base}.url`, {
-                            required: 'URL is required.',
+                            required: 'Paste a valid URL (include https://).',
                             validate: (value) =>
                               isValidHttpUrl(String(value)) || 'Enter a valid http(s) URL.',
                           })}
@@ -506,8 +624,8 @@ export const RiskForm = ({
                       </div>
                       <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
                         <Input
-                          label="Description"
-                          helperText="Optional. Add context so reviewers know why this link matters."
+                          label="Description (optional)"
+                          helperText="Add context so reviewers know why this link matters."
                           placeholder="Optional context for this evidence link"
                           {...register(`${base}.description`)}
                         />
@@ -547,9 +665,9 @@ export const RiskForm = ({
               </div>
             </details>
 
-            <details className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
-              <summary className="cursor-pointer select-none text-sm font-semibold text-text-high">
-                Mitigation steps
+            <details className="rounded-2xl bg-surface-secondary/10 p-4">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                Mitigation steps (optional)
               </summary>
               <div className="mt-3 space-y-3">
                 {mitigationStepsArray.fields.length === 0 ? (
@@ -563,15 +681,12 @@ export const RiskForm = ({
                   const stepErrors = (errors.mitigationSteps as any)?.[index]
 
                   return (
-                    <div
-                      key={(field as any)._key}
-                      className="rounded-2xl border border-border-faint bg-surface-secondary/10 p-3"
-                    >
+                    <div key={(field as any)._key} className="rounded-2xl bg-surface-primary/60 p-4">
                       <div className="grid gap-3 md:grid-cols-[auto_minmax(0,1fr)] md:items-start">
                         <div className="pt-8">
                           <input
                             type="checkbox"
-                            className="h-4 w-4 accent-brand-primary"
+                            className="h-4 w-4 rounded accent-brand-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20"
                             aria-label="Mark step done"
                             checked={(watch(`${base}.status`) as any) === 'done'}
                             onChange={(event) => {
@@ -587,25 +702,25 @@ export const RiskForm = ({
                         </div>
                         <div className="grid gap-3">
                           <Input
-                            label="Step"
+                            label="Step (required)"
                             helperText="Required for each step. Keep it short and actionable."
                             placeholder="Describe the mitigation action"
                             error={stepErrors?.description?.message?.toString()}
                             {...register(`${base}.description`, {
-                              required: 'Step description is required.',
+                              required: 'Describe the step (e.g., “Enable MFA for admin accounts”).',
                             })}
                           />
                           <div className="grid gap-3 md:grid-cols-2">
                             <Input
-                              label="Owner"
-                              helperText="Optional. Who will execute this step."
+                              label="Owner (optional)"
+                              helperText="Who will execute this step."
                               placeholder="Who owns this step?"
                               {...register(`${base}.owner`)}
                             />
                             <Input
                               type="date"
-                              label="Due date"
-                              helperText="Optional. Target completion date."
+                              label="Due date (optional)"
+                              helperText="Target completion date."
                               {...register(`${base}.dueDate`)}
                             />
                           </div>
@@ -670,14 +785,14 @@ export const RiskForm = ({
               </div>
             </details>
 
-            <details className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
-              <summary className="cursor-pointer select-none text-sm font-semibold text-text-high">
-                Notes
+            <details className="rounded-2xl bg-surface-secondary/10 p-4">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                Notes (optional)
               </summary>
               <div className="mt-3">
                 <Textarea
-                  label="Notes"
-                  helperText="Optional. Use for audit context, assumptions, or decision rationale."
+                  label="Notes (optional)"
+                  helperText="Use for audit context, assumptions, or decision rationale."
                   rows={3}
                   placeholder="Optional long-form notes"
                   {...register('notes')}
@@ -687,9 +802,9 @@ export const RiskForm = ({
               </div>
             </details>
 
-            <div className="grid gap-2.5 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,0.45fr)]">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,0.45fr)]">
               <div className="space-y-3">
-                <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
+                <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-4 shadow-sm">
                   <div className="flex items-center justify-between text-xs font-medium text-text-high">
                     <span>Likelihood *</span>
                     <span className="rounded-full bg-surface-secondary/30 px-3 py-0.5 text-[11px] font-semibold text-text-high">
@@ -708,13 +823,17 @@ export const RiskForm = ({
                     className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-gradient-to-r from-brand-primary/20 via-brand-primary/10 to-brand-primary/5 accent-brand-primary focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/25"
                     aria-label="Likelihood (1-5)"
                     aria-describedby="likelihood-help"
+                    aria-valuemin={1}
+                    aria-valuemax={5}
+                    aria-valuenow={probability}
+                    aria-valuetext={`${probability} of 5`}
                   />
-                  <p id="likelihood-help" className="mt-1.5 text-[11px] text-text-low">
+                  <p id="likelihood-help" className="mt-2 text-[11px] text-text-low">
                     Estimate likelihood from 1 (rare) to 5 (almost certain).
                   </p>
                 </div>
 
-                <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
+                <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-4 shadow-sm">
                   <div className="flex items-center justify-between text-xs font-medium text-text-high">
                     <span>Impact *</span>
                     <span className="rounded-full bg-surface-secondary/30 px-3 py-0.5 text-[11px] font-semibold text-text-high">
@@ -733,73 +852,117 @@ export const RiskForm = ({
                     className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-gradient-to-r from-status-danger/20 via-status-danger/10 to-status-danger/5 accent-status-danger focus:outline-none focus-visible:ring-4 focus-visible:ring-status-danger/25"
                     aria-label="Impact (1-5)"
                     aria-describedby="impact-help"
+                    aria-valuemin={1}
+                    aria-valuemax={5}
+                    aria-valuenow={impact}
+                    aria-valuetext={`${impact} of 5`}
                   />
-                  <p id="impact-help" className="mt-1.5 text-[11px] text-text-low">
+                  <p id="impact-help" className="mt-2 text-[11px] text-text-low">
                     Gauge downstream effect from 1 (minimal) to 5 (critical).
                   </p>
                 </div>
               </div>
 
-              <aside className="flex h-full flex-col justify-between rounded-[18px] border border-border-subtle bg-surface-primary p-3.5 text-text-high shadow-sm">
+              <aside
+                className={cn(
+                  'flex h-full flex-col gap-3 rounded-[18px] border bg-surface-primary p-4 text-text-high shadow-sm',
+                  severityMeta.cardTone,
+                )}
+                aria-label="Live score"
+              >
                 <div className="space-y-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.25em] text-text-low">
                     Live score
                   </p>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-4xl font-bold" aria-label={`Risk score: ${riskScore}`}>
-                      {riskScore}
-                    </span>
-                    <span
-                      className="rounded-full border border-border-faint bg-surface-primary/90 px-3 py-0.5 text-xs font-semibold"
-                      aria-label={`Risk severity: ${severity.toUpperCase()}`}
-                    >
-                      {severity.toUpperCase()}
-                    </span>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-baseline gap-3">
+                      <span
+                        className="text-4xl font-bold"
+                        aria-label={`Risk score: ${riskScore}`}
+                      >
+                        {riskScore}
+                      </span>
+                      <span
+                        className={cn(
+                          'rounded-full border px-3 py-0.5 text-xs font-semibold',
+                          severityMeta.pillTone,
+                        )}
+                        aria-label={`Risk severity: ${severityMeta.label.toUpperCase()}`}
+                      >
+                        {severityMeta.label.toUpperCase()}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-text-low">
+                      <span className="rounded-full border border-border-faint/70 bg-surface-primary/70 px-3 py-1">
+                        Likelihood: <span className="text-text-high">{probability}/5</span>
+                      </span>
+                      <span className="rounded-full border border-border-faint/70 bg-surface-primary/70 px-3 py-1">
+                        Impact: <span className="text-text-high">{impact}/5</span>
+                      </span>
+                    </div>
                   </div>
+
                   <p className="text-xs text-text-low">
-                    Likelihood x Impact refresh with every adjustment so you always see the latest severity.
+                    {severityMeta.why}{' '}
+                    <span className="font-semibold text-text-high">
+                      {riskScore} = {probability}×{impact}
+                    </span>
+                    .
                   </p>
                 </div>
-                <dl className="space-y-1.5 pt-2.5 text-xs text-text-low">
-                  <div className="flex justify-between">
-                    <dt className="font-semibold text-text-high">Likelihood</dt>
-                    <dd>
-                      {probability} / 5 <span className="text-text-low">({probability * 20}%)</span>
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="font-semibold text-text-high">Impact</dt>
-                    <dd>
-                      {impact} / 5 <span className="text-text-low">({impact * 20}%)</span>
-                    </dd>
-                  </div>
-                </dl>
+
+                <div className="mt-auto rounded-2xl border border-border-faint/60 bg-surface-primary/70 p-3 text-xs text-text-low">
+                  <p className="font-semibold text-text-high">Recommended next step</p>
+                  <p className="mt-1">{severityMeta.nudge}</p>
+                </div>
               </aside>
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-1.5 pt-1">
-              {mode === 'edit' && onCancel && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={onCancel}
-                  aria-label="Cancel editing"
-                >
-                  Cancel
-                </Button>
-              )}
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="px-6"
-                aria-label={mode === 'create' ? 'Add new risk' : 'Save risk changes'}
-              >
-                {mode === 'create' ? 'Add risk' : 'Save changes'}
-              </Button>
-            </div>
+            {showActions ? (
+              <div className="sticky bottom-0 -mx-4 mt-3 border-t border-border-faint/70 bg-surface-primary/95 px-4 pb-[calc(env(safe-area-inset-bottom)+0.375rem)] pt-3 backdrop-blur">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  {onCancel ? (
+                    <Button type="button" variant="ghost" onClick={onCancel}>
+                      Cancel
+                    </Button>
+                  ) : (
+                    <span />
+                  )}
+                  <div className="flex flex-wrap justify-end gap-2">
+                    {mode === 'create' && onSaveDraft ? (
+                    <Button type="button" variant="secondary" onClick={handleSaveDraft}>
+                      Save draft
+                    </Button>
+                  ) : null}
+                    <Button
+                      type="submit"
+                      disabled={isPrimaryDisabled}
+                      className="px-6"
+                      aria-label={mode === 'create' ? 'Add new risk' : 'Save risk changes'}
+                      aria-describedby={
+                        isPrimaryDisabled ? 'risk-form-submit-help' : undefined
+                      }
+                    >
+                      {mode === 'create' ? 'Add risk' : 'Save changes'}
+                    </Button>
+                  </div>
+                </div>
+                {isPrimaryDisabled ? (
+                  <p id="risk-form-submit-help" className="mt-2 text-xs text-text-low">
+                    {missingRequiredFields.length
+                      ? `Complete required fields: ${missingRequiredFields.join(', ')}.`
+                      : 'Complete required fields marked * to enable submission.'}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </section>
         </div>
       </div>
     </form>
   )
-}
+})
+
+RiskForm.displayName = 'RiskForm'

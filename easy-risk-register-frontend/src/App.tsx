@@ -18,6 +18,8 @@ import { DEFAULT_FILTERS, getRiskSeverity } from './utils/riskCalculations'
 import { Button, Modal, SectionHeader } from './design-system'
 import { cn } from './utils/cn'
 import { useToast } from './components/feedback/ToastProvider'
+import { MetricsModal } from './components/feedback/MetricsModal'
+import { isAnalyticsEnabled, setAnalyticsEnabled, trackEvent } from './utils/analytics'
 
 type MatrixSelection = {
   probability: number
@@ -26,6 +28,8 @@ type MatrixSelection = {
 }
 
 type DashboardView = 'overview' | 'table'
+
+const RISK_FORM_DRAFT_KEY = 'easy-risk-register:risk-form-draft'
 
 const NAV_ITEMS: SidebarNavItem[] = [
   {
@@ -49,9 +53,54 @@ function App() {
   const [activeView, setActiveView] = useState<DashboardView>('overview')
   const [isFormModalOpen, setIsFormModalOpen] = useState(false)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
+  const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false)
+  const [isRiskFormDirty, setIsRiskFormDirty] = useState(false)
+  const [riskDraft, setRiskDraft] = useState<Partial<RiskFormValues> | null>(null)
   const [isExportModalOpen, setIsExportModalOpen] = useState(false)
   const [exportVariant, setExportVariant] = useState<CSVExportVariant>('standard')
+  const [isMetricsModalOpen, setIsMetricsModalOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const formModalOpenedAtRef = useRef<number | null>(null)
+  const formModalModeRef = useRef<'create' | 'edit' | null>(null)
+  const formModalOpenedFromDraftRef = useRef(false)
+  const formModalDidSubmitRef = useRef(false)
+
+  const isMetricsUiEnabled = useMemo(() => {
+    if (typeof window === 'undefined') return false
+    try {
+      return new URLSearchParams(window.location.search).has('metrics') || isAnalyticsEnabled()
+    } catch {
+      return false
+    }
+  }, [])
+
+  const loadRiskDraft = () => {
+    try {
+      const raw = localStorage.getItem(RISK_FORM_DRAFT_KEY)
+      if (!raw) return null
+      const parsed = JSON.parse(raw) as unknown
+      if (!parsed || typeof parsed !== 'object') return null
+      return parsed as Partial<RiskFormValues>
+    } catch {
+      return null
+    }
+  }
+
+  const saveRiskDraft = (values: RiskFormValues) => {
+    try {
+      localStorage.setItem(RISK_FORM_DRAFT_KEY, JSON.stringify(values))
+    } catch {
+      // ignore
+    }
+  }
+
+  const clearRiskDraft = () => {
+    try {
+      localStorage.removeItem(RISK_FORM_DRAFT_KEY)
+    } catch {
+      // ignore
+    }
+  }
 
   useEffect(() => {
     actions.seedDemoData()
@@ -64,13 +113,31 @@ function App() {
   }, [activeView, matrixSelection])
 
   const handleSubmit = (values: RiskFormValues) => {
+    formModalDidSubmitRef.current = true
+    const durationMs =
+      formModalOpenedAtRef.current === null ? null : Date.now() - formModalOpenedAtRef.current
+
     if (editingRisk) {
       actions.updateRisk(editingRisk.id, values)
     } else {
       actions.addRisk(values)
+      clearRiskDraft()
+      setRiskDraft(null)
     }
+
+    trackEvent('risk_modal_submit', {
+      mode: editingRisk ? 'edit' : 'create',
+      durationMs,
+      wasDraft: formModalOpenedFromDraftRef.current,
+      view: activeView,
+    })
+
     setEditingRisk(null)
     setIsFormModalOpen(false)
+    setIsRiskFormDirty(false)
+    formModalOpenedAtRef.current = null
+    formModalModeRef.current = null
+    formModalOpenedFromDraftRef.current = false
   }
 
   const handleDelete = (id: string) => {
@@ -78,16 +145,49 @@ function App() {
     if (editingRisk?.id === id) {
       setEditingRisk(null)
       setIsFormModalOpen(false)
+      setIsRiskFormDirty(false)
     }
   }
 
   const handleOpenCreateModal = () => {
     setEditingRisk(null)
+    setIsRiskFormDirty(false)
+    const draft = loadRiskDraft()
+    setRiskDraft(draft)
+    formModalOpenedAtRef.current = Date.now()
+    formModalModeRef.current = 'create'
+    formModalDidSubmitRef.current = false
+    formModalOpenedFromDraftRef.current = Boolean(draft)
+
+    trackEvent('risk_modal_open', {
+      mode: 'create',
+      view: activeView,
+      hasDraft: Boolean(draft),
+    })
+    if (draft) {
+      toast.notify({
+        title: 'Draft loaded',
+        description: 'Restored your last saved draft into the form.',
+        variant: 'info',
+      })
+    }
     setIsFormModalOpen(true)
   }
 
   const handleEditRisk = (risk: Risk) => {
     setEditingRisk(risk)
+    setIsRiskFormDirty(false)
+    setRiskDraft(null)
+    formModalOpenedAtRef.current = Date.now()
+    formModalModeRef.current = 'edit'
+    formModalDidSubmitRef.current = false
+    formModalOpenedFromDraftRef.current = false
+
+    trackEvent('risk_modal_open', {
+      mode: 'edit',
+      view: activeView,
+      riskId: risk.id,
+    })
     setIsFormModalOpen(true)
   }
 
@@ -107,8 +207,44 @@ function App() {
   }
 
   const handleCloseModal = () => {
+    if (isFormModalOpen && !formModalDidSubmitRef.current) {
+      const durationMs =
+        formModalOpenedAtRef.current === null ? null : Date.now() - formModalOpenedAtRef.current
+
+      trackEvent('risk_modal_abandon', {
+        mode: formModalModeRef.current ?? (editingRisk ? 'edit' : 'create'),
+        durationMs,
+        dirty: isRiskFormDirty,
+        view: activeView,
+      })
+    }
+
     setEditingRisk(null)
     setIsFormModalOpen(false)
+    setIsRiskFormDirty(false)
+    formModalOpenedAtRef.current = null
+    formModalModeRef.current = null
+    formModalOpenedFromDraftRef.current = false
+    formModalDidSubmitRef.current = false
+  }
+
+  const handleRequestCloseModal = () => {
+    if (!isRiskFormDirty) {
+      handleCloseModal()
+      return
+    }
+
+    setIsDiscardConfirmOpen(true)
+  }
+
+  const handleSaveDraft = (values: RiskFormValues) => {
+    saveRiskDraft(values)
+    trackEvent('risk_modal_save_draft', { view: activeView })
+    toast.notify({
+      title: 'Draft saved',
+      description: 'You can close this modal and come back to the draft later.',
+      variant: 'success',
+    })
   }
 
   const handleMatrixSelect = (riskIds: string[]) => {
@@ -269,12 +405,24 @@ function App() {
             eyebrow="Easy Risk Register"
             title="Risk management workspace"
             description="Switch between an executive dashboard and a spreadsheet-style table without leaving the page. Capture risks in a focused modal, export reports, or narrow the data with filters."
-            actions={
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  variant="ghost"
-                  onClick={() => fileInputRef.current?.click()}
-                  aria-label="Import CSV file"
+              actions={
+                <div className="flex flex-wrap gap-3">
+                  {isMetricsUiEnabled ? (
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setAnalyticsEnabled(true)
+                        setIsMetricsModalOpen(true)
+                      }}
+                      aria-label="Open metrics and feedback"
+                    >
+                      Metrics
+                    </Button>
+                  ) : null}
+                  <Button
+                    variant="ghost"
+                    onClick={() => fileInputRef.current?.click()}
+                    aria-label="Import CSV file"
                 >
                   Import CSV
                 </Button>
@@ -393,8 +541,40 @@ function App() {
       />
 
       <Modal
+        isOpen={isDiscardConfirmOpen}
+        onClose={() => setIsDiscardConfirmOpen(false)}
+        title="Discard changes?"
+        eyebrow="Unsaved edits"
+        description="You have unsaved changes in this risk form. Discard them and close?"
+        size="sm"
+        footer={
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button variant="ghost" onClick={() => setIsDiscardConfirmOpen(false)}>
+              Keep editing
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setIsDiscardConfirmOpen(false)
+                handleCloseModal()
+              }}
+            >
+              Discard and close
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-3 text-sm text-text-low">
+          <p>
+            Tip: Use <span className="font-semibold text-text-high">Save draft</span> if you want to
+            keep your progress without adding a risk yet.
+          </p>
+        </div>
+      </Modal>
+
+      <Modal
         isOpen={isFormModalOpen}
-        onClose={handleCloseModal}
+        onClose={handleRequestCloseModal}
         title={editingRisk ? 'Update risk' : 'Create new risk'}
         eyebrow="Risk workspace"
         description={
@@ -408,10 +588,12 @@ function App() {
           <RiskForm
             mode={editingRisk ? 'edit' : 'create'}
             categories={categories}
-            defaultValues={editingRisk ?? undefined}
+            defaultValues={editingRisk ?? riskDraft ?? undefined}
             onSubmit={handleSubmit}
             onAddCategory={actions.addCategory}
-            onCancel={handleCloseModal}
+            onCancel={handleRequestCloseModal}
+            onSaveDraft={!editingRisk ? handleSaveDraft : undefined}
+            onDirtyChange={setIsRiskFormDirty}
             className="border-0 bg-transparent p-0 shadow-none"
           />
         </div>
@@ -493,6 +675,11 @@ function App() {
         accept=".csv"
         onChange={handleImport}
         className="hidden"
+      />
+
+      <MetricsModal
+        isOpen={isMetricsModalOpen}
+        onClose={() => setIsMetricsModalOpen(false)}
       />
     </div>
   )

@@ -54,3 +54,12 @@ Object.defineProperty(window, 'sessionStorage', {
   },
   writable: true,
 })
+
+// jsdom's requestSubmit is missing/unimplemented; force a polyfill so form submissions behave in tests.
+Object.defineProperty(HTMLFormElement.prototype, 'requestSubmit', {
+  configurable: true,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value: function requestSubmit(this: HTMLFormElement) {
+    this.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+  },
+})

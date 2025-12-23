@@ -55,7 +55,7 @@ describe('Modal', () => {
     const onCloseSpy = vi.fn()
     render(<Modal isOpen onClose={onCloseSpy} title="Test Modal">Test Content</Modal>)
 
-    const closeButton = screen.getByText('Close')
+    const closeButton = screen.getByLabelText('Close modal')
     fireEvent.click(closeButton)
 
     expect(onCloseSpy).toHaveBeenCalled()
@@ -162,12 +162,11 @@ describe('Modal', () => {
       'inset-0',
       'z-50',
       'flex',
-      'items-start',
+      'items-center',
       'justify-center',
-      'overflow-y-auto',
+      'overflow-hidden',
       'bg-black/45',
-      'px-4',
-      'py-10',
+      'p-4',
       'backdrop-blur-sm'
     )
   })
@@ -180,11 +179,9 @@ describe('Modal', () => {
       'relative',
       'z-10',
       'flex',
-      'max-h-[95vh]',
       'w-full',
       'flex-col',
       'overflow-hidden',
-      'rounded-[32px]',
       'border',
       'border-border-subtle/60',
       'bg-surface-primary',
@@ -196,20 +193,37 @@ describe('Modal', () => {
     render(<Modal isOpen onClose={() => {}}>Test Content</Modal>)
 
     const contentArea = screen.getByText('Test Content').closest('div')
-    expect(contentArea).toHaveClass('flex-1', 'overflow-y-auto', 'px-5', 'pb-5', 'pt-3')
+    expect(contentArea).toHaveClass('flex-1', 'overflow-y-auto', 'overflow-x-hidden', 'px-5', 'pb-5', 'pt-3')
+  })
+
+  it('renders a full-screen sheet on small screens for size="full"', () => {
+    render(<Modal isOpen onClose={() => {}} size="full">Test Content</Modal>)
+
+    const backdrop = screen.getByRole('dialog').parentElement
+    expect(backdrop).toHaveClass('p-0', 'sm:p-8')
+
+    const modal = screen.getByRole('dialog')
+    expect(modal).toHaveClass('h-[100dvh]', 'max-h-[100dvh]', 'rounded-none', 'sm:rounded-[32px]')
   })
 
   it('renders close button with proper ARIA label', () => {
     render(<Modal isOpen onClose={() => {}} title="Test Title">Test Content</Modal>)
 
-    const closeButton = screen.getByText('Close')
-    expect(closeButton).toHaveAttribute('aria-label', 'Close modal')
+    expect(screen.getByLabelText('Close modal')).toBeInTheDocument()
   })
 
   it('renders close button with proper styling', () => {
     render(<Modal isOpen onClose={() => {}} title="Test Title">Test Content</Modal>)
 
-    const closeButton = screen.getByText('Close')
+    const closeButton = screen.getByLabelText('Close modal')
     expect(closeButton).toHaveClass('rounded-full', 'border', 'px-3', 'py-1', 'text-text-low')
+  })
+
+  it('closes when Escape is pressed', () => {
+    const onCloseSpy = vi.fn()
+    render(<Modal isOpen onClose={onCloseSpy} title="Test Title">Test Content</Modal>)
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onCloseSpy).toHaveBeenCalled()
   })
 })

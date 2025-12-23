@@ -21,10 +21,17 @@ vi.mock('framer-motion', () => {
       ),
     )
 
+  const componentCache = new Map<string, ReturnType<typeof createComponent>>()
+
   const motionProxy = new Proxy(
     {},
     {
-      get: (_target, key: string) => createComponent(key),
+      get: (_target, key: string) => {
+        if (!componentCache.has(key)) {
+          componentCache.set(key, createComponent(key))
+        }
+        return componentCache.get(key)!
+      },
     },
   ) as Record<string, ReturnType<typeof createComponent>>
 

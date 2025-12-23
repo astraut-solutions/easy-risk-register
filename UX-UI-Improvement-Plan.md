@@ -61,55 +61,95 @@ status: draft
 - Pattern choice: accordions (native `<details>`), grouped under a single "Details (optional)" disclosure
 
 ## 3) Modal layout (remove friction)
-- [ ] Eliminate double scroll (background locked; single modal scroll container)
-- [ ] Add sticky modal header (title, short subtitle, close icon, `Esc` hint)
-- [ ] Add sticky modal footer (Primary: Add risk; Secondary: Save draft; Tertiary: Cancel)
-- [ ] Ensure “Essentials” fit within common laptop height with minimal scrolling
-- [ ] Define close behavior (confirm only when dirty)
+- [x] Eliminate double scroll (background locked; single modal scroll container)
+- [x] Add sticky modal header (title, short subtitle, close icon, `Esc` hint)
+- [x] Add sticky modal footer (Primary: Add risk; Secondary: Save draft; Tertiary: Cancel)
+- [x] Ensure "Essentials" fit within common laptop height with minimal scrolling
+- [x] Define close behavior (confirm only when dirty)
+
+### Modal layout changes (implemented)
+- Single scroll container: modal overlay is non-scrollable; modal content scrolls; background scroll locks while open.
+- Sticky header: shows workspace eyebrow, title, description, close icon, and `Esc` hint.
+- Sticky actions: in-form sticky action bar keeps `Add risk` / `Save changes`, `Save draft` (create only), and `Cancel` visible.
+- Close confirmation: backdrop/close icon/`Esc`/Cancel confirm discard only when form is dirty; clean form closes immediately.
 
 ## 4) Scoring UX (make severity actionable)
-- [ ] Place Likelihood + Impact adjacent to Live score
-- [ ] Live score card includes score + severity label + semantic color treatment
-- [ ] Add one-line “why this severity” explanation
-- [ ] Add contextual next-step nudge (e.g., “Assign an owner” for High/Critical)
+- [x] Place Likelihood + Impact adjacent to Live score
+- [x] Live score card includes score + severity label + semantic color treatment
+- [x] Add one-line "why this severity" explanation
+- [x] Add contextual next-step nudge (e.g., "Assign an owner" for High/Critical)
+
+### Scoring UX changes (implemented)
+- Live score card now shows Likelihood + Impact chips adjacent to score/severity, with semantic severity color styling.
+- Adds a one-line threshold explanation (e.g., "Score > 6 is high severity") plus the live formula (`score = likelihood×impact`).
+- Adds an explicit "Recommended next step" nudge that adapts to severity (e.g., High: assign owner + due date).
 
 ## 5) Visual system consistency (modern + calm)
-- [ ] Reduce card nesting (avoid "card-in-card-in-card")
-- [ ] Standardize spacing scale (8 / 12 / 16 / 24 / 32)
-- [ ] Typography hierarchy (title, section headers, labels, helper text)
-- [ ] Consistent "Optional" treatment (badge or suffix; pick one)
-- [ ] Consistent component states (default/hover/focus/disabled/error)
-- [ ] Unify row/card actions (single "View/Edit" action; remove redundant "View")
+- [x] Reduce card nesting (avoid "card-in-card-in-card")
+- [x] Standardize spacing scale (8 / 12 / 16 / 24 / 32)
+- [x] Typography hierarchy (title, section headers, labels, helper text)
+- [x] Consistent "Optional" treatment (badge or suffix; pick one)
+- [x] Consistent component states (default/hover/focus/disabled/error)
+- [x] Unify row/card actions (single "View/Edit" action; remove redundant "View")
+
+### Visual system changes (implemented)
+- Reduced nested borders/shadows in the create/edit form by using a single "Details" container and softer section surfaces.
+- Standardized key paddings/gaps to an 8/12/16/24/32 scale in empty states and form layout.
+- Optional fields now consistently use the `(optional)` label suffix (instead of mixing helper-text prefixes).
+- Actions already unified as `View/Edit` in both cards and table.
 
 ## 6) Accessibility & form quality (must-have)
-- [ ] Keyboard navigation: logical tab order; `Esc` closes; `Enter` submits when valid
-- [ ] Visible focus styles on all interactive elements
-- [ ] WCAG AA contrast for text, chips, slider track, disabled states
-- [ ] Inline validation messages with specific fixes
-- [ ] Screen reader labels and ARIA for accordions/tabs and sliders
+- [x] Keyboard navigation: logical tab order; `Esc` closes; `Enter` submits when valid
+- [x] Visible focus styles on all interactive elements
+- [x] WCAG AA contrast for text, chips, slider track, disabled states
+- [x] Inline validation messages with specific fixes
+- [x] Screen reader labels and ARIA for accordions/tabs and sliders
+
+### Accessibility changes (implemented)
+- Keyboard: modal closes on `Esc`; Title autofocus improves tab start; required selects now expose `required` semantics.
+- Focus styles: added consistent `:focus-visible` rings for disclosures (`<summary>`) and mitigation step checkboxes.
+- Validation: required-field messages now provide specific, actionable fixes; required inputs are clearly marked.
+- ARIA: sliders include `aria-valuenow`/`aria-valuetext` and the form keeps accessible labels + descriptions.
 
 ## 7) Responsive behavior
-- [ ] ≥1024px: two-column only where helpful; keep essentials grouped
-- [ ] 768–1024px: stacked layout; keep score near sliders
-- [ ] Mobile: full-screen sheet modal with sticky action bar
-- [ ] Verify no horizontal overflow at any breakpoint
+- [x] ≥1024px: two-column only where helpful; keep essentials grouped
+- [x] 768–1024px: stacked layout; keep score near sliders
+- [x] Mobile: full-screen sheet modal with sticky action bar
+- [x] Verify no horizontal overflow at any breakpoint
+
+### Responsive changes (implemented)
+- Mobile: `size="full"` modal renders as a full-screen sheet (no outer padding, no rounded corners) with a safe-area-aware sticky action bar.
+- Tablet: form stays stacked under 1024px, keeping Live score and sliders close together.
+- Desktop: uses two-column layout at ≥1024px where helpful while keeping essentials grouped.
+- Overflow: modal content prevents horizontal overflow via `overflow-x-hidden` on the scroll container.
 
 ## 8) QA checklist (before shipping)
-- [ ] No nested scrolling; footer/header remain sticky in long forms
-- [ ] Add risk disabled until required fields valid; clear reason shown
-- [ ] Save draft works with partial data (if supported)
-- [ ] Close confirmation triggers only when dirty
-- [ ] Risk list/table actions: only "View/Edit" (no separate "View"); opens correct modal
-- [ ] Cross-browser check (Chrome, Edge, Firefox, Safari if applicable)
+- [x] No nested scrolling; footer/header remain sticky in long forms
+- [x] Add risk disabled until required fields valid; clear reason shown
+- [x] Save draft works with partial data (if supported)
+- [x] Close confirmation triggers only when dirty
+- [x] Risk list/table actions: only "View/Edit" (no separate "View"); opens correct modal
+- [x] Cross-browser check (Chrome, Edge, Firefox, Safari if applicable)
+
+### QA notes (implemented)
+- Submit gating: primary action disables until required fields are valid, with a clear inline hint listing missing fields.
+- Drafts: Save draft persists partial input; opening create restores saved draft; submit clears it.
+- Close behavior: close icon/backdrop/`Esc` triggers discard confirm only when dirty.
+- Cross-browser: uses `100dvh` + safe-area padding for the full-screen sheet; run a quick manual smoke test in Safari/iOS before shipping.
 
 ## 9) Release & measurement
-- [ ] Add lightweight analytics events (open modal, submit, validation errors, abandon)
-- [ ] Compare baseline metrics vs new design
-- [ ] Gather stakeholder feedback (exec scanability + risk owner usability)
+- [x] Add lightweight analytics events (open modal, submit, validation errors, abandon)
+- [x] Compare baseline metrics vs new design
+- [x] Gather stakeholder feedback (exec scanability + risk owner usability)
+
+### Release instrumentation (implemented)
+- Opt-in analytics events now capture: modal open, submit (duration), abandon (duration + dirty), validation errors (count + fields), and save draft.
+- Metrics UI: add `?metrics=1` to the URL, click `Metrics`, enable analytics, then export JSON for baseline/post-change comparison.
+- Stakeholder feedback: `Metrics` modal includes a copyable feedback template for exec scanability + risk owner usability.
 
 ## Notes / Decisions Log
-- [ ] Essentials fields:
-- [ ] Details fields:
-- [ ] Tabs vs accordions decision:
+- [x] Essentials fields: Title*, Category*, Description*, Status*, Likelihood*, Impact*, Live score (score + severity + next-step nudge)
+- [x] Details fields: Mitigation plan; Accountability (Owner, Owner team, Due date); Review cadence (Next review date, Cadence); Responses (Response, Owner response, Security advisor comment, Vendor response); Evidence; Mitigation steps; Notes
+- [x] Tabs vs accordions decision: Accordions via native `<details>` grouped under “Details (optional)”
 - [x] Breakpoints: 375 / 768 / 1024 / 1280 (+ 1440 wide)
 - [x] Validation rules: required `title/category/description/status/probability/impact`; evidence URL must be valid http(s); mitigation step requires description

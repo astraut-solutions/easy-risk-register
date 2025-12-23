@@ -21,7 +21,7 @@ export const RiskList = ({ risks, onEdit, onDelete, onView, emptyState }: RiskLi
       'Use the form on the left to add your first risk and start tracking mitigation plans.'
 
     return (
-      <div className="rr-panel p-12 text-center">
+      <div className="rr-panel p-8 text-center">
         <p className="text-lg font-semibold text-text-high">{title}</p>
         <p className="mt-2 text-sm text-text-low">{description}</p>
       </div>

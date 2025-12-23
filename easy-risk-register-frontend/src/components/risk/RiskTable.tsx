@@ -50,7 +50,7 @@ export const RiskTable = ({
 }: RiskTableProps) => {
   if (!risks.length) {
     return (
-      <div className="rr-panel p-12 text-center">
+      <div className="rr-panel p-8 text-center">
         <p className="text-lg font-semibold text-text-high">
           {emptyState?.title ?? 'No risks available'}
         </p>

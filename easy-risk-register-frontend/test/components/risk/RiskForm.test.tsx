@@ -86,15 +86,23 @@ vi.mock('../../../src/design-system', async () => {
 // Mock utils
 const mockUseForm = {
   register: vi.fn(),
-  handleSubmit: vi.fn((fn) => fn),
+  handleSubmit: vi.fn((onValid) => onValid),
   watch: vi.fn((name?: string) => {
     if (typeof name === 'string') return 'open'
-    return { probability: 3, impact: 3 }
+    return {
+      title: 'Test risk',
+      description: 'Test description',
+      category: 'Security',
+      status: 'open',
+      probability: 3,
+      impact: 3,
+    }
   }),
+  getValues: vi.fn(() => ({})),
   reset: vi.fn(),
   setValue: vi.fn(),
   control: {},
-  formState: { errors: {}, isSubmitting: false },
+  formState: { errors: {}, isSubmitting: false, isValid: true },
 }
 
 describe('RiskForm', () => {
@@ -153,6 +161,15 @@ describe('RiskForm', () => {
     expect(screen.getByText('HIGH')).toBeInTheDocument()
   })
 
+  it('explains severity and recommends a next step', () => {
+    vi.mocked(mockUseForm.watch).mockReturnValue({ probability: 4, impact: 3 })
+    render(<RiskForm {...defaultProps} />)
+
+    expect(screen.getByText(/Score > 6 is high severity/i)).toBeInTheDocument()
+    expect(screen.getByText(/Recommended next step/i)).toBeInTheDocument()
+    expect(screen.getByText(/Assign an owner and set a due date/i)).toBeInTheDocument()
+  })
+
   it('shows different severity levels', () => {
     // Test low severity
     vi.mocked(mockUseForm.watch).mockReturnValue({ probability: 1, impact: 2 })
@@ -198,7 +215,9 @@ describe('RiskForm', () => {
     render(<RiskForm {...defaultProps} onSubmit={mockSubmit} />)
 
     const submitButton = screen.getByText('Add risk')
-    fireEvent.click(submitButton)
+    const form = submitButton.closest('form')
+    expect(form).not.toBeNull()
+    fireEvent.submit(form!)
 
     await waitFor(() => {
       expect(mockSubmit).toHaveBeenCalledWith(
@@ -223,6 +242,7 @@ describe('RiskForm', () => {
     const mockUseFormWithReset = {
       ...mockUseForm,
       reset: resetSpy,
+      formState: { errors: {}, isSubmitting: false, isValid: true },
     }
     vi.mocked(useForm).mockReturnValue(mockUseFormWithReset)
     vi.mocked(mockUseFormWithReset.handleSubmit).mockImplementation((fn) => {
@@ -240,7 +260,9 @@ describe('RiskForm', () => {
     render(<RiskForm {...defaultProps} mode="create" onSubmit={() => {}} />)
 
     const submitButton = screen.getByText('Add risk')
-    fireEvent.click(submitButton)
+    const form = submitButton.closest('form')
+    expect(form).not.toBeNull()
+    fireEvent.submit(form!)
 
     await waitFor(() => {
       expect(resetSpy).toHaveBeenCalledWith({
@@ -272,6 +294,7 @@ describe('RiskForm', () => {
     const mockUseFormWithReset = {
       ...mockUseForm,
       reset: resetSpy,
+      formState: { errors: {}, isSubmitting: false, isValid: true },
     }
     vi.mocked(useForm).mockReturnValue(mockUseFormWithReset)
     vi.mocked(mockUseFormWithReset.handleSubmit).mockImplementation((fn) => {
@@ -289,7 +312,9 @@ describe('RiskForm', () => {
     render(<RiskForm {...defaultProps} mode="edit" onSubmit={() => {}} />)
 
     const submitButton = screen.getByText('Save changes')
-    fireEvent.click(submitButton)
+    const form = submitButton.closest('form')
+    expect(form).not.toBeNull()
+    fireEvent.submit(form!)
 
     await waitFor(() => {
       expect(resetSpy).not.toHaveBeenCalled()
@@ -322,7 +347,7 @@ describe('RiskForm', () => {
   it('disables submit button when form is submitting', () => {
     const mockUseFormSubmitting = {
       ...mockUseForm,
-      formState: { errors: {}, isSubmitting: true },
+      formState: { errors: {}, isSubmitting: true, isValid: true },
     }
     vi.mocked(useForm).mockReturnValue(mockUseFormSubmitting)
 
@@ -332,14 +357,29 @@ describe('RiskForm', () => {
     expect(submitButton).toBeDisabled()
   })
 
+  it('disables submit button until the form is valid', () => {
+    const mockUseFormInvalid = {
+      ...mockUseForm,
+      formState: { errors: {}, isSubmitting: false, isValid: false },
+      watch: vi.fn(() => ({ title: '', description: '', category: '', status: '' })),
+    }
+    vi.mocked(useForm).mockReturnValue(mockUseFormInvalid)
+
+    render(<RiskForm {...defaultProps} />)
+
+    const submitButton = screen.getByText('Add risk')
+    expect(submitButton).toBeDisabled()
+    expect(screen.getByText(/Complete required fields/i)).toBeInTheDocument()
+  })
+
   it('shows validation errors when required fields are empty', () => {
     const mockUseFormWithErrors = {
       ...mockUseForm,
       formState: {
         errors: {
-          title: { message: 'Title is required' },
-          category: { message: 'Category is required' },
-          description: { message: 'Description is required' },
+          title: { message: 'Add a short, specific title (e.g., “Supply chain disruption”).' },
+          category: { message: 'Select a category.' },
+          description: { message: 'Add 2–3 sentences describing context and business impact.' },
         },
         isSubmitting: false,
       },
@@ -348,8 +388,12 @@ describe('RiskForm', () => {
 
     render(<RiskForm {...defaultProps} />)
 
-    expect(screen.getByText('Title is required')).toBeInTheDocument()
-    expect(screen.getByText('Category is required')).toBeInTheDocument()
-    expect(screen.getByText('Description is required')).toBeInTheDocument()
+    expect(
+      screen.getByText('Add a short, specific title (e.g., “Supply chain disruption”).'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Select a category.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Add 2–3 sentences describing context and business impact.'),
+    ).toBeInTheDocument()
   })
 })
