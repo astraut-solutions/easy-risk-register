@@ -2,15 +2,17 @@ import { forwardRef, useId } from 'react'
 import type { TextareaHTMLAttributes } from 'react'
 
 import { cn } from '../../utils/cn'
+import { Tooltip } from './Tooltip'
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string
   error?: string
   helperText?: string
+  tooltip?: string
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, label, error, helperText, id, ...props }, ref) => {
+  ({ className, label, error, helperText, tooltip, id, ...props }, ref) => {
     const generatedId = useId()
     const textareaId = id ?? props.name ?? generatedId
     const hasError = Boolean(error)
@@ -20,12 +22,12 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="w-full">
         {label && (
-          <label
-            className="block text-sm font-medium text-text-high mb-2"
-            htmlFor={textareaId}
-          >
-            {label}
-          </label>
+          <div className="mb-2 flex items-center gap-2">
+            <label className="text-sm font-medium text-text-high" htmlFor={textareaId}>
+              {label}
+            </label>
+            {tooltip ? <Tooltip content={tooltip} ariaLabel={`Help: ${label}`} /> : null}
+          </div>
         )}
         <textarea
           id={textareaId}

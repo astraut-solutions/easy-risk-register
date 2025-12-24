@@ -12,7 +12,7 @@ import { RiskFiltersBar } from './components/risk/RiskFilters'
 import { RiskTable } from './components/risk/RiskTable'
 import { useRiskManagement } from './services/riskService'
 import type { Risk, RiskSeverity } from './types/risk'
-import type { CSVExportVariant } from './stores/riskStore'
+import type { CSVExportVariant, ReminderFrequency } from './stores/riskStore'
 import { DEFAULT_FILTERS, getRiskSeverity } from './utils/riskCalculations'
 import { Button, Modal, SectionHeader, Select } from './design-system'
 import { cn } from './utils/cn'
@@ -20,6 +20,14 @@ import { useToast } from './components/feedback/ToastProvider'
 import { MetricsModal } from './components/feedback/MetricsModal'
 import { isAnalyticsEnabled, setAnalyticsEnabled, trackEvent } from './utils/analytics'
 import { CYBER_RISK_TEMPLATES } from './constants/cyber'
+import { OnboardingCard } from './components/education/OnboardingCard'
+import { ReminderBanner } from './components/education/ReminderBanner'
+import {
+  buildPrivacyIncidentChecklistReportHtml,
+  buildRiskRegisterReportHtml,
+  openReportWindow,
+} from './utils/reports'
+import { computeReminderSummary, getFrequencyMs } from './utils/reminders'
 
 type MatrixSelection = {
   probability: number
@@ -45,7 +53,7 @@ const NAV_ITEMS: SidebarNavItem[] = [
 ]
 
 function App() {
-  const { risks, stats, filters, categories, actions } = useRiskManagement()
+  const { risks, allRisks, stats, filters, categories, settings, actions } = useRiskManagement()
   const toast = useToast()
   const [editingRisk, setEditingRisk] = useState<Risk | null>(null)
   const [viewingRisk, setViewingRisk] = useState<Risk | null>(null)
@@ -61,7 +69,15 @@ function App() {
   const [returnView, setReturnView] = useState<DashboardView>('overview')
   const [isExportModalOpen, setIsExportModalOpen] = useState(false)
   const [exportVariant, setExportVariant] = useState<CSVExportVariant>('standard')
+  const [isPdfExportModalOpen, setIsPdfExportModalOpen] = useState(false)
+  const [pdfRegisterScope, setPdfRegisterScope] = useState<'filtered' | 'all'>('filtered')
+  const [selectedPrivacyRiskId, setSelectedPrivacyRiskId] = useState('')
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   const [isMetricsModalOpen, setIsMetricsModalOpen] = useState(false)
+  const [reminderSummary, setReminderSummary] = useState<{
+    overdue: number
+    dueSoon: number
+  } | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const formModalOpenedAtRef = useRef<number | null>(null)
   const formModalModeRef = useRef<'create' | 'edit' | null>(null)
@@ -108,6 +124,60 @@ function App() {
   useEffect(() => {
     actions.seedDemoData()
   }, [actions])
+
+  useEffect(() => {
+    if (!settings.reminders.enabled) {
+      setReminderSummary(null)
+      return
+    }
+
+    const nowMs = Date.now()
+    const lastTriggeredMs = settings.reminders.lastTriggeredAt
+      ? Date.parse(settings.reminders.lastTriggeredAt)
+      : NaN
+    const frequencyMs = getFrequencyMs(settings.reminders.frequency)
+
+    if (Number.isFinite(lastTriggeredMs) && nowMs - lastTriggeredMs < frequencyMs) {
+      return
+    }
+
+    const summary = computeReminderSummary(allRisks, nowMs)
+    if (summary.overdue === 0 && summary.dueSoon === 0) return
+
+    let sentNotification = false
+    if (
+      settings.reminders.preferNotifications &&
+      typeof window !== 'undefined' &&
+      'Notification' in window &&
+      window.Notification?.permission === 'granted'
+    ) {
+      try {
+        const message =
+          summary.overdue > 0
+            ? `${summary.overdue} risk${summary.overdue === 1 ? '' : 's'} overdue.`
+            : `${summary.dueSoon} risk${summary.dueSoon === 1 ? '' : 's'} due within 7 days.`
+        new window.Notification('Easy Risk Register reminder', {
+          body: message,
+        })
+        sentNotification = true
+      } catch {
+        sentNotification = false
+      }
+    }
+
+    actions.updateReminderSettings({ lastTriggeredAt: new Date(nowMs).toISOString() })
+
+    if (!sentNotification) {
+      setReminderSummary({ overdue: summary.overdue, dueSoon: summary.dueSoon })
+    }
+  }, [
+    actions,
+    allRisks,
+    settings.reminders.enabled,
+    settings.reminders.frequency,
+    settings.reminders.lastTriggeredAt,
+    settings.reminders.preferNotifications,
+  ])
 
   useEffect(() => {
     if (activeView === 'table' && matrixSelection) {
@@ -321,6 +391,75 @@ function App() {
     setIsExportModalOpen(true)
   }
 
+  const handleExportPdf = () => {
+    setIsPdfExportModalOpen(true)
+  }
+
+  const handleDownloadRegisterPdf = () => {
+    const generatedAtIso = new Date().toISOString()
+    const matrixFilterLabel = matrixSelection
+      ? `Likelihood ${matrixSelection.probability} × Impact ${matrixSelection.impact}`
+      : undefined
+    const reportRisks = pdfRegisterScope === 'all' ? allRisks : visibleRisks
+    const html = buildRiskRegisterReportHtml({
+      risks: reportRisks,
+      filters,
+      generatedAtIso,
+      matrixFilterLabel,
+    })
+
+    const opened = openReportWindow(html, 'Risk register report')
+    if (!opened) {
+      toast.notify({
+        title: 'Unable to open PDF export',
+        description: 'Your browser blocked the popup. Allow popups and try again.',
+        variant: 'warning',
+      })
+      return
+    }
+
+    toast.notify({
+      title: 'Report opened',
+      description: 'If the print dialog does not open, press Ctrl+P / Cmd+P to “Save as PDF”.',
+      variant: 'info',
+    })
+    setIsPdfExportModalOpen(false)
+  }
+
+  const handleDownloadPrivacyPdf = () => {
+    const risk = allRisks.find((item) => item.id === selectedPrivacyRiskId)
+    if (!risk) {
+      toast.notify({
+        title: 'Select a risk',
+        description: 'Choose a risk that has a privacy incident checklist attached.',
+        variant: 'info',
+      })
+      return
+    }
+
+    const html = buildPrivacyIncidentChecklistReportHtml({
+      risk,
+      generatedAtIso: new Date().toISOString(),
+    })
+
+    const opened = openReportWindow(html, 'Privacy incident checklist report')
+    if (!opened) {
+      toast.notify({
+        title: 'Unable to open PDF export',
+        description: 'Your browser blocked the popup. Allow popups and try again.',
+        variant: 'warning',
+      })
+      return
+    }
+
+    toast.notify({
+      title: 'Report opened',
+      description: 'If the print dialog does not open, press Ctrl+P / Cmd+P to “Save as PDF”.',
+      variant: 'info',
+    })
+    setIsPdfExportModalOpen(false)
+  }
+
   const handleDownloadExport = () => {
     const csvContent = actions.exportToCSV(exportVariant)
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -329,8 +468,11 @@ function App() {
     link.href = url
     const suffix = exportVariant === 'audit_pack' ? '-audit-pack' : ''
     link.download = `risk-register${suffix}-${new Date().toISOString().split('T')[0]}.csv`
+    link.style.display = 'none'
+    document.body.appendChild(link)
     link.click()
-    URL.revokeObjectURL(url)
+    document.body.removeChild(link)
+    window.setTimeout(() => URL.revokeObjectURL(url), 250)
     setIsExportModalOpen(false)
   }
 
@@ -454,6 +596,14 @@ function App() {
     }
   }, [filters, stats.total])
 
+  const privacyIncidentRisks = useMemo(
+    () =>
+      allRisks.filter((risk) =>
+        risk.checklists.some((checklist) => checklist.templateId === 'checklist_privacy_incident_ndb_v1'),
+      ),
+    [allRisks],
+  )
+
   return (
     <div className="min-h-screen bg-surface-tertiary text-text-mid">
       <div className="mx-auto flex w-full max-w-[1400px] gap-8 px-4 py-8 sm:px-6 lg:px-10">
@@ -476,8 +626,8 @@ function App() {
             eyebrow="Easy Risk Register"
             title="Risk management workspace"
              description="Switch between an executive dashboard, a spreadsheet-style table, and a focused New risk tab without leaving the page. Export reports or narrow the data with filters."
-             actions={
-              <div className="flex flex-wrap items-center gap-3">
+              actions={
+               <div className="flex flex-wrap items-center gap-3">
                 <Button
                   size="sm"
                   onClick={() => {
@@ -493,23 +643,31 @@ function App() {
                 >
                   {activeView === 'new' ? 'Back to overview' : 'New risk'}
                 </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={handleExport}
-                  aria-label="Export CSV file"
-                >
-                  Export CSV
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => fileInputRef.current?.click()}
-                  aria-label="Import CSV file"
+                 <Button
+                   size="sm"
+                   variant="secondary"
+                   onClick={handleExport}
+                   aria-label="Export CSV file"
+                 >
+                   Export CSV
+                 </Button>
+                 <Button
+                   size="sm"
+                   variant="secondary"
+                   onClick={handleExportPdf}
+                   aria-label="Export PDF report"
+                 >
+                   Export PDF
+                 </Button>
+                 <Button
+                   size="sm"
+                   variant="ghost"
+                   onClick={() => fileInputRef.current?.click()}
+                   aria-label="Import CSV file"
                 >
                   Import CSV
                 </Button>
-                {isMetricsUiEnabled ? (
+                 {isMetricsUiEnabled ? (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -521,10 +679,37 @@ function App() {
                   >
                     Metrics
                   </Button>
-                ) : null}
-              </div>
-              }
+                 ) : null}
+                 <Button
+                   size="sm"
+                   variant="ghost"
+                   onClick={() => setIsSettingsModalOpen(true)}
+                   aria-label="Open settings"
+                 >
+                   Settings
+                 </Button>
+               </div>
+               }
+             />
+
+          {!settings.onboardingDismissed ? (
+            <OnboardingCard
+              onStart={() => startCreateRisk()}
+              onDismiss={() => actions.updateSettings({ onboardingDismissed: true })}
             />
+          ) : null}
+
+          {reminderSummary ? (
+            <ReminderBanner
+              overdue={reminderSummary.overdue}
+              dueSoon={reminderSummary.dueSoon}
+              onView={() => {
+                setReminderSummary(null)
+                setActiveView('table')
+              }}
+              onDismiss={() => setReminderSummary(null)}
+            />
+          ) : null}
 
           <div className="flex flex-wrap gap-3 lg:hidden">
             {NAV_ITEMS.map((item) => {
@@ -622,6 +807,7 @@ function App() {
                   onCancel={() => requestNavigate(returnView)}
                   onSaveDraft={!editingRisk ? handleSaveDraft : undefined}
                   onDirtyChange={setIsRiskFormDirty}
+                  showTooltips={settings.tooltipsEnabled}
                   className="border-0 bg-transparent p-0 shadow-none"
                 />
               </div>
@@ -814,6 +1000,190 @@ function App() {
             <Button variant="secondary" onClick={handleDownloadExport}>
               Download CSV
             </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isPdfExportModalOpen}
+        onClose={() => setIsPdfExportModalOpen(false)}
+        title="Export PDF"
+        eyebrow="Reporting"
+        description="Exports open a print-friendly report. In the print dialog, choose “Save as PDF”."
+        size="md"
+      >
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-text-high">Risk register</p>
+            <div role="radiogroup" aria-label="Risk register PDF scope" className="space-y-2">
+              <label className="flex items-start gap-3">
+                <input
+                  type="radio"
+                  name="pdfRegisterScope"
+                  value="filtered"
+                  checked={pdfRegisterScope === 'filtered'}
+                  onChange={() => setPdfRegisterScope('filtered')}
+                  className="mt-1"
+                />
+                <span className="text-sm text-text-low">
+                  Current view (applies filters{matrixSelection ? ' and matrix selection' : ''})
+                </span>
+              </label>
+              <label className="flex items-start gap-3">
+                <input
+                  type="radio"
+                  name="pdfRegisterScope"
+                  value="all"
+                  checked={pdfRegisterScope === 'all'}
+                  onChange={() => setPdfRegisterScope('all')}
+                  className="mt-1"
+                />
+                <span className="text-sm text-text-low">All risks (ignores filters)</span>
+              </label>
+            </div>
+            <div className="flex justify-end">
+              <Button variant="secondary" onClick={handleDownloadRegisterPdf}>
+                Export register PDF
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-3 border-t border-border-faint pt-5">
+            <p className="text-sm font-semibold text-text-high">Privacy incident / checklist</p>
+            <Select
+              label="Select risk"
+              options={[
+                { value: '', label: 'Choose a risk' },
+                ...privacyIncidentRisks.map((risk) => ({ value: risk.id, label: risk.title })),
+              ]}
+              value={selectedPrivacyRiskId}
+              onChange={setSelectedPrivacyRiskId}
+              placeholder="Choose a risk"
+            />
+            <div className="flex justify-end">
+              <Button
+                variant="secondary"
+                onClick={handleDownloadPrivacyPdf}
+                disabled={!selectedPrivacyRiskId}
+              >
+                Export checklist PDF
+              </Button>
+            </div>
+            {!privacyIncidentRisks.length ? (
+              <p className="text-xs text-text-low">
+                No risks currently have the privacy incident checklist attached.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        title="Settings"
+        eyebrow="Preferences"
+        description="Settings are stored locally in your browser."
+        size="md"
+      >
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-text-high">Education</p>
+            <label className="flex items-start gap-3 text-sm text-text-low">
+              <input
+                type="checkbox"
+                checked={settings.tooltipsEnabled}
+                onChange={(event) => actions.updateSettings({ tooltipsEnabled: event.target.checked })}
+                className="mt-1"
+              />
+              <span>Show field tooltips</span>
+            </label>
+
+            <label className="flex items-start gap-3 text-sm text-text-low">
+              <input
+                type="checkbox"
+                checked={!settings.onboardingDismissed}
+                onChange={(event) =>
+                  actions.updateSettings({ onboardingDismissed: !event.target.checked })
+                }
+                className="mt-1"
+              />
+              <span>Show onboarding tips</span>
+            </label>
+          </div>
+
+          <div className="space-y-3 border-t border-border-faint pt-5">
+            <p className="text-sm font-semibold text-text-high">Reminders</p>
+            <label className="flex items-start gap-3 text-sm text-text-low">
+              <input
+                type="checkbox"
+                checked={settings.reminders.enabled}
+                onChange={(event) => actions.updateReminderSettings({ enabled: event.target.checked })}
+                className="mt-1"
+              />
+              <span>Enable reminders for due/review dates</span>
+            </label>
+
+            <Select
+              label="Frequency"
+              options={[
+                { value: 'daily', label: 'Daily' },
+                { value: 'weekly', label: 'Weekly' },
+                { value: 'monthly', label: 'Monthly' },
+              ]}
+              value={settings.reminders.frequency}
+              onChange={(value) =>
+                actions.updateReminderSettings({ frequency: value as ReminderFrequency })
+              }
+              disabled={!settings.reminders.enabled}
+            />
+
+            <label className="flex items-start gap-3 text-sm text-text-low">
+              <input
+                type="checkbox"
+                checked={settings.reminders.preferNotifications}
+                onChange={(event) =>
+                  actions.updateReminderSettings({ preferNotifications: event.target.checked })
+                }
+                disabled={!settings.reminders.enabled}
+                className="mt-1"
+              />
+              <span>Use desktop notifications when allowed (falls back to in-app banners)</span>
+            </label>
+
+            {'Notification' in window ? (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border-faint bg-surface-secondary/10 p-3 text-sm text-text-low">
+                <span>
+                  Notification permission: <span className="font-semibold text-text-high">{window.Notification.permission}</span>
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={async () => {
+                    try {
+                      await window.Notification.requestPermission()
+                      toast.notify({
+                        title: 'Notification permission updated',
+                        description: `Current permission: ${window.Notification.permission}`,
+                        variant: 'info',
+                      })
+                    } catch {
+                      toast.notify({
+                        title: 'Unable to request permission',
+                        description: 'Your browser blocked the permission request.',
+                        variant: 'warning',
+                      })
+                    }
+                  }}
+                >
+                  Request permission
+                </Button>
+              </div>
+            ) : (
+              <p className="text-xs text-text-low">
+                Desktop notifications are not supported by this browser. Reminders will show as in-app banners.
+              </p>
+            )}
           </div>
         </div>
       </Modal>

@@ -2,16 +2,18 @@ import { forwardRef, useId } from 'react'
 import type { InputHTMLAttributes } from 'react'
 
 import { cn } from '../../utils/cn'
+import { Tooltip } from './Tooltip'
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
   error?: string
   helperText?: string
+  tooltip?: string
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   (
-    { className, type = 'text', label, error, helperText, id, name, ...props },
+    { className, type = 'text', label, error, helperText, tooltip, id, name, ...props },
     ref,
   ) => {
     const generatedId = useId()
@@ -24,12 +26,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label
-            className="block text-sm font-medium text-text-high mb-2"
-            htmlFor={inputId}
-          >
-            {label}
-          </label>
+          <div className="mb-2 flex items-center gap-2">
+            <label className="text-sm font-medium text-text-high" htmlFor={inputId}>
+              {label}
+            </label>
+            {tooltip ? <Tooltip content={tooltip} ariaLabel={`Help: ${label}`} /> : null}
+          </div>
         )}
         <input
           type={type}

@@ -8,6 +8,7 @@ import {
 } from 'react'
 
 import { cn } from '../../utils/cn'
+import { Tooltip } from './Tooltip'
 
 type Option = { value: string; label: string }
 
@@ -16,6 +17,7 @@ export interface SelectProps {
   labelVisibility?: 'visible' | 'sr-only'
   error?: string
   helperText?: string
+  tooltip?: string
   options: Option[]
   className?: string
   value?: string
@@ -35,6 +37,7 @@ export const Select = ({
   labelVisibility = 'visible',
   error,
   helperText,
+  tooltip,
   options,
   value,
   defaultValue,
@@ -186,17 +189,21 @@ export const Select = ({
 
   return (
     <div className="w-full" ref={containerRef}>
-      {label && (
-        <label
+      {label ? (
+        <div
           className={cn(
-            'mb-2 block text-sm font-medium text-text-high',
+            'mb-2 flex items-center gap-2',
             labelVisibility === 'sr-only' && 'sr-only',
           )}
-          htmlFor={selectId}
         >
-          {label}
-        </label>
-      )}
+          <label className="text-sm font-medium text-text-high" htmlFor={selectId}>
+            {label}
+          </label>
+          {labelVisibility !== 'sr-only' && tooltip ? (
+            <Tooltip content={tooltip} ariaLabel={`Help: ${label}`} />
+          ) : null}
+        </div>
+      ) : null}
       {name && (
         <input
           type="hidden"

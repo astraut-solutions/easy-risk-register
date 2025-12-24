@@ -27,13 +27,13 @@ This plan implements the cyber-security and Australia compliance enhancements ca
 - [x] Add filters for checklist status (not started / in progress / done) (`REQ-019`, `REQ-005`)
 - [x] Add local-storage migration for existing users with safe defaults (no data loss) (`REQ-014`, `NFR-018`)
 
-## Phase 3 (Month 2) — P1: Reporting + Reminders + Education
-- [ ] Build tooltip system for key fields + global toggle in settings (`REQ-021`, `NFR-016`)
-- [ ] Add guided onboarding (lightweight) encouraging templates and “first 3 steps” (`REQ-021`, `NFR-005`)
-- [ ] Implement PDF export for risk register + filtered views (include generated time, applied filters, severity legend) (`REQ-023`)
-- [ ] Implement PDF export for privacy incident/checklist report (checklist completion summary + timestamps) (`REQ-024`, `REQ-018`)
-- [ ] Add reminder settings (frequency, opt-in/out) stored locally (`REQ-022`, `REQ-014`)
-- [ ] Use Notification API when allowed; otherwise show in-app reminder banners (`REQ-022`)
+## Phase 3 (Month 2) - P1: Reporting + Reminders + Education
+- [x] Build tooltip system for key fields + global toggle in settings (`REQ-021`, `NFR-016`)
+- [x] Add guided onboarding (lightweight) encouraging templates and "first 3 steps" (`REQ-021`, `NFR-005`)
+- [x] Implement PDF export for risk register + filtered views (include generated time, applied filters, severity legend) (`REQ-023`)
+- [x] Implement PDF export for privacy incident/checklist report (checklist completion summary + timestamps) (`REQ-024`, `REQ-018`)
+- [x] Add reminder settings (frequency, opt-in/out) stored locally (`REQ-022`, `REQ-014`)
+- [x] Use Notification API when allowed; otherwise show in-app reminder banners (`REQ-022`)
 
 ## Phase 4 (Month 3) — P2: Advanced Privacy Controls + Response Planning
 - [ ] Crypto design spike: storage format, key derivation, passphrase UX, recovery warnings (`REQ-025`, `NFR-021`)

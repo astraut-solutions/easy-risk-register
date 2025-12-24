@@ -129,8 +129,8 @@ describe('RiskForm', () => {
     expect(screen.getByLabelText(/category/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/description/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/status/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/likelihood/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/impact/i)).toBeInTheDocument()
+    expect(screen.getByRole('slider', { name: /likelihood/i })).toBeInTheDocument()
+    expect(screen.getByRole('slider', { name: /impact/i })).toBeInTheDocument()
     expect(screen.getByText('Details (optional)')).toBeInTheDocument()
   })
 

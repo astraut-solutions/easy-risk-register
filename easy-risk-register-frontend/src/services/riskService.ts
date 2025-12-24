@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import type { Risk, RiskFilters, RiskInput } from '../types/risk'
 import { useRiskStore } from '../stores/riskStore'
 import type { CSVExportVariant } from '../stores/riskStore'
+import type { AppSettings, ReminderSettings } from '../stores/riskStore'
 
 /**
  * Risk service providing centralized access to risk management operations
@@ -52,6 +53,13 @@ export const riskService = {
 
   /** Seeds the risk store with demonstration data for testing purposes */
   seedDemoData: () => useRiskStore.getState().seedDemoData(),
+
+  /** Updates UI/app settings persisted locally */
+  updateSettings: (updates: Partial<AppSettings>) => useRiskStore.getState().updateSettings(updates),
+
+  /** Updates reminder-specific settings */
+  updateReminderSettings: (updates: Partial<ReminderSettings>) =>
+    useRiskStore.getState().updateReminderSettings(updates),
 }
 
 /**
@@ -61,9 +69,11 @@ export const riskService = {
  */
 export const useRiskManagement = () => {
   const risks = useRiskStore((state) => state.filteredRisks)
+  const allRisks = useRiskStore((state) => state.risks)
   const stats = useRiskStore((state) => state.stats)
   const filters = useRiskStore((state) => state.filters)
   const categories = useRiskStore((state) => state.categories)
+  const settings = useRiskStore((state) => state.settings)
   const addRisk = useRiskStore((state) => state.addRisk)
   const updateRisk = useRiskStore((state) => state.updateRisk)
   const deleteRisk = useRiskStore((state) => state.deleteRisk)
@@ -74,6 +84,8 @@ export const useRiskManagement = () => {
   const exportToCSV = useRiskStore((state) => state.exportToCSV)
   const importFromCSV = useRiskStore((state) => state.importFromCSV)
   const seedDemoData = useRiskStore((state) => state.seedDemoData)
+  const updateSettings = useRiskStore((state) => state.updateSettings)
+  const updateReminderSettings = useRiskStore((state) => state.updateReminderSettings)
 
   const actions = useMemo(
     () => ({
@@ -87,6 +99,8 @@ export const useRiskManagement = () => {
       exportToCSV,
       importFromCSV,
       seedDemoData,
+      updateSettings,
+      updateReminderSettings,
     }),
     [
       addRisk,
@@ -99,8 +113,10 @@ export const useRiskManagement = () => {
       setFilters,
       toggleChecklistItem,
       updateRisk,
+      updateReminderSettings,
+      updateSettings,
     ],
   )
 
-  return { risks, stats, filters, categories, actions }
+  return { risks, allRisks, stats, filters, categories, settings, actions }
 }

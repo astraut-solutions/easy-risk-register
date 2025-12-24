@@ -15,6 +15,32 @@ import {
 import { sanitizeRiskInput, sanitizeTextInput, validateCSVContent } from '../utils/sanitization'
 import ZustandEncryptedStorage from '../utils/ZustandEncryptedStorage'
 
+export type ReminderFrequency = 'daily' | 'weekly' | 'monthly'
+
+export interface ReminderSettings {
+  enabled: boolean
+  frequency: ReminderFrequency
+  preferNotifications: boolean
+  lastTriggeredAt?: string
+}
+
+export interface AppSettings {
+  tooltipsEnabled: boolean
+  onboardingDismissed: boolean
+  reminders: ReminderSettings
+}
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  tooltipsEnabled: true,
+  onboardingDismissed: false,
+  reminders: {
+    enabled: false,
+    frequency: 'weekly',
+    preferNotifications: false,
+    lastTriggeredAt: undefined,
+  },
+}
+
 const clampScore = (value: number) => Math.min(Math.max(Math.round(value), 1), 5)
 
 const normalizeText = (value: string) => value.trim()
@@ -43,6 +69,43 @@ const isReviewCadence = (value: unknown): value is NonNullable<Risk['reviewCaden
   value === 'semiannual' ||
   value === 'annual' ||
   value === 'ad-hoc'
+
+const isReminderFrequency = (value: unknown): value is ReminderFrequency =>
+  value === 'daily' || value === 'weekly' || value === 'monthly'
+
+const normalizeSettings = (value: unknown): AppSettings => {
+  if (!value || typeof value !== 'object') return { ...DEFAULT_SETTINGS }
+  const raw = value as any
+
+  const tooltipsEnabled =
+    typeof raw.tooltipsEnabled === 'boolean' ? raw.tooltipsEnabled : DEFAULT_SETTINGS.tooltipsEnabled
+  const onboardingDismissed =
+    typeof raw.onboardingDismissed === 'boolean'
+      ? raw.onboardingDismissed
+      : DEFAULT_SETTINGS.onboardingDismissed
+
+  const remindersRaw = raw.reminders
+  const reminders: ReminderSettings = {
+    enabled:
+      remindersRaw && typeof remindersRaw.enabled === 'boolean'
+        ? remindersRaw.enabled
+        : DEFAULT_SETTINGS.reminders.enabled,
+    frequency:
+      remindersRaw && isReminderFrequency(remindersRaw.frequency)
+        ? remindersRaw.frequency
+        : DEFAULT_SETTINGS.reminders.frequency,
+    preferNotifications:
+      remindersRaw && typeof remindersRaw.preferNotifications === 'boolean'
+        ? remindersRaw.preferNotifications
+        : DEFAULT_SETTINGS.reminders.preferNotifications,
+    lastTriggeredAt:
+      remindersRaw && typeof remindersRaw.lastTriggeredAt === 'string'
+        ? normalizeISODateOrUndefined(remindersRaw.lastTriggeredAt)
+        : undefined,
+  }
+
+  return { tooltipsEnabled, onboardingDismissed, reminders }
+}
 
 const normalizeThreatType = (value: unknown): Risk['threatType'] =>
   isThreatType(value) ? value : 'other'
@@ -610,6 +673,9 @@ export interface RiskStoreState {
   categories: string[]
   filters: RiskFilters
   stats: ReturnType<typeof computeRiskStats>
+  settings: AppSettings
+  updateSettings: (updates: Partial<AppSettings>) => void
+  updateReminderSettings: (updates: Partial<ReminderSettings>) => void
   addRisk: (input: RiskInput) => Risk
   updateRisk: (
     id: string,
@@ -728,6 +794,18 @@ export const useRiskStore = create<RiskStoreState>()(
       categories: [...DEFAULT_CATEGORIES],
       filters: { ...DEFAULT_FILTERS },
       stats: computeRiskStats([]),
+      settings: { ...DEFAULT_SETTINGS },
+      updateSettings: (updates) =>
+        set((state) => ({
+          settings: normalizeSettings({ ...state.settings, ...updates }),
+        })),
+      updateReminderSettings: (updates) =>
+        set((state) => ({
+          settings: normalizeSettings({
+            ...state.settings,
+            reminders: { ...state.settings.reminders, ...updates },
+          }),
+        })),
       addRisk: (input) => {
         const risk = buildRisk(input)
         set((state) => recalc([risk, ...state.risks], state.filters))
@@ -963,13 +1041,13 @@ export const useRiskStore = create<RiskStoreState>()(
     {
       name: LOCAL_STORAGE_KEY,
       storage: createJSONStorage(safeStorage),
-      version: 3,
+      version: 4,
       migrate: (persistedState, version) => {
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState
         }
 
-        if (version >= 3) {
+        if (version >= 4) {
           return persistedState
         }
 
@@ -991,12 +1069,14 @@ export const useRiskStore = create<RiskStoreState>()(
           : [...DEFAULT_CATEGORIES]
 
         const filters = { ...DEFAULT_FILTERS, ...(state.filters ?? {}) }
+        const settings = normalizeSettings(state.settings)
 
         return {
           ...state,
           risks,
           categories,
           filters,
+          settings,
           filteredRisks: filterRisks(risks, filters),
           stats: computeRiskStats(risks),
         }
@@ -1009,6 +1089,7 @@ export const useRiskStore = create<RiskStoreState>()(
         state.filteredRisks = filterRisks(state.risks, filters)
         state.stats = stats
         state.filters = filters
+        state.settings = normalizeSettings((state as any).settings)
       },
     },
   ),

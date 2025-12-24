@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Report</title>
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+        background: #f1f5f9;
+        color: #0f172a;
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        background: #ffffff;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      header .hint { font-size: 12px; color: #475569; }
+      header .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+      button {
+        border: 1px solid #e2e8f0;
+        background: #0f172a;
+        color: #ffffff;
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button[disabled] { opacity: 0.6; cursor: not-allowed; }
+      main { padding: 0; }
+      iframe {
+        width: 100%;
+        height: calc(100vh - 55px);
+        border: 0;
+        background: #ffffff;
+        display: block;
+      }
+      .error {
+        padding: 18px 14px;
+        color: #0f172a;
+      }
+      .error p { margin: 6px 0 0; color: #475569; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="hint">
+        Use Print to “Save as PDF”. If it doesn’t open: Ctrl+P / Cmd+P.
+      </div>
+      <div class="actions">
+        <button id="printBtn" type="button">Print / Save as PDF</button>
+      </div>
+    </header>
+    <main>
+      <iframe id="reportFrame" title="Report preview"></iframe>
+      <div id="error" class="error" hidden>
+        <strong>Report unavailable</strong>
+        <p>The report payload was not found. Please export again from the app.</p>
+      </div>
+    </main>
+    <script src="/report.js"></script>
+  </body>
+</html>
+

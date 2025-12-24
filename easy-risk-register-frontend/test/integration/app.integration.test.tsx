@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event'
 
 import App from '../../src/App'
 import { useRiskStore } from '../../src/stores/riskStore'
+import { DEFAULT_SETTINGS } from '../../src/stores/riskStore'
 import { DEFAULT_CATEGORIES } from '../../src/constants/risk'
 import { DEFAULT_FILTERS, computeRiskStats } from '../../src/utils/riskCalculations'
 import { ToastProvider } from '../../src/components/feedback/ToastProvider'
@@ -59,6 +60,7 @@ const resetRiskStoreState = () => {
     categories: [...DEFAULT_CATEGORIES],
     filters: { ...DEFAULT_FILTERS },
     stats: computeRiskStats([]),
+    settings: { ...DEFAULT_SETTINGS, tooltipsEnabled: false, onboardingDismissed: true },
   })
 
   const storeWithPersist = useRiskStore as typeof useRiskStore & {

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useRiskStore } from '../../src/stores/riskStore'
 import type { RiskInput } from '../../src/types/risk'
 import { DEFAULT_FILTERS } from '../../src/utils/riskCalculations'
+import { DEFAULT_SETTINGS } from '../../src/stores/riskStore'
 
 // Mock nanoid to have predictable IDs for testing
 vi.mock('nanoid', () => ({
@@ -23,7 +24,8 @@ describe('RiskStore', () => {
         averageScore: 0,
         maxScore: 0,
         updatedAt: new Date().toISOString()
-      }
+      },
+      settings: { ...DEFAULT_SETTINGS, onboardingDismissed: true },
     })
   })
 

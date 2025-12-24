@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid'
 
 import type { RiskInput, RiskStatus, ReviewCadence, RiskResponse } from '../../types/risk'
 import { calculateRiskScore, getRiskSeverity } from '../../utils/riskCalculations'
-import { Button, Input, Select, Textarea } from '../../design-system'
+import { Button, Input, Select, Textarea, Tooltip } from '../../design-system'
 import { cn } from '../../utils/cn'
 import { trackEvent } from '../../utils/analytics'
 import { THREAT_TYPE_OPTIONS } from '../../constants/cyber'
@@ -35,6 +35,7 @@ interface RiskFormProps {
   }) => void
   formId?: string
   showActions?: boolean
+  showTooltips?: boolean
   className?: string
 }
 
@@ -50,6 +51,7 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
   onMetaChange,
   formId,
   showActions = true,
+  showTooltips = true,
   className,
 }: RiskFormProps, ref) => {
   const {
@@ -370,6 +372,11 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
               <Input
                 label="Title *"
                 helperText="Keep it sharp so execs can scan quickly."
+                tooltip={
+                  showTooltips
+                    ? 'Use a short headline (5–10 words). Good titles make exports and dashboards scan-friendly.'
+                    : undefined
+                }
                 error={errors.title?.message?.toString()}
                 placeholder="Supply chain disruption"
                 className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-3 text-sm focus:ring-brand-primary/30"
@@ -386,6 +393,11 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                       <Select
                         label="Category *"
                         helperText="Use broad buckets for reporting and filtering."
+                        tooltip={
+                          showTooltips
+                            ? 'Categories help sort and filter the register for reporting (e.g. Security, Compliance, Operational).'
+                            : undefined
+                        }
                         error={errors.category?.message?.toString()}
                       options={categories.map((category) => ({
                         value: category,
@@ -443,6 +455,11 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                 <Select
                   label="Threat type (optional)"
                   helperText="Used for cyber-focused filtering and reporting."
+                  tooltip={
+                    showTooltips
+                      ? 'Threat type is a cyber lens for filtering and reporting (e.g. phishing, ransomware, data breach).'
+                      : undefined
+                  }
                   options={THREAT_TYPE_OPTIONS.map((option) => ({
                     value: option.value,
                     label: option.label,
@@ -460,6 +477,11 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
               label="Description *"
               error={errors.description?.message?.toString()}
               helperText="Capture context, trigger, and business impact in 2-3 sentences."
+              tooltip={
+                showTooltips
+                  ? 'Include the likely cause, what could go wrong, and the business impact. This helps reviewers understand why the score matters.'
+                  : undefined
+              }
               placeholder="Describe the risk context and impact..."
               rows={3}
               className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-3 text-sm focus:ring-brand-primary/30"
@@ -473,13 +495,18 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                   defaultValue="open"
                 rules={{ required: 'Select a status.' }}
                 render={({ field }) => (
-                  <Select
-                    label="Status *"
-                    helperText="Keep open risks actionable; close only when resolved."
-                    error={errors.status?.message?.toString()}
-                    options={[
-                      { value: 'open', label: 'Open' },
-                      { value: 'accepted', label: 'Accepted' },
+                   <Select
+                     label="Status *"
+                     helperText="Keep open risks actionable; close only when resolved."
+                     tooltip={
+                       showTooltips
+                         ? 'Status is for governance: Open = active work, Accepted = explicitly tolerated, Mitigated = controls in place, Closed = no longer relevant.'
+                         : undefined
+                     }
+                     error={errors.status?.message?.toString()}
+                     options={[
+                       { value: 'open', label: 'Open' },
+                       { value: 'accepted', label: 'Accepted' },
                       { value: 'mitigated', label: 'Mitigated' },
                       { value: 'closed', label: 'Closed' },
                     ]}
@@ -499,7 +526,15 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-4 shadow-sm">
                   <div className="flex items-center justify-between text-xs font-medium text-text-high">
-                    <span>Likelihood *</span>
+                    <span className="flex items-center gap-2">
+                      <span>Likelihood *</span>
+                      {showTooltips ? (
+                        <Tooltip
+                          content="Likelihood is how probable the scenario is over your chosen time window (e.g. next 12 months). Use incident history and control strength."
+                          ariaLabel="Help: Likelihood"
+                        />
+                      ) : null}
+                    </span>
                     <span className="rounded-full bg-surface-secondary/30 px-3 py-0.5 text-[11px] font-semibold text-text-high">
                       {probability} / 5
                     </span>
@@ -528,7 +563,15 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
 
                 <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-4 shadow-sm">
                   <div className="flex items-center justify-between text-xs font-medium text-text-high">
-                    <span>Impact *</span>
+                    <span className="flex items-center gap-2">
+                      <span>Impact *</span>
+                      {showTooltips ? (
+                        <Tooltip
+                          content="Impact is the severity if the risk occurs (financial, operational, legal, reputation). Use worst credible outcome, not average."
+                          ariaLabel="Help: Impact"
+                        />
+                      ) : null}
+                    </span>
                     <span className="rounded-full bg-surface-secondary/30 px-3 py-0.5 text-[11px] font-semibold text-text-high">
                       {impact} / 5
                     </span>
@@ -567,6 +610,11 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                   label="Mitigation plan (optional)"
                   placeholder="Outline mitigation actions, owners, or milestones..."
                   helperText="Keeps downstream owners aligned."
+                  tooltip={
+                    showTooltips
+                      ? 'Capture the main mitigation approach. Use Mitigation steps below for actionable tasks with owners and dates.'
+                      : undefined
+                  }
                   rows={2}
                   className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-3 text-sm focus:ring-brand-primary/30"
                   {...mitigationPlanField}
@@ -580,6 +628,11 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                 <Input
                   label="Owner (optional)"
                   helperText="Who is accountable for next actions."
+                  tooltip={
+                    showTooltips
+                      ? 'Set a single accountable owner (person or role). This makes reminders and reporting actionable.'
+                      : undefined
+                  }
                   placeholder="Name or role (e.g. SecOps lead)"
                   {...register('owner')}
                 />
@@ -593,6 +646,11 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                   type="date"
                   label="Due date (optional)"
                   helperText="Target date for mitigation or decision."
+                  tooltip={
+                    showTooltips
+                      ? 'Use for the next meaningful milestone (mitigation completed, acceptance decision, or control uplift).'
+                      : undefined
+                  }
                   {...register('dueDate')}
                 />
               </div>
@@ -607,6 +665,11 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                   type="date"
                   label="Next review date (optional)"
                   helperText="Set a concrete date for the next review."
+                  tooltip={
+                    showTooltips
+                      ? 'Review dates help ensure risks are revisited. Pair with a cadence if you have a regular governance rhythm.'
+                      : undefined
+                  }
                   {...register('reviewDate')}
                 />
                 <Controller
@@ -616,6 +679,11 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                     <Select
                       label="Cadence (optional)"
                       helperText="How often this risk should be reviewed."
+                      tooltip={
+                        showTooltips
+                          ? 'Cadence is a hint for how often to re-assess likelihood, impact, and controls (weekly → annual).'
+                          : undefined
+                      }
                       options={reviewCadenceOptions.map((option) => ({
                         value: option.value,
                         label: option.label,
@@ -643,6 +711,11 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                     <Select
                       label="Response (optional)"
                       helperText="Choose a default response strategy."
+                      tooltip={
+                        showTooltips
+                          ? 'Response is the high-level strategy: Treat (reduce), Transfer (insure/contract), Tolerate (accept), Terminate (stop the activity).'
+                          : undefined
+                      }
                       options={riskResponseOptions.map((option) => ({
                         value: option.value,
                         label: option.label,

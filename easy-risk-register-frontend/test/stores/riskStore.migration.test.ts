@@ -11,7 +11,7 @@ const getPersistOptions = () => {
 }
 
 describe('RiskStore persistence migration', () => {
-  it('should migrate v1 persisted state to v3 shape (defaults + cyber fields + categories + stats)', () => {
+  it('should migrate v1 persisted state to v4 shape (defaults + cyber fields + categories + stats + settings)', () => {
     const migrate = getPersistOptions().migrate as (state: unknown, version: number) => any
 
     const persistedV1 = {
@@ -49,6 +49,8 @@ describe('RiskStore persistence migration', () => {
     expect(migrated.filteredRisks).toHaveLength(1)
     expect(migrated.filters.threatType).toBe('all')
     expect(migrated.filters.checklistStatus).toBe('all')
+    expect(migrated.settings).toBeDefined()
+    expect(migrated.settings.tooltipsEnabled).toBeTypeOf('boolean')
   })
 
   it('should sanitize and normalize during migration (drops unsafe evidence urls)', () => {
