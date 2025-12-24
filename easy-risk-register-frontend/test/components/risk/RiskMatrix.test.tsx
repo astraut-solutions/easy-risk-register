@@ -20,6 +20,13 @@ const mockRisks = [
     category: 'Security',
     status: 'open',
     mitigationPlan: 'High risk plan',
+    mitigationSteps: [],
+    owner: '',
+    riskResponse: 'treat',
+    ownerResponse: '',
+    securityAdvisorComment: '',
+    vendorResponse: '',
+    evidence: [],
     creationDate: '2023-01-01T00:00:00.000Z',
     lastModified: '2023-01-01T00:00:00.000Z',
   },
@@ -33,6 +40,13 @@ const mockRisks = [
     category: 'Operational',
     status: 'mitigated',
     mitigationPlan: 'Medium risk plan',
+    mitigationSteps: [],
+    owner: '',
+    riskResponse: 'treat',
+    ownerResponse: '',
+    securityAdvisorComment: '',
+    vendorResponse: '',
+    evidence: [],
     creationDate: '2023-01-01T00:00:00.000Z',
     lastModified: '2023-01-01T00:00:00.000Z',
   },
@@ -46,6 +60,13 @@ const mockRisks = [
     category: 'Compliance',
     status: 'closed',
     mitigationPlan: 'Low risk plan',
+    mitigationSteps: [],
+    owner: '',
+    riskResponse: 'treat',
+    ownerResponse: '',
+    securityAdvisorComment: '',
+    vendorResponse: '',
+    evidence: [],
     creationDate: '2023-01-01T00:00:00.000Z',
     lastModified: '2023-01-01T00:00:00.000Z',
   },
@@ -56,16 +77,16 @@ describe('RiskMatrix', () => {
     render(<RiskMatrix risks={[]} />)
 
     expect(screen.getByText('Risk matrix')).toBeInTheDocument()
-    expect(screen.getByText('Interactive visualization of risks by probability and impact')).toBeInTheDocument()
+    expect(screen.getByText('Interactive visualization of risks by likelihood and impact')).toBeInTheDocument()
 
     // Check impact headers
     for (let i = 1; i <= 5; i++) {
       expect(screen.getByText(`Impact ${i}`)).toBeInTheDocument()
     }
 
-    // Check probability headers
+    // Check likelihood headers
     for (let i = 1; i <= 5; i++) {
-      expect(screen.getByText(`Prob ${i}`)).toBeInTheDocument()
+      expect(screen.getByText(`Like ${i}`)).toBeInTheDocument()
     }
   })
 
@@ -97,15 +118,15 @@ describe('RiskMatrix', () => {
     render(<RiskMatrix risks={mockRisks} />)
 
     // Find cells that should contain risks
-    const highRiskCell = screen.getByLabelText(/Risk cell: Probability 5, Impact 5/i)
+    const highRiskCell = screen.getByLabelText(/Risk cell: Likelihood 5, Impact 5/i)
     expect(highRiskCell).toHaveTextContent('1') // 1 high risk
     expect(highRiskCell).toHaveTextContent('high')
 
-    const mediumRiskCell = screen.getByLabelText(/Risk cell: Probability 3, Impact 3/i)
+    const mediumRiskCell = screen.getByLabelText(/Risk cell: Likelihood 3, Impact 3/i)
     expect(mediumRiskCell).toHaveTextContent('1') // 1 medium risk
     expect(mediumRiskCell).toHaveTextContent('medium')
 
-    const lowRiskCell = screen.getByLabelText(/Risk cell: Probability 1, Impact 2/i)
+    const lowRiskCell = screen.getByLabelText(/Risk cell: Likelihood 1, Impact 2/i)
     expect(lowRiskCell).toHaveTextContent('1') // 1 low risk
     expect(lowRiskCell).toHaveTextContent('low')
   })
@@ -122,6 +143,13 @@ describe('RiskMatrix', () => {
         category: 'Security',
         status: 'open',
         mitigationPlan: 'Plan 1',
+        mitigationSteps: [],
+        owner: '',
+        riskResponse: 'treat',
+        ownerResponse: '',
+        securityAdvisorComment: '',
+        vendorResponse: '',
+        evidence: [],
         creationDate: '2023-01-01T00:00:00.000Z',
         lastModified: '2023-01-01T00:00:00.000Z',
       },
@@ -135,6 +163,13 @@ describe('RiskMatrix', () => {
         category: 'Security',
         status: 'open',
         mitigationPlan: 'Plan 2',
+        mitigationSteps: [],
+        owner: '',
+        riskResponse: 'treat',
+        ownerResponse: '',
+        securityAdvisorComment: '',
+        vendorResponse: '',
+        evidence: [],
         creationDate: '2023-01-01T00:00:00.000Z',
         lastModified: '2023-01-01T00:00:00.000Z',
       },
@@ -142,7 +177,7 @@ describe('RiskMatrix', () => {
 
     render(<RiskMatrix risks={risksWithSameProbabilityImpact} />)
 
-    const cell = screen.getByLabelText(/Risk cell: Probability 4, Impact 4/i)
+    const cell = screen.getByLabelText(/Risk cell: Likelihood 4, Impact 4/i)
     expect(cell).toHaveTextContent('2') // 2 risks in the same cell
     expect(cell).toHaveTextContent('high') // highest severity for the cell
   })
@@ -151,7 +186,7 @@ describe('RiskMatrix', () => {
     const mockOnSelect = vi.fn()
     render(<RiskMatrix risks={mockRisks} onSelect={mockOnSelect} />)
 
-    const highRiskCell = screen.getByLabelText(/Risk cell: Probability 5, Impact 5/i)
+    const highRiskCell = screen.getByLabelText(/Risk cell: Likelihood 5, Impact 5/i)
     fireEvent.click(highRiskCell)
 
     expect(mockOnSelect).toHaveBeenCalledWith(['1']) // Should pass the risk ID
@@ -161,7 +196,7 @@ describe('RiskMatrix', () => {
     const mockOnSelect = vi.fn()
     render(<RiskMatrix risks={[]} onSelect={mockOnSelect} />)
 
-    const emptyCell = screen.getByLabelText(/Risk cell: Probability 1, Impact 1, 0 risk\(s\), no severity/i)
+    const emptyCell = screen.getByLabelText(/Risk cell: Likelihood 1, Impact 1, 0 risk\(s\), no severity/i)
     fireEvent.click(emptyCell)
 
     expect(mockOnSelect).not.toHaveBeenCalled()
@@ -172,14 +207,14 @@ describe('RiskMatrix', () => {
 
     const matrixGrid = screen.getByRole('grid')
     expect(matrixGrid).toBeInTheDocument()
-    expect(matrixGrid).toHaveAttribute('aria-label', 'Risk matrix grid showing risk distribution by probability and impact')
+    expect(matrixGrid).toHaveAttribute('aria-label', 'Risk matrix grid showing risk distribution by likelihood and impact')
 
     const titleLabel = screen.getByText('Risk matrix')
     expect(matrixGrid).toHaveAttribute('aria-labelledby', 'risk-matrix-title')
     expect(titleLabel).toHaveAttribute('id', 'risk-matrix-title')
 
     // Check that cells have proper aria labels
-    const highRiskCell = screen.getByLabelText(/Risk cell: Probability 5, Impact 5, 1 risk\(s\), high severity/i)
+    const highRiskCell = screen.getByLabelText(/Risk cell: Likelihood 5, Impact 5, 1 risk\(s\), high severity/i)
     expect(highRiskCell).toBeInTheDocument()
   })
 
@@ -198,7 +233,7 @@ describe('RiskMatrix', () => {
   it('has enabled cells when there are risks', () => {
     render(<RiskMatrix risks={mockRisks} />)
 
-    const highRiskCell = screen.getByLabelText(/Risk cell: Probability 5, Impact 5/i)
+    const highRiskCell = screen.getByLabelText(/Risk cell: Likelihood 5, Impact 5/i)
     expect(highRiskCell).not.toBeDisabled()
   })
 
@@ -206,7 +241,7 @@ describe('RiskMatrix', () => {
     render(<RiskMatrix risks={[]} />)
 
     expect(
-      screen.getByText('Click on any cell to filter risks by probability and impact level')
+      screen.getByText('Click on any cell to filter risks by likelihood and impact level')
     ).toBeInTheDocument()
   })
 })

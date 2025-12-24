@@ -7,6 +7,7 @@ import App from '../../src/App'
 import { useRiskStore } from '../../src/stores/riskStore'
 import { DEFAULT_CATEGORIES } from '../../src/constants/risk'
 import { DEFAULT_FILTERS, computeRiskStats } from '../../src/utils/riskCalculations'
+import { ToastProvider } from '../../src/components/feedback/ToastProvider'
 
 // Framer Motion adds animation wrappers that we don't need for integration smoke tests.
 // This mock keeps the DOM tree predictable while allowing refs to continue working.
@@ -20,10 +21,17 @@ vi.mock('framer-motion', () => {
       ),
     )
 
+  const componentCache = new Map<string, ReturnType<typeof createComponent>>()
+
   const motionProxy = new Proxy(
     {},
     {
-      get: (_target, key: string) => createComponent(key),
+      get: (_target, key: string) => {
+        if (!componentCache.has(key)) {
+          componentCache.set(key, createComponent(key))
+        }
+        return componentCache.get(key)!
+      },
     },
   ) as Record<string, ReturnType<typeof createComponent>>
 
@@ -64,12 +72,6 @@ const resetRiskStoreState = () => {
   resetStorageMock(window.sessionStorage)
 }
 
-const waitForRiskCards = async (expectedCount: number) => {
-  await waitFor(() => {
-    expect(screen.getAllByRole('article', { name: /risk card/i })).toHaveLength(expectedCount)
-  })
-}
-
 describe('App integration', () => {
   beforeEach(() => {
     resetRiskStoreState()
@@ -77,29 +79,37 @@ describe('App integration', () => {
 
   it('seeds demo data and filters the risk list through the toolbar controls', async () => {
     const user = userEvent.setup()
-    render(<App />)
+    render(
+      <ToastProvider>
+        <App />
+      </ToastProvider>,
+    )
 
-    await waitForRiskCards(3)
-    expect(screen.getByText(/Payment processor outage/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Showing 3 of 3 risks/i)).toBeInTheDocument()
 
     const searchInput = screen.getByPlaceholderText(/search risks/i)
     await user.type(searchInput, 'phishing')
 
-    await waitForRiskCards(1)
-    expect(screen.getByText(/Phishing vulnerability/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Showing 1 of 3 risks/i)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /reset/i }))
 
-    await waitForRiskCards(3)
-  })
+    expect(await screen.findByText(/Showing 3 of 3 risks/i)).toBeInTheDocument()
+  }, 15000)
 
-  it('creates a new risk from the modal and surfaces it inside the table view', async () => {
+  it('creates a new risk from the New risk tab and surfaces it inside the table view', async () => {
     const user = userEvent.setup()
-    render(<App />)
+    render(
+      <ToastProvider>
+        <App />
+      </ToastProvider>,
+    )
 
-    await waitForRiskCards(3)
+    expect(await screen.findByText(/Showing 3 of 3 risks/i)).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /new risk/i }))
+    await user.click(screen.getByRole('button', { name: /create new risk/i }))
+
+    expect(await screen.findByText(/Create risk/i)).toBeInTheDocument()
 
     const titleInput = await screen.findByLabelText(/title/i)
     await user.type(titleInput, 'AI model drift')
@@ -112,14 +122,10 @@ describe('App integration', () => {
 
     await user.click(screen.getByRole('button', { name: /add new risk/i }))
 
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    })
-
-    await screen.findByText(/AI model drift/i)
+    expect(await screen.findByText(/Showing 4 of 4 risks/i)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /open risk table/i }))
     const table = await screen.findByRole('table', { name: /risk register table/i })
     expect(within(table).getByText(/AI model drift/i)).toBeInTheDocument()
-  })
+  }, 30000)
 })

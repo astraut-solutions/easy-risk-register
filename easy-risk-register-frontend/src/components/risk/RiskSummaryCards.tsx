@@ -54,6 +54,10 @@ export const RiskSummaryCards = ({ stats }: RiskSummaryCardsProps) => {
 
   return (
     <div className="space-y-4">
+      <p className="text-right text-xs text-text-muted">
+        Updated {formatter.format(new Date(stats.updatedAt))}
+      </p>
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {cards.map((card, index) => (
           <motion.div
@@ -78,9 +82,6 @@ export const RiskSummaryCards = ({ stats }: RiskSummaryCardsProps) => {
         <Badge tone="danger">High: {stats.bySeverity.high}</Badge>
         <Badge tone="warning">Medium: {stats.bySeverity.medium}</Badge>
         <Badge tone="success">Low: {stats.bySeverity.low}</Badge>
-        <span className="ml-auto text-sm text-text-muted">
-          Updated {formatter.format(new Date(stats.updatedAt))}
-        </span>
       </div>
     </div>
   )

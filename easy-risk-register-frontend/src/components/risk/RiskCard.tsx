@@ -6,6 +6,13 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
 })
 
+const formatMaybeDate = (value?: string) => {
+  if (!value) return '—'
+  const parsed = Date.parse(value)
+  if (Number.isNaN(parsed)) return '—'
+  return dateFormatter.format(new Date(parsed))
+}
+
 interface RiskCardProps {
   risk: Risk
   onEdit: (risk: Risk) => void
@@ -34,9 +41,20 @@ export const RiskCard = ({ risk, onEdit, onDelete, onView }: RiskCardProps) => {
     >
       <div className="flex-1">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-lg font-semibold text-text-high group-hover:text-brand-primary transition-colors">
-            {risk.title}
-          </h3>
+          {onView ? (
+            <button
+              type="button"
+              onClick={() => onView(risk)}
+              className="text-left text-lg font-semibold text-text-high group-hover:text-brand-primary transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-primary rounded-md"
+              aria-label={`View details for risk: ${risk.title}`}
+            >
+              {risk.title}
+            </button>
+          ) : (
+            <h3 className="text-lg font-semibold text-text-high group-hover:text-brand-primary transition-colors">
+              {risk.title}
+            </h3>
+          )}
           <Badge
             tone={severityTone}
             subtle={false}
@@ -60,6 +78,20 @@ export const RiskCard = ({ risk, onEdit, onDelete, onView }: RiskCardProps) => {
           >
             {risk.category}
           </Badge>
+          <Badge
+            tone="neutral"
+            className="text-xs font-medium px-2 py-1 rounded-lg capitalize"
+            aria-label={`Response: ${risk.riskResponse}`}
+          >
+            {risk.riskResponse}
+          </Badge>
+          <Badge
+            tone="neutral"
+            className="text-xs font-medium px-2 py-1 rounded-lg"
+            aria-label={`Evidence count: ${risk.evidence.length}`}
+          >
+            Evidence {risk.evidence.length}
+          </Badge>
           <span className="text-xs text-text-low" aria-label={`Last modified: ${dateFormatter.format(new Date(risk.lastModified))}`}>
             {dateFormatter.format(new Date(risk.lastModified))}
           </span>
@@ -68,26 +100,30 @@ export const RiskCard = ({ risk, onEdit, onDelete, onView }: RiskCardProps) => {
           </span>
         </div>
 
+        <div className="grid gap-2 rounded-2xl border border-border-faint bg-surface-secondary/10 p-3 text-xs text-text-low">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-semibold text-text-high">Owner</span>
+            <span className="text-text-low">{risk.owner || '—'}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-semibold text-text-high">Due</span>
+            <span className="text-text-low">{formatMaybeDate(risk.dueDate)}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-semibold text-text-high">Next review</span>
+            <span className="text-text-low">{formatMaybeDate(risk.reviewDate)}</span>
+          </div>
+        </div>
+
         <div className="flex flex-wrap justify-end gap-2 border-t border-border-faint pt-4">
-          {onView && (
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => onView(risk)}
-              aria-label={`View risk details for ${risk.title}`}
-            >
-              View
-            </Button>
-          )}
           <Button
             type="button"
             size="sm"
             variant="ghost"
             onClick={() => onEdit(risk)}
-            aria-label={`Edit risk: ${risk.title}`}
+            aria-label={`View or edit risk: ${risk.title}`}
           >
-            Edit
+            View/Edit
           </Button>
           <Button
             type="button"

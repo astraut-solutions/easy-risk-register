@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
+import { ToastProvider } from './components/feedback/ToastProvider'
 
 // Only run accessibility tests in development
 if (process.env.NODE_ENV === 'development') {
@@ -12,8 +13,10 @@ if (process.env.NODE_ENV === 'development') {
 
     root.render(
       <StrictMode>
-        <App />
-        <AccessibilityTester />
+        <ToastProvider>
+          <App />
+          <AccessibilityTester />
+        </ToastProvider>
       </StrictMode>,
     )
   }).catch(() => {
@@ -23,7 +26,9 @@ if (process.env.NODE_ENV === 'development') {
 
     root.render(
       <StrictMode>
-        <App />
+        <ToastProvider>
+          <App />
+        </ToastProvider>
       </StrictMode>,
     )
   })
@@ -33,7 +38,9 @@ if (process.env.NODE_ENV === 'development') {
 
   root.render(
     <StrictMode>
-      <App />
+      <ToastProvider>
+        <App />
+      </ToastProvider>
     </StrictMode>,
   )
 }

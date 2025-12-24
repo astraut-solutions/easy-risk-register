@@ -28,6 +28,13 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
   year: 'numeric',
 })
 
+const formatMaybeDate = (value?: string) => {
+  if (!value) return '—'
+  const parsed = Date.parse(value)
+  if (Number.isNaN(parsed)) return '—'
+  return dateFormatter.format(new Date(parsed))
+}
+
 const getSeverityTone = (score: number): BadgeTone => {
   if (score <= 3) return 'success'
   if (score <= 6) return 'warning'
@@ -43,7 +50,7 @@ export const RiskTable = ({
 }: RiskTableProps) => {
   if (!risks.length) {
     return (
-      <div className="rr-panel p-12 text-center">
+      <div className="rr-panel p-8 text-center">
         <p className="text-lg font-semibold text-text-high">
           {emptyState?.title ?? 'No risks available'}
         </p>
@@ -56,20 +63,20 @@ export const RiskTable = ({
   }
 
   return (
-    <div className="rr-panel overflow-hidden p-0" role="region" aria-labelledby="risk-table-title">
+    <div className="rr-panel overflow-x-auto p-0" role="region" aria-labelledby="risk-table-title">
       <h3 id="risk-table-title" className="sr-only">Risk Table</h3>
       <Table
         className="[&_th]:whitespace-nowrap"
         role="table"
-        aria-label="Risk register table showing all risks with their details"
+        aria-label="Risk register table showing key risk details"
       >
         <TableHeader className="bg-surface-secondary/60">
           <TableRow role="row">
             <TableHead role="columnheader">Risk</TableHead>
             <TableHead role="columnheader">Category</TableHead>
-            <TableHead role="columnheader" className="text-center">Probability</TableHead>
-            <TableHead role="columnheader" className="text-center">Impact</TableHead>
             <TableHead role="columnheader" className="text-center">Score</TableHead>
+            <TableHead role="columnheader">Owner</TableHead>
+            <TableHead role="columnheader">Due</TableHead>
             <TableHead role="columnheader">Status</TableHead>
             <TableHead role="columnheader">Last updated</TableHead>
             <TableHead role="columnheader" className="text-right">Actions</TableHead>
@@ -77,21 +84,26 @@ export const RiskTable = ({
         </TableHeader>
         <TableBody>
           {risks.map((risk) => (
-            <TableRow key={risk.id} role="row">
-              <TableCell className="max-w-[240px]" role="cell">
-                <p className="font-semibold text-text-high">{risk.title}</p>
+              <TableRow key={risk.id} role="row">
+              <TableCell className="max-w-[320px]" role="cell">
+                {onView ? (
+                  <button
+                    type="button"
+                    onClick={() => onView(risk)}
+                    className="text-left font-semibold text-brand-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-primary rounded-md"
+                    aria-label={`View details for risk: ${risk.title}`}
+                  >
+                    {risk.title}
+                  </button>
+                ) : (
+                  <p className="font-semibold text-text-high">{risk.title}</p>
+                )}
                 <p className="line-clamp-2 text-sm text-text-low">{risk.description}</p>
               </TableCell>
               <TableCell role="cell">
                 <Badge tone="neutral" className="rounded-full px-3 py-1 text-xs font-semibold" aria-label={`Category: ${risk.category}`}>
                   {risk.category}
                 </Badge>
-              </TableCell>
-              <TableCell className="text-center font-semibold text-text-high" role="cell">
-                {risk.probability}
-              </TableCell>
-              <TableCell className="text-center font-semibold text-text-high" role="cell">
-                {risk.impact}
               </TableCell>
               <TableCell className="text-center" role="cell">
                 <Badge
@@ -102,6 +114,18 @@ export const RiskTable = ({
                 >
                   {risk.riskScore}
                 </Badge>
+                <p className="mt-1 text-[11px] font-semibold text-text-muted" aria-hidden="true">
+                  {risk.probability}×{risk.impact}
+                </p>
+              </TableCell>
+              <TableCell role="cell">
+                <span className="text-sm text-text-high">{risk.owner || '-'}</span>
+                {risk.ownerTeam ? (
+                  <p className="text-xs text-text-low">{risk.ownerTeam}</p>
+                ) : null}
+              </TableCell>
+              <TableCell role="cell" aria-label={`Due date: ${formatMaybeDate(risk.dueDate)}`}>
+                {formatMaybeDate(risk.dueDate)}
               </TableCell>
               <TableCell role="cell" aria-label={`Status: ${risk.status}`}>
                 <span className="capitalize">{risk.status}</span>
@@ -111,19 +135,14 @@ export const RiskTable = ({
               </TableCell>
               <TableCell className="text-right" role="cell">
                 <div className="flex flex-wrap justify-end gap-2" role="group" aria-label={`Actions for risk ${risk.title}`}>
-                  {onView && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => onView(risk)}
-                      aria-label={`View risk: ${risk.title}`}
-                    >
-                      View
-                    </Button>
-                  )}
-                  <Button type="button" size="sm" variant="ghost" onClick={() => onEdit(risk)} aria-label={`Edit risk: ${risk.title}`}>
-                    Edit
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onEdit(risk)}
+                    aria-label={`View or edit risk: ${risk.title}`}
+                  >
+                    View/Edit
                   </Button>
                   <Button
                     type="button"

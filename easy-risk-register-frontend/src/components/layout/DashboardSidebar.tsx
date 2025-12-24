@@ -18,7 +18,7 @@ export const DashboardSidebar = ({
   onSelect,
 }: DashboardSidebarProps) => {
   return (
-    <aside className="hidden lg:flex lg:w-72 xl:w-80" role="navigation" aria-label="Main navigation">
+    <aside className="hidden shrink-0 lg:flex lg:w-72 lg:flex-none xl:w-80" role="navigation" aria-label="Main navigation">
       <div className="rr-panel sticky top-6 flex h-fit min-h-[480px] w-full flex-col gap-6 p-6">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-text-low">
@@ -65,8 +65,7 @@ export const DashboardSidebar = ({
         </nav>
 
         <div className="mt-auto rounded-2xl border border-dashed border-border-subtle bg-surface-secondary/70 p-4 text-sm text-text-low">
-          Tip: Use the New risk button in the header to open a focused modal.
-          After saving, the modal closes automatically for a smoother workflow.
+          Tip: Use the New risk tab in the header to capture a risk without leaving the workspace. Drafts are saved locally so you can return later.
         </div>
       </div>
     </aside>

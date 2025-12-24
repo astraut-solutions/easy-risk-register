@@ -8,35 +8,67 @@ Easy Risk Register is a privacy-focused risk management application that priorit
 
 ### Content Security Policy (CSP)
 
-The application implements a Content Security Policy to prevent XSS (Cross-Site Scripting) and other code injection attacks. The CSP directives include:
-- `default-src 'self'` - Restricts all resources to same-origin by default
-- `script-src 'self' 'unsafe-inline' 'unsafe-eval'` - Allows scripts from same origin (needed for React/Vite)
-- `style-src 'self' 'unsafe-inline'` - Allows stylesheets from same-origin and inline styles
-- `img-src 'self' data: https:` - Allows images from same origin, data URLs, and HTTPS sources
-- `frame-ancestors 'none'` - Prevents clickjacking by blocking framing of the page
+The application implements a Content Security Policy to reduce the risk of XSS (Cross-Site Scripting) and other code injection attacks. For production deployments, CSP is set via **HTTP response headers** at the hosting layer (header-based CSP is harder to bypass than a meta-based CSP in some threat models).
+
+Current hosting-layer CSP implementations:
+- **Vercel**: `vercel.json` sets a strict header for all routes (no `unsafe-inline` / `unsafe-eval`).
+- **Docker (production)**: `easy-risk-register-frontend/server.mjs` serves the built app and sets a per-request **nonce-based** CSP header.
+- **Local development**: `easy-risk-register-frontend/vite.config.ts` sets a dev CSP header (includes `unsafe-eval` to support Vite dev tooling).
+
+The CSP directives include:
+- `default-src 'self'`
+- `script-src 'self'` (production) / `script-src 'self' 'unsafe-eval'` (development)
+- `style-src 'self' 'unsafe-inline'` (to support inline styles used by some UI libraries)
+- `img-src 'self' data: https:`
+- `font-src 'self' data:`
+- `connect-src 'self' http: https:`
+- `media-src 'self'`
+- `object-src 'none'`
+- `frame-src 'self'`
+- `frame-ancestors 'none'`
+- `base-uri 'self'`
+- `form-action 'self'`
+
+For more detail, see `docs/security-implementation.md`.
 
 ### Input Sanitization
 
 The application implements comprehensive input sanitization to prevent XSS attacks:
-- All user inputs are sanitized using the `isomorphic-dompurify` library
-- Dangerous HTML tags like `<script>`, `<iframe>`, `<object>` are removed
-- Potentially harmful attributes are stripped
-- Only safe HTML elements are allowed (e.g., `<p>`, `<strong>`, `<em>`, lists, headings)
+- User-provided text is sanitized using `isomorphic-dompurify` (`easy-risk-register-frontend/src/utils/sanitization.ts`)
+- A small allowlist of safe formatting tags is permitted (for example `<p>`, `<strong>`, `<em>`, lists, headings, `<pre>`, `<code>`)
+- Attributes are stripped by default and dangerous tags/attributes are explicitly forbidden
+- Risk inputs are sanitized before persistence and oversized fields are truncated as a fallback
+
+Search/filter logic uses simple string matching (not dynamically-constructed regular expressions) to avoid regex-related injection risks.
 
 ### Data Encryption
 
-All risk data stored in browser local storage is encrypted:
-- Uses AES-GCM encryption with 256-bit keys via the Web Crypto API
-- Each encryption operation uses a randomly generated initialization vector
-- Encryption occurs before data is saved to localStorage
-- Encryption key is stored separately with additional protection
+Persisted risk data can be encrypted in browser local storage:
+- Uses AES-GCM encryption with 256-bit keys via the Web Crypto API (when available)
+- Each encryption operation uses a randomly generated 12-byte initialization vector (IV)
+- Encrypted values are stored as base64 of `IV || ciphertext`
+- The encryption key is stored in LocalStorage under `easy-risk-register-key` (base64-encoded raw key material)
+- When Web Crypto is unavailable, the app falls back to unencrypted LocalStorage (and uses in-memory storage during SSR)
 
-### CSV Import Security
+Limitations / threat model notes:
+- Client-side encryption does not protect against attackers who can execute code in the same origin (for example via XSS).
+- The encryption key is stored in LocalStorage alongside encrypted data, so an attacker who can read LocalStorage can read both the ciphertext and the key material.
+
+For details, see `docs/architecture/secure-data-storage.md`.
+
+### CSV Import/Export Security
 
 The CSV import functionality includes security measures:
 - Uses the `papaparse` library for secure CSV parsing instead of regex-based splitting
 - Validates against CSV injection patterns that start with `=`, `+`, `-`, or `@`
 - All imported data is processed through the same sanitization as manual entries
+
+The CSV export functionality also includes security measures:
+- Uses PapaParse CSV generation with `escapeFormulae` enabled to prevent spreadsheet formula injection on exported cells
+
+### Why SQL injection is not applicable
+
+Easy Risk Register is a client-side app with no database and no SQL query execution, so SQL injection is not applicable. CSV and XSS risks still apply (spreadsheets can evaluate exported cells as formulas, and web UIs can be exposed to injection if content is not sanitized).
 
 ## Supported Versions
 
@@ -60,7 +92,7 @@ The CSV import functionality includes security measures:
 ## Compliance
 
 The Easy Risk Register application has been designed to:
-- Protect sensitive business risk data with client-side encryption
+- Protect sensitive business risk data with optional client-side encryption (when supported by the browser)
 - Minimize data exposure by storing information locally
 - Implement web security best practices to prevent common vulnerabilities
 - Support accessibility standards while maintaining security

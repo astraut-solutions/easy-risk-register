@@ -18,6 +18,173 @@ const clampScore = (value: number) => Math.min(Math.max(Math.round(value), 1), 5
 
 const normalizeText = (value: string) => value.trim()
 
+const isRiskStatus = (value: unknown): value is Risk['status'] =>
+  value === 'open' || value === 'mitigated' || value === 'closed' || value === 'accepted'
+
+const isRiskResponse = (value: unknown): value is Risk['riskResponse'] =>
+  value === 'treat' || value === 'transfer' || value === 'tolerate' || value === 'terminate'
+
+const isReviewCadence = (value: unknown): value is NonNullable<Risk['reviewCadence']> =>
+  value === 'weekly' ||
+  value === 'monthly' ||
+  value === 'quarterly' ||
+  value === 'semiannual' ||
+  value === 'annual' ||
+  value === 'ad-hoc'
+
+const normalizeISODateOrUndefined = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') return undefined
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  const parsed = Date.parse(trimmed)
+  if (Number.isNaN(parsed)) return undefined
+  return new Date(parsed).toISOString()
+}
+
+const normalizeEvidence = (value: unknown): Risk['evidence'] => {
+  if (!Array.isArray(value)) return []
+
+  return value
+    .map((entry: any) => {
+      if (!entry || typeof entry !== 'object') return null
+      if (typeof entry.url !== 'string' || !entry.url.trim()) return null
+
+      const rawType = typeof entry.type === 'string' ? entry.type.trim() : 'link'
+      const type: Risk['evidence'][number]['type'] =
+        rawType === 'link' || rawType === 'ticket' || rawType === 'doc' || rawType === 'other'
+          ? rawType
+          : 'other'
+
+      const description =
+        typeof entry.description === 'string' && entry.description.trim()
+          ? normalizeText(entry.description)
+          : undefined
+
+      const addedAt =
+        typeof entry.addedAt === 'string' && entry.addedAt.trim()
+          ? entry.addedAt.trim()
+          : new Date().toISOString()
+
+      return {
+        type,
+        url: entry.url.trim(),
+        ...(description ? { description } : {}),
+        addedAt,
+      }
+    })
+    .filter((entry): entry is Risk['evidence'][number] => Boolean(entry))
+}
+
+const normalizeMitigationSteps = (value: unknown): Risk['mitigationSteps'] => {
+  if (!Array.isArray(value)) return []
+
+  return value
+    .map((step: any) => {
+      if (!step || typeof step !== 'object') return null
+      if (typeof step.description !== 'string' || !step.description.trim()) return null
+
+      const owner =
+        typeof step.owner === 'string' && step.owner.trim()
+          ? normalizeText(step.owner)
+          : undefined
+
+      const dueDate = normalizeISODateOrUndefined(step.dueDate)
+
+      const status: Risk['mitigationSteps'][number]['status'] =
+        step.status === 'done' || step.status === 'open' ? step.status : 'open'
+
+      const createdAt =
+        typeof step.createdAt === 'string' && step.createdAt.trim()
+          ? step.createdAt.trim()
+          : new Date().toISOString()
+
+      const completedAt = normalizeISODateOrUndefined(step.completedAt)
+
+      return {
+        id: typeof step.id === 'string' && step.id.trim() ? step.id.trim() : nanoid(10),
+        description: normalizeText(step.description),
+        ...(owner ? { owner } : {}),
+        ...(dueDate ? { dueDate } : {}),
+        status,
+        createdAt,
+        ...(completedAt ? { completedAt } : {}),
+      }
+    })
+    .filter((step): step is Risk['mitigationSteps'][number] => Boolean(step))
+}
+
+const normalizeStoredRisk = (raw: unknown): Risk => {
+  const now = new Date().toISOString()
+  const sanitized = sanitizeRiskInput((raw ?? {}) as Record<string, any>)
+
+  const probability = clampScore(Number(sanitized.probability) || 1)
+  const impact = clampScore(Number(sanitized.impact) || 1)
+  const riskScore = calculateRiskScore(probability, impact)
+
+  const creationDate =
+    typeof sanitized.creationDate === 'string' && sanitized.creationDate.trim()
+      ? sanitized.creationDate.trim()
+      : now
+  const lastModified =
+    typeof sanitized.lastModified === 'string' && sanitized.lastModified.trim()
+      ? sanitized.lastModified.trim()
+      : creationDate
+
+  const status = isRiskStatus(sanitized.status) ? sanitized.status : 'open'
+
+  const riskResponse = isRiskResponse(sanitized.riskResponse)
+    ? sanitized.riskResponse
+    : 'treat'
+
+  return {
+    id:
+      typeof sanitized.id === 'string' && sanitized.id.trim()
+        ? sanitized.id.trim()
+        : nanoid(12),
+    title: normalizeText(sanitizeTextInput(String(sanitized.title ?? 'Untitled risk'))),
+    description: normalizeText(sanitizeTextInput(String(sanitized.description ?? ''))),
+    probability,
+    impact,
+    riskScore,
+    category:
+      typeof sanitized.category === 'string' && sanitized.category.trim()
+        ? normalizeText(sanitized.category)
+        : DEFAULT_CATEGORIES[0],
+    status,
+    mitigationPlan:
+      typeof sanitized.mitigationPlan === 'string' ? normalizeText(sanitized.mitigationPlan) : '',
+    mitigationSteps: normalizeMitigationSteps(sanitized.mitigationSteps),
+    owner: typeof sanitized.owner === 'string' ? normalizeText(sanitized.owner) : '',
+    ...(typeof sanitized.ownerTeam === 'string' && sanitized.ownerTeam.trim()
+      ? { ownerTeam: normalizeText(sanitized.ownerTeam) }
+      : {}),
+    ...(normalizeISODateOrUndefined(sanitized.dueDate)
+      ? { dueDate: normalizeISODateOrUndefined(sanitized.dueDate) }
+      : {}),
+    ...(normalizeISODateOrUndefined(sanitized.reviewDate)
+      ? { reviewDate: normalizeISODateOrUndefined(sanitized.reviewDate) }
+      : {}),
+    ...(isReviewCadence(sanitized.reviewCadence)
+      ? { reviewCadence: sanitized.reviewCadence }
+      : {}),
+    riskResponse,
+    ownerResponse:
+      typeof sanitized.ownerResponse === 'string' ? normalizeText(sanitized.ownerResponse) : '',
+    securityAdvisorComment:
+      typeof sanitized.securityAdvisorComment === 'string'
+        ? normalizeText(sanitized.securityAdvisorComment)
+        : '',
+    vendorResponse:
+      typeof sanitized.vendorResponse === 'string' ? normalizeText(sanitized.vendorResponse) : '',
+    ...(typeof sanitized.notes === 'string' && sanitized.notes.trim()
+      ? { notes: normalizeText(sanitized.notes) }
+      : {}),
+    evidence: normalizeEvidence(sanitized.evidence),
+    creationDate,
+    lastModified,
+  }
+}
+
 const buildRisk = (input: RiskInput): Risk => {
   // Sanitize the input before processing
   const sanitizedInput = sanitizeRiskInput(input) as RiskInput
@@ -33,6 +200,26 @@ const buildRisk = (input: RiskInput): Risk => {
     category: normalizeText(sanitizedInput.category) || DEFAULT_CATEGORIES[0],
     status: sanitizedInput.status ?? 'open',
     mitigationPlan: normalizeText(sanitizedInput.mitigationPlan ?? ''),
+    mitigationSteps: normalizeMitigationSteps(sanitizedInput.mitigationSteps),
+    owner: normalizeText(sanitizedInput.owner ?? ''),
+    ...(sanitizedInput.ownerTeam ? { ownerTeam: normalizeText(sanitizedInput.ownerTeam) } : {}),
+    ...(normalizeISODateOrUndefined(sanitizedInput.dueDate)
+      ? { dueDate: normalizeISODateOrUndefined(sanitizedInput.dueDate) }
+      : {}),
+    ...(normalizeISODateOrUndefined(sanitizedInput.reviewDate)
+      ? { reviewDate: normalizeISODateOrUndefined(sanitizedInput.reviewDate) }
+      : {}),
+    ...(isReviewCadence(sanitizedInput.reviewCadence)
+      ? { reviewCadence: sanitizedInput.reviewCadence }
+      : {}),
+    riskResponse: isRiskResponse(sanitizedInput.riskResponse)
+      ? sanitizedInput.riskResponse
+      : 'treat',
+    ownerResponse: normalizeText(sanitizedInput.ownerResponse ?? ''),
+    securityAdvisorComment: normalizeText(sanitizedInput.securityAdvisorComment ?? ''),
+    vendorResponse: normalizeText(sanitizedInput.vendorResponse ?? ''),
+    ...(sanitizedInput.notes ? { notes: normalizeText(sanitizedInput.notes) } : {}),
+    evidence: normalizeEvidence(sanitizedInput.evidence),
     creationDate: now,
     lastModified: now,
   }
@@ -70,45 +257,142 @@ const safeStorage = () => {
   return window.localStorage
 }
 
-const toCSV = (risks: Risk[]): string => {
-  const header = [
-    'id',
-    'title',
-    'description',
-    'probability',
-    'impact',
-    'riskScore',
-    'category',
-    'status',
-    'mitigationPlan',
-    'creationDate',
-    'lastModified',
-  ]
+export type CSVExportVariant = 'standard' | 'audit_pack'
 
-  const rows = risks.map((risk) =>
-    [
-      risk.id,
-      `"${risk.title.replace(/"/g, '""')}"`,
-      `"${risk.description.replace(/"/g, '""')}"`,
-      risk.probability,
-      risk.impact,
-      risk.riskScore,
-      risk.category,
-      risk.status,
-      `"${risk.mitigationPlan.replace(/"/g, '""')}"`,
-      risk.creationDate,
-      risk.lastModified,
-    ].join(','),
-  )
+const CSV_SPEC_VERSION = 1 as const
 
-  return [header.join(','), ...rows].join('\n')
+const CSV_STANDARD_COLUMNS = [
+  'csvSpecVersion',
+  'csvVariant',
+  'id',
+  'title',
+  'description',
+  'probability',
+  'impact',
+  'riskScore',
+  'category',
+  'status',
+  'mitigationPlan',
+  'owner',
+  'ownerTeam',
+  'dueDate',
+  'reviewDate',
+  'reviewCadence',
+  'riskResponse',
+  'ownerResponse',
+  'securityAdvisorComment',
+  'vendorResponse',
+  'notes',
+  'evidenceJson',
+  'mitigationStepsJson',
+  'creationDate',
+  'lastModified',
+] as const
+
+const CSV_AUDIT_PACK_COLUMNS = [
+  ...CSV_STANDARD_COLUMNS,
+  'evidenceCount',
+  'evidenceUrls',
+  'evidenceTypes',
+  'evidenceAddedAt',
+  'mitigationStepsOpenCount',
+  'mitigationStepsDoneCount',
+] as const
+
+type CSVColumnStandard = (typeof CSV_STANDARD_COLUMNS)[number]
+type CSVColumnAuditPack = (typeof CSV_AUDIT_PACK_COLUMNS)[number]
+
+const toCSV = (risks: Risk[], variant: CSVExportVariant = 'standard'): string => {
+  const columns = variant === 'audit_pack' ? CSV_AUDIT_PACK_COLUMNS : CSV_STANDARD_COLUMNS
+
+  const data = risks.map((risk) => {
+    const base: Record<CSVColumnStandard, string | number> = {
+      csvSpecVersion: CSV_SPEC_VERSION,
+      csvVariant: variant,
+      id: risk.id,
+      title: risk.title,
+      description: risk.description,
+      probability: risk.probability,
+      impact: risk.impact,
+      riskScore: risk.riskScore,
+      category: risk.category,
+      status: risk.status,
+      mitigationPlan: risk.mitigationPlan,
+      owner: risk.owner,
+      ownerTeam: risk.ownerTeam ?? '',
+      dueDate: risk.dueDate ?? '',
+      reviewDate: risk.reviewDate ?? '',
+      reviewCadence: risk.reviewCadence ?? '',
+      riskResponse: risk.riskResponse,
+      ownerResponse: risk.ownerResponse,
+      securityAdvisorComment: risk.securityAdvisorComment,
+      vendorResponse: risk.vendorResponse,
+      notes: risk.notes ?? '',
+      evidenceJson: JSON.stringify(risk.evidence ?? []),
+      mitigationStepsJson: JSON.stringify(risk.mitigationSteps ?? []),
+      creationDate: risk.creationDate,
+      lastModified: risk.lastModified,
+    }
+
+    if (variant !== 'audit_pack') {
+      return base
+    }
+
+    const openSteps = (risk.mitigationSteps ?? []).filter((step) => step.status !== 'done').length
+    const doneSteps = (risk.mitigationSteps ?? []).filter((step) => step.status === 'done').length
+
+    const audit: Record<CSVColumnAuditPack, string | number> = {
+      ...(base as Record<CSVColumnAuditPack, string | number>),
+      evidenceCount: (risk.evidence ?? []).length,
+      evidenceUrls: (risk.evidence ?? []).map((entry) => entry.url).join(' '),
+      evidenceTypes: (risk.evidence ?? []).map((entry) => entry.type).join(' '),
+      evidenceAddedAt: (risk.evidence ?? []).map((entry) => entry.addedAt).join(' '),
+      mitigationStepsOpenCount: openSteps,
+      mitigationStepsDoneCount: doneSteps,
+    }
+
+    return audit
+  })
+
+  return Papa.unparse(data, {
+    columns: [...columns],
+    header: true,
+    newline: '\n',
+    quotes: true,
+    escapeFormulae: true,
+  })
 }
 
-const fromCSV = (csv: string): Risk[] => {
+export type CSVImportFailureReason =
+  | 'empty'
+  | 'invalid_content'
+  | 'parse_error'
+  | 'no_valid_rows'
+
+export type CSVImportResult = { imported: number; reason?: CSVImportFailureReason }
+
+const parseJsonArray = <T,>(value: unknown): T[] => {
+  if (typeof value !== 'string') return []
+  const trimmed = value.trim()
+  if (!trimmed) return []
+
+  try {
+    const parsed = JSON.parse(trimmed) as unknown
+    return Array.isArray(parsed) ? (parsed as T[]) : []
+  } catch {
+    return []
+  }
+}
+
+const fromCSV = (csv: string): { risks: Risk[]; reason?: CSVImportFailureReason } => {
+  if (!csv.trim()) {
+    return { risks: [], reason: 'empty' }
+  }
+
   // Validate CSV content for potential injection attacks
   if (!validateCSVContent(csv)) {
     console.error('CSV validation failed: Potential injection attack detected');
-    return [];
+    return { risks: [], reason: 'invalid_content' }
   }
 
   // Use papaparse to securely parse the CSV
@@ -126,26 +410,69 @@ const fromCSV = (csv: string): Risk[] => {
     // Continue processing even if there are errors - just log them
   }
 
-  return results.data
+  const hadRows = Array.isArray(results.data) && results.data.length > 0
+
+  const risks = results.data
     .map((row: any) => {
       // Cast to any since papaparse returns unknown for parsed objects
       if (!row.title || !row.description) return null;
 
-      return {
+      const now = new Date().toISOString()
+
+      const evidenceJson = row.evidenceJson ?? row.evidence ?? ''
+      const mitigationStepsJson = row.mitigationStepsJson ?? row.mitigationSteps ?? ''
+
+      const evidenceFromJson = parseJsonArray<Risk['evidence'][number]>(evidenceJson)
+      const mitigationStepsFromJson =
+        parseJsonArray<Risk['mitigationSteps'][number]>(mitigationStepsJson)
+
+      const evidenceFromUrls =
+        !evidenceFromJson.length && typeof row.evidenceUrls === 'string' && row.evidenceUrls.trim()
+          ? row.evidenceUrls
+              .split(/\s+/)
+              .filter(Boolean)
+              .map((url: string) => ({ type: 'link', url, addedAt: now }))
+          : []
+
+      const importedRaw = {
         id: row.id || nanoid(12),
-        title: sanitizeTextInput(row.title ? row.title.toString().replace(/""/g, '"') : ''),
-        description: sanitizeTextInput(row.description ? row.description.toString().replace(/""/g, '"') : ''),
-        probability: clampScore(Number(row.probability) || 1),
-        impact: clampScore(Number(row.impact) || 1),
-        riskScore: calculateRiskScore(Number(row.probability) || 1, Number(row.impact) || 1),
-        category: sanitizeTextInput(row.category || DEFAULT_CATEGORIES[0]),
-        status: (row.status as Risk['status']) || 'open',
-        mitigationPlan: sanitizeTextInput(row.mitigationPlan || ''),
-        creationDate: row.creationDate || new Date().toISOString(),
-        lastModified: row.lastModified || new Date().toISOString(),
-      } satisfies Risk
+        title: row.title,
+        description: row.description,
+        probability: Number(row.probability) || 1,
+        impact: Number(row.impact) || 1,
+        category: row.category || DEFAULT_CATEGORIES[0],
+        status: row.status,
+        mitigationPlan: row.mitigationPlan || '',
+        mitigationSteps: mitigationStepsFromJson,
+        owner: row.owner || '',
+        ownerTeam: row.ownerTeam || undefined,
+        dueDate: row.dueDate || undefined,
+        reviewDate: row.reviewDate || undefined,
+        reviewCadence: row.reviewCadence || undefined,
+        riskResponse: row.riskResponse || undefined,
+        ownerResponse: row.ownerResponse || '',
+        securityAdvisorComment: row.securityAdvisorComment || '',
+        vendorResponse: row.vendorResponse || '',
+        notes: row.notes || undefined,
+        evidence: evidenceFromJson.length ? evidenceFromJson : evidenceFromUrls,
+        creationDate: row.creationDate || now,
+        lastModified: row.lastModified || row.creationDate || now,
+      }
+
+      const normalized = normalizeStoredRisk(importedRaw)
+      return normalized satisfies Risk
     })
     .filter((risk): risk is Risk => Boolean(risk))
+
+  if (!risks.length) {
+    if (results.errors && results.errors.length > 0) {
+      return { risks: [], reason: 'parse_error' }
+    }
+
+    return { risks: [], reason: hadRows ? 'no_valid_rows' : 'empty' }
+  }
+
+  return { risks }
 }
 
 export interface RiskStoreState {
@@ -164,8 +491,8 @@ export interface RiskStoreState {
   addCategory: (category: string) => void
   setFilters: (updates: Partial<RiskFilters>) => void
   bulkImport: (risks: Risk[]) => void
-  exportToCSV: () => string
-  importFromCSV: (csv: string) => number
+  exportToCSV: (variant?: CSVExportVariant) => string
+  importFromCSV: (csv: string) => CSVImportResult
   seedDemoData: () => number
 }
 
@@ -184,6 +511,36 @@ const seedData: RiskInput[] = [
     category: 'Operational',
     status: 'open',
     mitigationPlan: 'Add backup PSP integration and automated smoke tests.',
+    owner: 'Finance Ops Lead',
+    ownerTeam: 'Finance',
+    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
+    reviewCadence: 'monthly',
+    evidence: [
+      {
+        type: 'ticket',
+        url: 'https://example.com/tickets/psp-failover',
+        description: 'Tracking failover workstream',
+        addedAt: new Date().toISOString(),
+      },
+    ],
+    mitigationSteps: [
+      {
+        id: 'seed-psp-1',
+        description: 'Identify secondary PSP and contract terms',
+        owner: 'Procurement',
+        dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString(),
+        status: 'open',
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'seed-psp-2',
+        description: 'Implement health checks and smoke tests',
+        owner: 'Engineering',
+        dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 21).toISOString(),
+        status: 'open',
+        createdAt: new Date().toISOString(),
+      },
+    ],
   },
   {
     title: 'Vendor compliance gap',
@@ -191,8 +548,22 @@ const seedData: RiskInput[] = [
     probability: 2,
     impact: 4,
     category: 'Compliance',
-    status: 'mitigated',
+    status: 'accepted',
     mitigationPlan: 'Legal review scheduled and updated contract template drafted.',
+    owner: 'Vendor Manager',
+    ownerTeam: 'Legal',
+    reviewDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 60).toISOString(),
+    reviewCadence: 'quarterly',
+    ownerResponse: 'Temporary acceptance until contract update is executed.',
+    securityAdvisorComment: 'Ensure vendor SOC 2 report is obtained annually.',
+    evidence: [
+      {
+        type: 'doc',
+        url: 'https://example.com/docs/vendor-dpa-redline',
+        description: 'Draft DPA redline',
+        addedAt: new Date().toISOString(),
+      },
+    ],
   },
   {
     title: 'Phishing vulnerability',
@@ -202,6 +573,19 @@ const seedData: RiskInput[] = [
     category: 'Security',
     status: 'open',
     mitigationPlan: 'Roll out quarterly training and MFA hardening.',
+    owner: 'Security Lead',
+    ownerTeam: 'Security',
+    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 45).toISOString(),
+    reviewCadence: 'monthly',
+    vendorResponse: 'MFA enforcement is supported by the IdP vendor.',
+    evidence: [
+      {
+        type: 'link',
+        url: 'https://example.com/runbooks/phishing-response',
+        description: 'Incident response runbook',
+        addedAt: new Date().toISOString(),
+      },
+    ],
   },
 ]
 
@@ -252,6 +636,62 @@ export const useRiskStore = create<RiskStoreState>()(
               mitigationPlan: sanitizedUpdates.mitigationPlan
                 ? normalizeText(sanitizedUpdates.mitigationPlan)
                 : merged.mitigationPlan,
+              mitigationSteps:
+                'mitigationSteps' in sanitizedUpdates
+                  ? normalizeMitigationSteps(sanitizedUpdates.mitigationSteps)
+                  : merged.mitigationSteps,
+              owner:
+                'owner' in sanitizedUpdates
+                  ? normalizeText(String(sanitizedUpdates.owner ?? ''))
+                  : merged.owner,
+              ownerTeam:
+                'ownerTeam' in sanitizedUpdates
+                  ? typeof sanitizedUpdates.ownerTeam === 'string' && sanitizedUpdates.ownerTeam.trim()
+                    ? normalizeText(sanitizedUpdates.ownerTeam)
+                    : undefined
+                  : merged.ownerTeam,
+              dueDate:
+                'dueDate' in sanitizedUpdates
+                  ? normalizeISODateOrUndefined(sanitizedUpdates.dueDate)
+                  : merged.dueDate,
+              reviewDate:
+                'reviewDate' in sanitizedUpdates
+                  ? normalizeISODateOrUndefined(sanitizedUpdates.reviewDate)
+                  : merged.reviewDate,
+              reviewCadence:
+                'reviewCadence' in sanitizedUpdates
+                  ? isReviewCadence(sanitizedUpdates.reviewCadence)
+                    ? sanitizedUpdates.reviewCadence
+                    : undefined
+                  : merged.reviewCadence,
+              riskResponse:
+                'riskResponse' in sanitizedUpdates
+                  ? isRiskResponse(sanitizedUpdates.riskResponse)
+                    ? sanitizedUpdates.riskResponse
+                    : merged.riskResponse
+                  : merged.riskResponse,
+              ownerResponse:
+                'ownerResponse' in sanitizedUpdates
+                  ? normalizeText(String(sanitizedUpdates.ownerResponse ?? ''))
+                  : merged.ownerResponse,
+              securityAdvisorComment:
+                'securityAdvisorComment' in sanitizedUpdates
+                  ? normalizeText(String(sanitizedUpdates.securityAdvisorComment ?? ''))
+                  : merged.securityAdvisorComment,
+              vendorResponse:
+                'vendorResponse' in sanitizedUpdates
+                  ? normalizeText(String(sanitizedUpdates.vendorResponse ?? ''))
+                  : merged.vendorResponse,
+              notes:
+                'notes' in sanitizedUpdates
+                  ? typeof sanitizedUpdates.notes === 'string' && sanitizedUpdates.notes.trim()
+                    ? normalizeText(sanitizedUpdates.notes)
+                    : undefined
+                  : merged.notes,
+              evidence:
+                'evidence' in sanitizedUpdates
+                  ? normalizeEvidence(sanitizedUpdates.evidence)
+                  : merged.evidence,
               status: sanitizedUpdates.status ?? merged.status,
               probability,
               impact,
@@ -290,15 +730,27 @@ export const useRiskStore = create<RiskStoreState>()(
           const merged = [...risks, ...state.risks]
           return recalc(merged, state.filters)
         }),
-      exportToCSV: () => {
+      exportToCSV: (variant) => {
         const state = get()
-        return toCSV(state.risks)
+        return toCSV(state.risks, variant ?? 'standard')
       },
       importFromCSV: (csv) => {
-        const parsed = fromCSV(csv)
-        if (!parsed.length) return 0
-        set((state) => recalc([...parsed, ...state.risks], state.filters))
-        return parsed.length
+        const { risks, reason } = fromCSV(csv)
+        if (!risks.length) {
+          return { imported: 0, reason: reason ?? 'empty' }
+        }
+        set((state) => {
+          const mergedRisks = [...risks, ...state.risks]
+          const baseCategories =
+            state.categories && state.categories.length
+              ? state.categories
+              : [...DEFAULT_CATEGORIES]
+          const categories = Array.from(
+            new Set([...baseCategories, ...risks.map((risk) => risk.category)].filter(Boolean)),
+          )
+          return { ...recalc(mergedRisks, state.filters), categories }
+        })
+        return { imported: risks.length }
       },
       seedDemoData: () => {
         const state = get()
@@ -314,7 +766,44 @@ export const useRiskStore = create<RiskStoreState>()(
     {
       name: LOCAL_STORAGE_KEY,
       storage: createJSONStorage(safeStorage),
-      version: 1,
+      version: 2,
+      migrate: (persistedState, version) => {
+        if (!persistedState || typeof persistedState !== 'object') {
+          return persistedState
+        }
+
+        if (version >= 2) {
+          return persistedState
+        }
+
+        const state = persistedState as any
+        const risks: Risk[] = Array.isArray(state.risks)
+          ? state.risks.map((risk: any) => normalizeStoredRisk(risk))
+          : []
+
+        const categories: string[] = Array.isArray(state.categories)
+          ? Array.from(
+              new Set(
+                [...DEFAULT_CATEGORIES, ...state.categories]
+                  .map((category) =>
+                    typeof category === 'string' ? sanitizeTextInput(category).trim() : '',
+                  )
+                  .filter(Boolean),
+              ),
+            )
+          : [...DEFAULT_CATEGORIES]
+
+        const filters = state.filters ?? { ...DEFAULT_FILTERS }
+
+        return {
+          ...state,
+          risks,
+          categories,
+          filters,
+          filteredRisks: filterRisks(risks, filters),
+          stats: computeRiskStats(risks),
+        }
+      },
       onRehydrateStorage: () => (state) => {
         if (!state) return
         state.initialized = true

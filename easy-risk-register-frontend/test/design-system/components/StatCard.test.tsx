@@ -75,6 +75,8 @@ describe('StatCard', () => {
     const { container } = render(<StatCard label="Test Label" value="42" />)
     const card = container.firstElementChild as HTMLElement
     expect(card).toHaveClass(
+      'flex',
+      'h-full',
       'rounded-2xl',
       'border',
       'border-border-faint',
@@ -82,7 +84,7 @@ describe('StatCard', () => {
       'from-surface-primary',
       'to-surface-secondary/60',
       'p-6',
-      'shadow-card-soft'
+      'shadow-sm'
     )
   })
 
@@ -113,7 +115,8 @@ describe('StatCard', () => {
     render(<StatCard label="Test Label" value="42" description="Test description" />)
     const descriptionElement = screen.getByText('Test description')
     expect(descriptionElement).toHaveClass(
-      'mt-2',
+      'mt-4',
+      'line-clamp-2',
       'text-sm',
       'text-text-low'
     )

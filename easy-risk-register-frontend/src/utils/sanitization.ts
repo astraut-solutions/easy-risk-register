@@ -34,13 +34,37 @@ export const sanitizeTextInput = (input: string): string => {
   return sanitized.trim()
 }
 
+const normalizeOptionalText = (input: unknown, maxLength: number): string | undefined => {
+  if (typeof input !== 'string') return undefined
+  const trimmed = input.trim()
+  if (!trimmed) return undefined
+
+  const validationError = validateInput(trimmed, maxLength)
+  const safeValue = validationError ? trimmed.substring(0, maxLength) : trimmed
+  return sanitizeTextInput(safeValue)
+}
+
+export const sanitizeHttpUrl = (input: unknown): string | undefined => {
+  if (typeof input !== 'string') return undefined
+  const trimmed = input.trim()
+  if (!trimmed) return undefined
+
+  try {
+    const url = new URL(trimmed)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return undefined
+    return url.toString()
+  } catch {
+    return undefined
+  }
+}
+
 /**
  * Validates input length to prevent extremely large inputs
  * @param input - The input string to validate
  * @param maxLength - Maximum allowed length (default: 5000)
  * @returns Error message if validation fails, null otherwise
  */
-const validateInput = (input: string, maxLength: number = 5000): string | null => {
+function validateInput(input: string, maxLength: number = 5000): string | null {
   if (input.length > maxLength) {
     return `Input exceeds maximum length of ${maxLength} characters`
   }
@@ -61,7 +85,13 @@ export const sanitizeRiskInput = (input: Record<string, any>): Record<string, an
     { field: 'title', maxLength: 200 },
     { field: 'description', maxLength: 5000 },
     { field: 'mitigationPlan', maxLength: 5000 },
-    { field: 'category', maxLength: 100 }
+    { field: 'category', maxLength: 100 },
+    { field: 'owner', maxLength: 200 },
+    { field: 'ownerTeam', maxLength: 200 },
+    { field: 'ownerResponse', maxLength: 2000 },
+    { field: 'securityAdvisorComment', maxLength: 2000 },
+    { field: 'vendorResponse', maxLength: 2000 },
+    { field: 'notes', maxLength: 10000 },
   ]
 
   for (const { field, maxLength } of textFields) {
@@ -78,6 +108,73 @@ export const sanitizeRiskInput = (input: Record<string, any>): Record<string, an
     }
   }
 
+  if (Array.isArray(sanitizedInput.evidence)) {
+    sanitizedInput.evidence = sanitizedInput.evidence
+      .map((entry: any) => {
+        if (!entry || typeof entry !== 'object') return null
+
+        const url = sanitizeHttpUrl(entry.url)
+        if (!url) return null
+
+        const type =
+          typeof entry.type === 'string'
+            ? sanitizeTextInput(entry.type).slice(0, 32)
+            : 'link'
+
+        const description = normalizeOptionalText(entry.description, 2000)
+        const addedAt =
+          typeof entry.addedAt === 'string' && entry.addedAt.trim()
+            ? entry.addedAt.trim()
+            : new Date().toISOString()
+
+        return {
+          type,
+          url,
+          ...(description ? { description } : {}),
+          addedAt,
+        }
+      })
+      .filter(Boolean)
+  }
+
+  if (Array.isArray(sanitizedInput.mitigationSteps)) {
+    sanitizedInput.mitigationSteps = sanitizedInput.mitigationSteps
+      .map((step: any) => {
+        if (!step || typeof step !== 'object') return null
+
+        const description = normalizeOptionalText(step.description, 2000)
+        if (!description) return null
+
+        const id = typeof step.id === 'string' && step.id.trim() ? step.id.trim() : undefined
+        const owner = normalizeOptionalText(step.owner, 200)
+        const dueDate =
+          typeof step.dueDate === 'string' && step.dueDate.trim()
+            ? step.dueDate.trim()
+            : undefined
+        const status =
+          step.status === 'done' || step.status === 'open' ? step.status : 'open'
+        const createdAt =
+          typeof step.createdAt === 'string' && step.createdAt.trim()
+            ? step.createdAt.trim()
+            : new Date().toISOString()
+        const completedAt =
+          typeof step.completedAt === 'string' && step.completedAt.trim()
+            ? step.completedAt.trim()
+            : undefined
+
+        return {
+          ...(id ? { id } : {}),
+          description,
+          ...(owner ? { owner } : {}),
+          ...(dueDate ? { dueDate } : {}),
+          status,
+          createdAt,
+          ...(completedAt ? { completedAt } : {}),
+        }
+      })
+      .filter(Boolean)
+  }
+
   return sanitizedInput
 }
 
@@ -88,7 +185,8 @@ export const sanitizeRiskInput = (input: Record<string, any>): Record<string, an
  * @returns True if content is safe, false if potential injection patterns are found
  */
 export const validateCSVContent = (csv: string): boolean => {
-  // Check for potential CSV injection patterns
-  const injectionPatterns = [/^[\s]*[=+\-@]/, /[\r\n][\s]*[=+\-@]/] // Start with =, +, -, @
-  return !injectionPatterns.some(pattern => pattern.test(csv))
+  // Check for potential CSV injection patterns (formulas) at the start of any field.
+  // Quoting does not prevent spreadsheet apps from evaluating formulas, so allow for an optional quote.
+  const injectionPattern = /(^|[,\r\n])\s*["']?\s*[=+\-@]/
+  return !injectionPattern.test(csv)
 }

@@ -51,7 +51,29 @@ vi.mock('../../../src/design-system', async () => {
   }
 })
 
-const mockRisk1: Risk = {
+const makeRisk = (overrides: Partial<Risk>): Risk => ({
+  id: '1',
+  title: 'Test Risk',
+  description: 'Test description',
+  probability: 3,
+  impact: 3,
+  riskScore: 9,
+  category: 'Security',
+  status: 'open',
+  mitigationPlan: '',
+  mitigationSteps: [],
+  owner: '',
+  riskResponse: 'treat',
+  ownerResponse: '',
+  securityAdvisorComment: '',
+  vendorResponse: '',
+  evidence: [],
+  creationDate: '2023-01-01T00:00:00.000Z',
+  lastModified: '2023-01-02T00:00:00.000Z',
+  ...overrides,
+})
+
+const mockRisk1: Risk = makeRisk({
   id: '1',
   title: 'Test Risk 1',
   description: 'First test risk description',
@@ -61,11 +83,15 @@ const mockRisk1: Risk = {
   category: 'Security',
   status: 'open',
   mitigationPlan: 'First mitigation plan',
-  creationDate: '2023-01-01T00:00:00.000Z',
-  lastModified: '2023-01-02T00:00:00.000Z',
-}
+  owner: 'Alice',
+  dueDate: '2023-01-15T00:00:00.000Z',
+  reviewDate: '2023-01-20T00:00:00.000Z',
+  reviewCadence: 'monthly',
+  riskResponse: 'treat',
+  evidence: [],
+})
 
-const mockRisk2: Risk = {
+const mockRisk2: Risk = makeRisk({
   id: '2',
   title: 'Test Risk 2',
   description: 'Second test risk description',
@@ -75,9 +101,13 @@ const mockRisk2: Risk = {
   category: 'Compliance',
   status: 'mitigated',
   mitigationPlan: 'Second mitigation plan',
-  creationDate: '2023-02-01T00:00:00.000Z',
-  lastModified: '2023-02-02T00:00:00.000Z',
-}
+  owner: 'Bob',
+  dueDate: '2023-02-15T00:00:00.000Z',
+  reviewDate: '2023-02-20T00:00:00.000Z',
+  reviewCadence: 'quarterly',
+  riskResponse: 'transfer',
+  evidence: [{ type: 'link', url: 'https://example.com', addedAt: '2023-02-10T00:00:00.000Z' }],
+})
 
 describe('RiskTable', () => {
   const defaultProps = {
@@ -91,9 +121,9 @@ describe('RiskTable', () => {
 
     expect(screen.getByText('Risk')).toBeInTheDocument()
     expect(screen.getByText('Category')).toBeInTheDocument()
-    expect(screen.getByText('Probability')).toBeInTheDocument()
-    expect(screen.getByText('Impact')).toBeInTheDocument()
     expect(screen.getByText('Score')).toBeInTheDocument()
+    expect(screen.getByText('Owner')).toBeInTheDocument()
+    expect(screen.getByText('Due')).toBeInTheDocument()
     expect(screen.getByText('Status')).toBeInTheDocument()
     expect(screen.getByText('Last updated')).toBeInTheDocument()
     expect(screen.getByText('Actions')).toBeInTheDocument()
@@ -110,9 +140,8 @@ describe('RiskTable', () => {
     expect(firstRowQueries.getByText('Test Risk 1')).toBeInTheDocument()
     expect(firstRowQueries.getByText('First test risk description')).toBeInTheDocument()
     expect(firstRowQueries.getByText('Security')).toBeInTheDocument()
-    expect(firstRowQueries.getByText('4')).toBeInTheDocument()
-    expect(firstRowQueries.getByText('3')).toBeInTheDocument()
     expect(firstRowQueries.getByText('12')).toBeInTheDocument()
+    expect(firstRowQueries.getByText('4×3')).toBeInTheDocument()
     expect(firstRowQueries.getByText('open')).toBeInTheDocument()
 
     // Check second risk
@@ -120,9 +149,8 @@ describe('RiskTable', () => {
     expect(secondRowQueries.getByText('Test Risk 2')).toBeInTheDocument()
     expect(secondRowQueries.getByText('Second test risk description')).toBeInTheDocument()
     expect(secondRowQueries.getByText('Compliance')).toBeInTheDocument()
-    expect(secondRowQueries.getByText('2')).toBeInTheDocument()
-    expect(secondRowQueries.getByText('4')).toBeInTheDocument()
     expect(secondRowQueries.getByText('8')).toBeInTheDocument()
+    expect(secondRowQueries.getByText('2×4')).toBeInTheDocument()
     expect(secondRowQueries.getByText('mitigated')).toBeInTheDocument()
   })
 
@@ -151,12 +179,12 @@ describe('RiskTable', () => {
     expect(mediumSeverityBadge).toHaveAttribute('tone', 'warning')
   })
 
-  it('calls onEdit when edit button is clicked', () => {
+  it('calls onEdit when Edit button is clicked', () => {
     const onEditSpy = vi.fn()
     render(<RiskTable {...defaultProps} onEdit={onEditSpy} />)
 
-    const editButtons = screen.getAllByText('Edit')
-    fireEvent.click(editButtons[0])
+    const viewEditButtons = screen.getAllByText('View/Edit')
+    fireEvent.click(viewEditButtons[0])
 
     expect(onEditSpy).toHaveBeenCalledWith(mockRisk1)
   })
@@ -171,12 +199,12 @@ describe('RiskTable', () => {
     expect(onDeleteSpy).toHaveBeenCalledWith('2')
   })
 
-  it('calls onView when view button is clicked if onView prop is provided', () => {
+  it('calls onView when the risk title is clicked if onView prop is provided', () => {
     const onViewSpy = vi.fn()
     render(<RiskTable {...defaultProps} onView={onViewSpy} />)
 
-    const viewButtons = screen.getAllByText('View')
-    fireEvent.click(viewButtons[0])
+    const titleButton = screen.getByRole('button', { name: 'View details for risk: Test Risk 1' })
+    fireEvent.click(titleButton)
 
     expect(onViewSpy).toHaveBeenCalledWith(mockRisk1)
   })
@@ -215,8 +243,8 @@ describe('RiskTable', () => {
     render(<RiskTable {...defaultProps} />)
 
     // Should display formatted dates (will vary by locale but should contain the date)
-    expect(screen.getByText(/Jan|January/)).toBeInTheDocument()
-    expect(screen.getByText(/Feb|February/)).toBeInTheDocument()
+    expect(screen.getAllByText(/Jan|January/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Feb|February/).length).toBeGreaterThan(0)
   })
 
   it('capitalizes status correctly', () => {
@@ -245,7 +273,7 @@ describe('RiskTable', () => {
 
     // Check table ARIA label
     const table = screen.getByTestId('mock-table')
-    expect(table).toHaveAttribute('aria-label', 'Risk register table showing all risks with their details')
+    expect(table).toHaveAttribute('aria-label', 'Risk register table showing key risk details')
 
     // Check ARIA label for actions group
     const actionGroups = screen.getAllByRole('group')

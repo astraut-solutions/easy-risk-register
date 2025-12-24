@@ -1,38 +1,68 @@
-import { useEffect } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { forwardRef, useEffect, useId, useImperativeHandle, useMemo, useState } from 'react'
+import { Controller, useFieldArray, useForm } from 'react-hook-form'
+import { nanoid } from 'nanoid'
 
-import type { RiskInput, RiskStatus } from '../../types/risk'
+import type { RiskInput, RiskStatus, ReviewCadence, RiskResponse } from '../../types/risk'
 import { calculateRiskScore, getRiskSeverity } from '../../utils/riskCalculations'
 import { Button, Input, Select, Textarea } from '../../design-system'
 import { cn } from '../../utils/cn'
+import { trackEvent } from '../../utils/analytics'
 
 export type RiskFormValues = RiskInput & { status: RiskStatus }
+
+export type RiskFormHandle = {
+  getValues: () => RiskFormValues
+  markClean: () => void
+  submit: () => void
+}
 
 interface RiskFormProps {
   categories: string[]
   defaultValues?: Partial<RiskFormValues>
   mode?: 'create' | 'edit'
   onSubmit: (values: RiskFormValues) => void
+  onAddCategory?: (category: string) => void
   onCancel?: () => void
+  onSaveDraft?: (values: RiskFormValues) => void
+  onDirtyChange?: (isDirty: boolean) => void
+  onMetaChange?: (meta: {
+    isDirty: boolean
+    isSubmitting: boolean
+    isValid: boolean
+    missingRequiredFields: string[]
+    isPrimaryDisabled: boolean
+  }) => void
+  formId?: string
+  showActions?: boolean
   className?: string
 }
 
-export const RiskForm = ({
+export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
   categories,
   defaultValues,
   mode = 'create',
   onSubmit,
+  onAddCategory,
   onCancel,
+  onSaveDraft,
+  onDirtyChange,
+  onMetaChange,
+  formId,
+  showActions = true,
   className,
-}: RiskFormProps) => {
+}: RiskFormProps, ref) => {
   const {
     register,
     handleSubmit,
     watch,
+    getValues,
     reset,
+    setValue,
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty, isValid },
   } = useForm<RiskFormValues>({
+    mode: 'onChange',
+    reValidateMode: 'onChange',
     defaultValues: {
       title: '',
       description: '',
@@ -41,13 +71,119 @@ export const RiskForm = ({
       category: categories[0] ?? 'Operational',
       mitigationPlan: '',
       status: 'open',
+      owner: '',
+      ownerTeam: '',
+      dueDate: '',
+      reviewDate: '',
+      reviewCadence: undefined,
+      riskResponse: 'treat',
+      ownerResponse: '',
+      securityAdvisorComment: '',
+      vendorResponse: '',
+      notes: '',
+      evidence: [],
+      mitigationSteps: [],
       ...defaultValues,
     },
   })
 
-  const { probability = 3, impact = 3 } = watch()
+  const formValues = watch()
+  const { probability = 3, impact = 3 } = formValues
   const riskScore = calculateRiskScore(probability, impact)
   const severity = getRiskSeverity(riskScore)
+
+  const missingRequiredFields = useMemo(() => {
+    const missing: string[] = []
+    if (!formValues.title?.trim()) missing.push('Title')
+    if (!formValues.description?.trim()) missing.push('Description')
+    if (!formValues.category?.trim()) missing.push('Category')
+    if (!formValues.status?.trim()) missing.push('Status')
+    return missing
+  }, [formValues.category, formValues.description, formValues.status, formValues.title])
+
+  const isPrimaryDisabled = isSubmitting || !isValid || missingRequiredFields.length > 0
+
+  const severityMeta = useMemo(() => {
+    switch (severity) {
+      case 'low':
+        return {
+          label: 'Low',
+          cardTone: 'border-status-success/30 bg-status-success/10',
+          pillTone: 'border-status-success/40 bg-status-success/15 text-status-success',
+          why: 'Score ≤ 3 is low severity.',
+          nudge: 'Next: Confirm an owner and review cadence.',
+        }
+      case 'medium':
+        return {
+          label: 'Medium',
+          cardTone: 'border-status-warning/30 bg-status-warning/10',
+          pillTone: 'border-status-warning/40 bg-status-warning/15 text-status-warning',
+          why: 'Score 4–6 is medium severity.',
+          nudge: 'Next: Add mitigation steps and a target due date.',
+        }
+      case 'high':
+      default:
+        return {
+          label: 'High',
+          cardTone: 'border-status-danger/30 bg-status-danger/10',
+          pillTone: 'border-status-danger/40 bg-status-danger/15 text-status-danger',
+          why: 'Score > 6 is high severity.',
+          nudge: 'Next: Assign an owner and set a due date.',
+        }
+    }
+  }, [severity])
+
+  const resolvedFormId = formId ?? useId()
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty)
+  }, [isDirty, onDirtyChange])
+
+  useEffect(() => {
+    onMetaChange?.({
+      isDirty,
+      isSubmitting,
+      isValid,
+      missingRequiredFields,
+      isPrimaryDisabled,
+    })
+  }, [isDirty, isPrimaryDisabled, isSubmitting, isValid, missingRequiredFields, onMetaChange])
+
+  const [isAddingCategory, setIsAddingCategory] = useState(false)
+  const [newCategory, setNewCategory] = useState('')
+  const [newCategoryError, setNewCategoryError] = useState<string | null>(null)
+
+  const evidenceArray = useFieldArray({
+    control,
+    name: 'evidence',
+    keyName: '_key',
+  })
+
+  const mitigationStepsArray = useFieldArray({
+    control,
+    name: 'mitigationSteps',
+    keyName: '_key',
+  })
+
+  const normalizedCategorySet = useMemo(() => {
+    return new Set(categories.map((category) => category.trim().toLowerCase()))
+  }, [categories])
+
+  const toDateInputValue = (iso?: string) => {
+    if (!iso) return ''
+    const parsed = Date.parse(iso)
+    if (Number.isNaN(parsed)) return ''
+    return new Date(parsed).toISOString().split('T')[0]
+  }
+
+  const isValidHttpUrl = (value: string) => {
+    try {
+      const url = new URL(value)
+      return url.protocol === 'http:' || url.protocol === 'https:'
+    } catch {
+      return false
+    }
+  }
 
   useEffect(() => {
     if (defaultValues) {
@@ -59,9 +195,47 @@ export const RiskForm = ({
         category: defaultValues.category ?? categories[0] ?? 'Operational',
         mitigationPlan: defaultValues.mitigationPlan ?? '',
         status: defaultValues.status ?? 'open',
+        owner: defaultValues.owner ?? '',
+        ownerTeam: defaultValues.ownerTeam ?? '',
+        dueDate: toDateInputValue(defaultValues.dueDate),
+        reviewDate: toDateInputValue(defaultValues.reviewDate),
+        reviewCadence: defaultValues.reviewCadence,
+        riskResponse: defaultValues.riskResponse ?? 'treat',
+        ownerResponse: defaultValues.ownerResponse ?? '',
+        securityAdvisorComment: defaultValues.securityAdvisorComment ?? '',
+        vendorResponse: defaultValues.vendorResponse ?? '',
+        notes: defaultValues.notes ?? '',
+        evidence: defaultValues.evidence ?? [],
+        mitigationSteps: defaultValues.mitigationSteps ?? [],
       })
     }
   }, [categories, defaultValues, reset])
+
+  const collectErrorPaths = (value: unknown, prefix = ''): string[] => {
+    if (!value || typeof value !== 'object') return []
+
+    if ('message' in (value as Record<string, unknown>)) {
+      return prefix ? [prefix] : []
+    }
+
+    if (Array.isArray(value)) {
+      return value.flatMap((entry, index) => collectErrorPaths(entry, `${prefix}[${index}]`))
+    }
+
+    return Object.entries(value as Record<string, unknown>).flatMap(([key, entry]) => {
+      const nextPrefix = prefix ? `${prefix}.${key}` : key
+      return collectErrorPaths(entry, nextPrefix)
+    })
+  }
+
+  const onFormInvalid = (formErrors: unknown) => {
+    const fields = collectErrorPaths(formErrors)
+    trackEvent('risk_modal_validation_error', {
+      mode,
+      errorCount: fields.length,
+      fields,
+    })
+  }
 
   const onFormSubmit = (values: RiskFormValues) => {
     onSubmit({
@@ -79,76 +253,205 @@ export const RiskForm = ({
         category: categories[0] ?? 'Operational',
         mitigationPlan: '',
         status: 'open',
+        owner: '',
+        ownerTeam: '',
+        dueDate: '',
+        reviewDate: '',
+        reviewCadence: undefined,
+        riskResponse: 'treat',
+        ownerResponse: '',
+        securityAdvisorComment: '',
+        vendorResponse: '',
+        notes: '',
+        evidence: [],
+        mitigationSteps: [],
       })
     }
   }
 
+  const handleSaveDraft = () => {
+    if (!onSaveDraft) return
+    const values = getValues()
+    onSaveDraft(values)
+    reset(values)
+  }
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getValues: () => getValues(),
+      markClean: () => reset(getValues()),
+      submit: () => {
+        void handleSubmit(onFormSubmit)()
+      },
+    }),
+    [getValues, handleSubmit, onFormSubmit, reset],
+  )
+
+  const handleStartAddCategory = () => {
+    if (!onAddCategory) return
+    setNewCategory('')
+    setNewCategoryError(null)
+    setIsAddingCategory(true)
+  }
+
+  const handleCancelAddCategory = () => {
+    setNewCategory('')
+    setNewCategoryError(null)
+    setIsAddingCategory(false)
+  }
+
+  const handleConfirmAddCategory = () => {
+    if (!onAddCategory) return
+
+    const normalized = newCategory.trim()
+    if (!normalized) {
+      setNewCategoryError('Category name is required.')
+      return
+    }
+
+    if (normalizedCategorySet.has(normalized.toLowerCase())) {
+      setNewCategoryError('Category already exists.')
+      return
+    }
+
+    onAddCategory(normalized)
+    setValue('category', normalized, { shouldDirty: true, shouldValidate: true })
+    handleCancelAddCategory()
+  }
+
+  const reviewCadenceOptions: Array<{ value: ReviewCadence; label: string }> = [
+    { value: 'weekly', label: 'Weekly' },
+    { value: 'monthly', label: 'Monthly' },
+    { value: 'quarterly', label: 'Quarterly' },
+    { value: 'semiannual', label: 'Semiannual' },
+    { value: 'annual', label: 'Annual' },
+    { value: 'ad-hoc', label: 'Ad hoc' },
+  ]
+
+  const riskResponseOptions: Array<{ value: RiskResponse; label: string }> = [
+    { value: 'treat', label: 'Treat (mitigate)' },
+    { value: 'transfer', label: 'Transfer' },
+    { value: 'tolerate', label: 'Tolerate' },
+    { value: 'terminate', label: 'Terminate' },
+  ]
+
+  const titleField = register('title', {
+    required: 'Add a short, specific title (e.g., “Supply chain disruption”).',
+  })
+  const descriptionField = register('description', {
+    required: 'Add 2–3 sentences describing context and business impact.',
+  })
+  const mitigationPlanField = register('mitigationPlan')
+
   return (
     <form
-      onSubmit={handleSubmit(onFormSubmit)}
+      id={resolvedFormId}
+      onSubmit={handleSubmit(onFormSubmit, onFormInvalid)}
       className={cn('flex h-full min-h-full flex-col gap-4', className)}
       noValidate
     >
       <div className="flex flex-1 flex-col gap-4 pb-1">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
           <section className="space-y-4 rounded-[20px] border border-border-faint/70 bg-surface-primary/95 p-4 shadow-[0_28px_56px_rgba(15,23,42,0.08)]">
-            <div className="grid gap-2.5 md:grid-cols-[minmax(0,0.6fr)_minmax(0,0.4fr)]">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-text-high">Essentials</h3>
+              <span className="text-xs font-medium text-text-low">Required fields marked *</span>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-[minmax(0,0.6fr)_minmax(0,0.4fr)]">
               <Input
-                label="Title"
+                label="Title *"
                 helperText="Keep it sharp so execs can scan quickly."
                 error={errors.title?.message?.toString()}
                 placeholder="Supply chain disruption"
-                className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-2.5 text-sm focus:ring-brand-primary/30"
-                {...register('title', { required: 'Title is required' })}
-                aria-describedby={errors.title ? 'title-error' : undefined}
+                className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-3 text-sm focus:ring-brand-primary/30"
+                autoFocus
+                {...titleField}
               />
               <Controller
                 name="category"
                 control={control}
-                defaultValue={categories[0] ?? 'Operational'}
-                rules={{ required: 'Category is required' }}
-                render={({ field }) => (
-                  <Select
-                    label="Category"
-                    error={errors.category?.message?.toString()}
-                    options={categories.map(category => ({
-                      value: category,
-                      label: category,
-                    }))}
-                    value={field.value}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    name={field.name}
-                    placeholder="Select a category"
-                    aria-describedby={errors.category ? 'category-error' : undefined}
-                  />
+                  defaultValue={categories[0] ?? 'Operational'}
+                  rules={{ required: 'Select a category.' }}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Select
+                        label="Category *"
+                        helperText="Use broad buckets for reporting and filtering."
+                        error={errors.category?.message?.toString()}
+                      options={categories.map((category) => ({
+                        value: category,
+                        label: category,
+                      }))}
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        required
+                        placeholder="Select a category"
+                      />
+
+                    {onAddCategory && !isAddingCategory && (
+                      <div className="flex items-center justify-end">
+                        <Button type="button" size="sm" variant="ghost" onClick={handleStartAddCategory}>
+                          Add category
+                        </Button>
+                      </div>
+                    )}
+
+                    {onAddCategory && isAddingCategory && (
+                      <div className="rounded-2xl border border-border-faint bg-surface-secondary/10 p-3">
+                        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end">
+                          <Input
+                            label="New category"
+                            value={newCategory}
+                            onChange={(event) => {
+                              setNewCategory(event.target.value)
+                              setNewCategoryError(null)
+                            }}
+                            error={newCategoryError ?? undefined}
+                            placeholder="e.g. Third-party, Privacy, Finance"
+                            className="rounded-xl border-border-faint bg-surface-primary/70 px-4 py-3 text-sm focus:ring-brand-primary/30"
+                          />
+                          <Button type="button" size="sm" onClick={handleConfirmAddCategory}>
+                            Add
+                          </Button>
+                          <Button type="button" size="sm" variant="ghost" onClick={handleCancelAddCategory}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               />
             </div>
 
             <Textarea
-              label="Description"
+              label="Description *"
               error={errors.description?.message?.toString()}
               helperText="Capture context, trigger, and business impact in 2-3 sentences."
               placeholder="Describe the risk context and impact..."
               rows={3}
-              className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-2.5 text-sm focus:ring-brand-primary/30"
-              {...register('description', { required: 'Description is required' })}
-              aria-describedby={errors.description ? 'description-error' : undefined}
+              className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-3 text-sm focus:ring-brand-primary/30"
+              {...descriptionField}
             />
 
-            <div className="grid gap-2.5 md:grid-cols-[minmax(0,0.35fr)_minmax(0,0.65fr)]">
-              <Controller
-                name="status"
-                control={control}
-                defaultValue="open"
-                rules={{ required: 'Status is required' }}
+              <div className="grid gap-3 md:grid-cols-[minmax(0,0.35fr)_minmax(0,0.65fr)]">
+                <Controller
+                  name="status"
+                  control={control}
+                  defaultValue="open"
+                rules={{ required: 'Select a status.' }}
                 render={({ field }) => (
                   <Select
-                    label="Status"
+                    label="Status *"
+                    helperText="Keep open risks actionable; close only when resolved."
                     error={errors.status?.message?.toString()}
                     options={[
                       { value: 'open', label: 'Open' },
+                      { value: 'accepted', label: 'Accepted' },
                       { value: 'mitigated', label: 'Mitigated' },
                       { value: 'closed', label: 'Closed' },
                     ]}
@@ -156,33 +459,19 @@ export const RiskForm = ({
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     name={field.name}
-                    aria-describedby={errors.status ? 'status-error' : undefined}
+                    required
                   />
                 )}
               />
-              <div className="flex items-center rounded-2xl border border-dashed border-border-faint bg-surface-secondary/20 px-3.5 py-2.5 text-[11px] text-text-low">
-                Probability x Impact updates instantly so you can gauge severity before committing changes.
+                <div className="flex items-center rounded-2xl border border-dashed border-border-faint bg-surface-secondary/20 px-4 py-3 text-[11px] text-text-low">
+                  Likelihood x Impact updates instantly so you can gauge severity before committing changes.
+                </div>
               </div>
-            </div>
-          </section>
 
-          <section className="flex flex-col gap-3 rounded-[20px] border border-border-faint/60 bg-gradient-to-b from-surface-primary/90 to-surface-secondary/20 p-4 shadow-[0_28px_56px_rgba(15,23,42,0.08)]">
-            <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
-              <Textarea
-                label="Mitigation plan"
-                placeholder="Outline mitigation actions, owners, or milestones..."
-                helperText="Optional, but it keeps downstream owners aligned."
-                rows={2}
-                className="rounded-xl border-border-faint bg-surface-secondary/10 px-3.5 py-2 text-sm focus:ring-brand-primary/30"
-                {...register('mitigationPlan')}
-              />
-            </div>
-
-            <div className="grid gap-2.5 lg:grid-cols-[minmax(0,0.65fr)_minmax(0,0.45fr)]">
-              <div className="space-y-3">
-                <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-4 shadow-sm">
                   <div className="flex items-center justify-between text-xs font-medium text-text-high">
-                    <span>Probability</span>
+                    <span>Likelihood *</span>
                     <span className="rounded-full bg-surface-secondary/30 px-3 py-0.5 text-[11px] font-semibold text-text-high">
                       {probability} / 5
                     </span>
@@ -197,17 +486,21 @@ export const RiskForm = ({
                       valueAsNumber: true,
                     })}
                     className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-gradient-to-r from-brand-primary/20 via-brand-primary/10 to-brand-primary/5 accent-brand-primary focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/25"
-                    aria-label="Probability (1-5)"
-                    aria-describedby="probability-help"
+                    aria-label="Likelihood (1-5)"
+                    aria-describedby="likelihood-help"
+                    aria-valuemin={1}
+                    aria-valuemax={5}
+                    aria-valuenow={probability}
+                    aria-valuetext={`${probability} of 5`}
                   />
-                  <p id="probability-help" className="mt-1.5 text-[11px] text-text-low">
+                  <p id="likelihood-help" className="mt-2 text-[11px] text-text-low">
                     Estimate likelihood from 1 (rare) to 5 (almost certain).
                   </p>
                 </div>
 
-                <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-3.5 shadow-sm">
+                <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-4 shadow-sm">
                   <div className="flex items-center justify-between text-xs font-medium text-text-high">
-                    <span>Impact</span>
+                    <span>Impact *</span>
                     <span className="rounded-full bg-surface-secondary/30 px-3 py-0.5 text-[11px] font-semibold text-text-high">
                       {impact} / 5
                     </span>
@@ -224,73 +517,460 @@ export const RiskForm = ({
                     className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-gradient-to-r from-status-danger/20 via-status-danger/10 to-status-danger/5 accent-status-danger focus:outline-none focus-visible:ring-4 focus-visible:ring-status-danger/25"
                     aria-label="Impact (1-5)"
                     aria-describedby="impact-help"
+                    aria-valuemin={1}
+                    aria-valuemax={5}
+                    aria-valuenow={impact}
+                    aria-valuetext={`${impact} of 5`}
                   />
-                  <p id="impact-help" className="mt-1.5 text-[11px] text-text-low">
+                  <p id="impact-help" className="mt-2 text-[11px] text-text-low">
                     Gauge downstream effect from 1 (minimal) to 5 (critical).
                   </p>
                 </div>
               </div>
+            </section>
 
-              <aside className="flex h-full flex-col justify-between rounded-[18px] border border-border-subtle bg-surface-primary p-3.5 text-text-high shadow-sm">
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-text-low">
-                    Live score
+          <section className="flex flex-col gap-3 rounded-[20px] border border-border-faint/60 bg-gradient-to-b from-surface-primary/90 to-surface-secondary/20 p-4 shadow-[0_28px_56px_rgba(15,23,42,0.08)]">
+            <details className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-4 shadow-sm">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                Details (optional)
+              </summary>
+              <div className="mt-3 space-y-3">
+                <Textarea
+                  label="Mitigation plan (optional)"
+                  placeholder="Outline mitigation actions, owners, or milestones..."
+                  helperText="Keeps downstream owners aligned."
+                  rows={2}
+                  className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-3 text-sm focus:ring-brand-primary/30"
+                  {...mitigationPlanField}
+                />
+
+            <details className="rounded-2xl bg-surface-secondary/10 p-4">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                Accountability (optional)
+              </summary>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <Input
+                  label="Owner (optional)"
+                  helperText="Who is accountable for next actions."
+                  placeholder="Name or role (e.g. SecOps lead)"
+                  {...register('owner')}
+                />
+                <Input
+                  label="Owner team (optional)"
+                  helperText="Helps routing and reporting."
+                  placeholder="Team (optional)"
+                  {...register('ownerTeam')}
+                />
+                <Input
+                  type="date"
+                  label="Due date (optional)"
+                  helperText="Target date for mitigation or decision."
+                  {...register('dueDate')}
+                />
+              </div>
+            </details>
+
+            <details className="rounded-2xl bg-surface-secondary/10 p-4">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                Review cadence (optional)
+              </summary>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <Input
+                  type="date"
+                  label="Next review date (optional)"
+                  helperText="Set a concrete date for the next review."
+                  {...register('reviewDate')}
+                />
+                <Controller
+                  name="reviewCadence"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      label="Cadence (optional)"
+                      helperText="How often this risk should be reviewed."
+                      options={reviewCadenceOptions.map((option) => ({
+                        value: option.value,
+                        label: option.label,
+                      }))}
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      placeholder="Select cadence (optional)"
+                    />
+                  )}
+                />
+              </div>
+            </details>
+
+            <details className="rounded-2xl bg-surface-secondary/10 p-4">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                Responses (optional)
+              </summary>
+              <div className="mt-3 grid gap-3">
+                <Controller
+                  name="riskResponse"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      label="Response (optional)"
+                      helperText="Choose a default response strategy."
+                      options={riskResponseOptions.map((option) => ({
+                        value: option.value,
+                        label: option.label,
+                      }))}
+                      value={field.value ?? 'treat'}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                    />
+                  )}
+                />
+
+                <Textarea
+                  label="Owner response (optional)"
+                  helperText="One sentence capturing the owner's stance."
+                  rows={2}
+                  placeholder="Short owner response (optional)"
+                  {...register('ownerResponse')}
+                />
+                <Textarea
+                  label="Security advisor comment (optional)"
+                  helperText="Note security guidance or constraints."
+                  rows={2}
+                  placeholder="Short security advisor comment (optional)"
+                  {...register('securityAdvisorComment')}
+                />
+                <Textarea
+                  label="Vendor response (optional)"
+                  helperText="Record vendor confirmation or commitments."
+                  rows={2}
+                  placeholder="Short vendor response (optional)"
+                  {...register('vendorResponse')}
+                />
+              </div>
+            </details>
+
+            <details className="rounded-2xl bg-surface-secondary/10 p-4">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                Evidence (optional)
+              </summary>
+              <div className="mt-3 space-y-3">
+                {evidenceArray.fields.length === 0 ? (
+                  <p className="text-xs text-text-low">
+                    Add links to tickets, docs, or other evidence that supports the risk decision.
                   </p>
+                ) : null}
+
+                {evidenceArray.fields.map((field, index) => {
+                  const base = `evidence.${index}` as const
+                  return (
+                    <div key={(field as any)._key} className="rounded-2xl bg-surface-primary/60 p-4">
+                      <div className="grid gap-3 md:grid-cols-[minmax(0,0.35fr)_minmax(0,1fr)]">
+                        <Controller
+                          name={`${base}.type`}
+                          control={control}
+                          defaultValue={(field as any).type ?? 'link'}
+                          render={({ field: typeField }) => (
+                            <Select
+                              label="Type"
+                              options={[
+                                { value: 'link', label: 'Link' },
+                                { value: 'ticket', label: 'Ticket' },
+                                { value: 'doc', label: 'Doc' },
+                                { value: 'other', label: 'Other' },
+                              ]}
+                              value={typeField.value ?? 'link'}
+                              onChange={typeField.onChange}
+                              onBlur={typeField.onBlur}
+                              name={typeField.name}
+                            />
+                          )}
+                        />
+                        <Input
+                          label="URL (required)"
+                          placeholder="https://..."
+                          error={
+                            (errors.evidence as any)?.[index]?.url?.message?.toString()
+                          }
+                          {...register(`${base}.url`, {
+                            required: 'Paste a valid URL (include https://).',
+                            validate: (value) =>
+                              isValidHttpUrl(String(value)) || 'Enter a valid http(s) URL.',
+                          })}
+                        />
+                      </div>
+                      <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+                        <Input
+                          label="Description (optional)"
+                          helperText="Add context so reviewers know why this link matters."
+                          placeholder="Optional context for this evidence link"
+                          {...register(`${base}.description`)}
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => evidenceArray.remove(index)}
+                          aria-label="Remove evidence"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                      <input
+                        type="hidden"
+                        {...register(`${base}.addedAt`)}
+                      />
+                    </div>
+                  )
+                })}
+
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() =>
+                    evidenceArray.append({
+                      type: 'link',
+                      url: '',
+                      description: '',
+                      addedAt: new Date().toISOString(),
+                    } as any)
+                  }
+                >
+                  Add evidence
+                </Button>
+              </div>
+            </details>
+
+            <details className="rounded-2xl bg-surface-secondary/10 p-4">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                Mitigation steps (optional)
+              </summary>
+              <div className="mt-3 space-y-3">
+                {mitigationStepsArray.fields.length === 0 ? (
+                  <p className="text-xs text-text-low">
+                    Track mitigation as actionable steps with owners and due dates.
+                  </p>
+                ) : null}
+
+                {mitigationStepsArray.fields.map((field, index) => {
+                  const base = `mitigationSteps.${index}` as const
+                  const stepErrors = (errors.mitigationSteps as any)?.[index]
+
+                  return (
+                    <div key={(field as any)._key} className="rounded-2xl bg-surface-primary/60 p-4">
+                      <div className="grid gap-3 md:grid-cols-[auto_minmax(0,1fr)] md:items-start">
+                        <div className="pt-8">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded accent-brand-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20"
+                            aria-label="Mark step done"
+                            checked={(watch(`${base}.status`) as any) === 'done'}
+                            onChange={(event) => {
+                              const nextStatus = event.target.checked ? 'done' : 'open'
+                              setValue(`${base}.status`, nextStatus as any, { shouldDirty: true })
+                              setValue(
+                                `${base}.completedAt`,
+                                event.target.checked ? new Date().toISOString() : undefined,
+                                { shouldDirty: true },
+                              )
+                            }}
+                          />
+                        </div>
+                        <div className="grid gap-3">
+                          <Input
+                            label="Step (required)"
+                            helperText="Required for each step. Keep it short and actionable."
+                            placeholder="Describe the mitigation action"
+                            error={stepErrors?.description?.message?.toString()}
+                            {...register(`${base}.description`, {
+                              required: 'Describe the step (e.g., “Enable MFA for admin accounts”).',
+                            })}
+                          />
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <Input
+                              label="Owner (optional)"
+                              helperText="Who will execute this step."
+                              placeholder="Who owns this step?"
+                              {...register(`${base}.owner`)}
+                            />
+                            <Input
+                              type="date"
+                              label="Due date (optional)"
+                              helperText="Target completion date."
+                              {...register(`${base}.dueDate`)}
+                            />
+                          </div>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                disabled={index === 0}
+                                onClick={() => mitigationStepsArray.move(index, index - 1)}
+                              >
+                                Up
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                disabled={index === mitigationStepsArray.fields.length - 1}
+                                onClick={() => mitigationStepsArray.move(index, index + 1)}
+                              >
+                                Down
+                              </Button>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => mitigationStepsArray.remove(index)}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <input type="hidden" {...register(`${base}.id`)} />
+                      <input type="hidden" {...register(`${base}.status`)} />
+                      <input type="hidden" {...register(`${base}.createdAt`)} />
+                      <input type="hidden" {...register(`${base}.completedAt`)} />
+                    </div>
+                  )
+                })}
+
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() =>
+                    mitigationStepsArray.append({
+                      id: nanoid(10),
+                      description: '',
+                      owner: '',
+                      dueDate: '',
+                      status: 'open',
+                      createdAt: new Date().toISOString(),
+                    } as any)
+                  }
+                >
+                  Add step
+                </Button>
+              </div>
+            </details>
+
+            <details className="rounded-2xl bg-surface-secondary/10 p-4">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                Notes (optional)
+              </summary>
+              <div className="mt-3">
+                <Textarea
+                  label="Notes (optional)"
+                  helperText="Use for audit context, assumptions, or decision rationale."
+                  rows={3}
+                  placeholder="Optional long-form notes"
+                  {...register('notes')}
+                />
+              </div>
+            </details>
+              </div>
+            </details>
+
+            <aside
+              className={cn(
+                'flex h-full flex-col gap-3 rounded-[18px] border bg-surface-primary p-4 text-text-high shadow-sm',
+                severityMeta.cardTone,
+              )}
+              aria-label="Live score"
+            >
+              <div className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-text-low">
+                  Live score
+                </p>
+
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-baseline gap-3">
                     <span className="text-4xl font-bold" aria-label={`Risk score: ${riskScore}`}>
                       {riskScore}
                     </span>
                     <span
-                      className="rounded-full border border-border-faint bg-surface-primary/90 px-3 py-0.5 text-xs font-semibold"
-                      aria-label={`Risk severity: ${severity.toUpperCase()}`}
+                      className={cn(
+                        'rounded-full border px-3 py-0.5 text-xs font-semibold',
+                        severityMeta.pillTone,
+                      )}
+                      aria-label={`Risk severity: ${severityMeta.label.toUpperCase()}`}
                     >
-                      {severity.toUpperCase()}
+                      {severityMeta.label.toUpperCase()}
                     </span>
                   </div>
-                  <p className="text-xs text-text-low">
-                    Probability x Impact refresh with every adjustment so you always see the latest severity.
-                  </p>
-                </div>
-                <dl className="space-y-1.5 pt-2.5 text-xs text-text-low">
-                  <div className="flex justify-between">
-                    <dt className="font-semibold text-text-high">Probability</dt>
-                    <dd>
-                      {probability} / 5 <span className="text-text-low">({probability * 20}%)</span>
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="font-semibold text-text-high">Impact</dt>
-                    <dd>
-                      {impact} / 5 <span className="text-text-low">({impact * 20}%)</span>
-                    </dd>
-                  </div>
-                </dl>
-              </aside>
-            </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-1.5 pt-1">
-              {mode === 'edit' && onCancel && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={onCancel}
-                  aria-label="Cancel editing"
-                >
-                  Cancel
-                </Button>
-              )}
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="px-6"
-                aria-label={mode === 'create' ? 'Add new risk' : 'Save risk changes'}
-              >
-                {mode === 'create' ? 'Add risk' : 'Save changes'}
-              </Button>
-            </div>
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-text-low">
+                    <span className="rounded-full border border-border-faint/70 bg-surface-primary/70 px-3 py-1">
+                      Likelihood: <span className="text-text-high">{probability}/5</span>
+                    </span>
+                    <span className="rounded-full border border-border-faint/70 bg-surface-primary/70 px-3 py-1">
+                      Impact: <span className="text-text-high">{impact}/5</span>
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-xs text-text-low">
+                  {severityMeta.why}{' '}
+                  <span className="font-semibold text-text-high">
+                    {riskScore} = {probability}×{impact}
+                  </span>
+                  .
+                </p>
+              </div>
+
+              <div className="mt-auto rounded-2xl border border-border-faint/60 bg-surface-primary/70 p-3 text-xs text-text-low">
+                <p className="font-semibold text-text-high">Recommended next step</p>
+                <p className="mt-1">{severityMeta.nudge}</p>
+              </div>
+            </aside>
+
           </section>
         </div>
       </div>
+
+      {showActions ? (
+        <div className="-mx-1 mt-6 border-t border-border-faint/70 bg-surface-primary px-1 pb-[calc(env(safe-area-inset-bottom)+0.375rem)] pt-4">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {onCancel ? (
+              <Button type="button" variant="ghost" onClick={onCancel}>
+                Cancel
+              </Button>
+            ) : null}
+            {mode === 'create' && onSaveDraft ? (
+              <Button type="button" variant="secondary" onClick={handleSaveDraft}>
+                Save draft
+              </Button>
+            ) : null}
+            <Button
+              type="submit"
+              disabled={isPrimaryDisabled}
+              className="px-6"
+              aria-label={mode === 'create' ? 'Add new risk' : 'Update risk'}
+              aria-describedby={isPrimaryDisabled ? 'risk-form-submit-help' : undefined}
+            >
+              {mode === 'create' ? 'Add risk' : 'Update risk'}
+            </Button>
+          </div>
+          {isPrimaryDisabled ? (
+            <p id="risk-form-submit-help" className="mt-2 text-xs text-text-low" aria-live="polite">
+              {missingRequiredFields.length
+                ? `Complete required fields: ${missingRequiredFields.join(', ')}.`
+                : 'Complete required fields marked * to enable submission.'}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </form>
   )
-}
+})
+
+RiskForm.displayName = 'RiskForm'

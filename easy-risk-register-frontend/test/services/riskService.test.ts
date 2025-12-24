@@ -208,12 +208,12 @@ describe('riskService', () => {
 
   describe('importCSV', () => {
     it('should call importFromCSV with the provided CSV string', () => {
-      mockUseRiskStore.importFromCSV.mockReturnValue(5);
+      mockUseRiskStore.importFromCSV.mockReturnValue({ imported: 5 });
 
       const result = riskService.importCSV('csv-data');
 
       expect(mockUseRiskStore.importFromCSV).toHaveBeenCalledWith('csv-data');
-      expect(result).toBe(5);
+      expect(result).toEqual({ imported: 5 });
     });
   });
 
