@@ -59,6 +59,7 @@ export const useRiskManagement = () => {
   const addRisk = useRiskStore((state) => state.addRisk)
   const updateRisk = useRiskStore((state) => state.updateRisk)
   const deleteRisk = useRiskStore((state) => state.deleteRisk)
+  const addCategory = useRiskStore((state) => state.addCategory)
   const setFilters = useRiskStore((state) => state.setFilters)
   const exportToCSV = useRiskStore((state) => state.exportToCSV)
   const importFromCSV = useRiskStore((state) => state.importFromCSV)
@@ -69,6 +70,7 @@ export const useRiskManagement = () => {
       addRisk,
       updateRisk,
       deleteRisk,
+      addCategory,
       setFilters,
       exportToCSV,
       importFromCSV,
@@ -76,6 +78,7 @@ export const useRiskManagement = () => {
     }),
     [
       addRisk,
+      addCategory,
       deleteRisk,
       exportToCSV,
       importFromCSV,
