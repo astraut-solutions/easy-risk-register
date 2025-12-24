@@ -8,6 +8,7 @@ import { Button, Input, Select, Textarea, Tooltip } from '../../design-system'
 import { cn } from '../../utils/cn'
 import { trackEvent } from '../../utils/analytics'
 import { THREAT_TYPE_OPTIONS } from '../../constants/cyber'
+import { PLAYBOOK_TEMPLATES } from '../../constants/playbooks'
 
 export type RiskFormValues = RiskInput & { status: RiskStatus }
 
@@ -88,6 +89,7 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
       notes: '',
       evidence: [],
       mitigationSteps: [],
+      playbook: { title: '', steps: [], lastModified: '' },
       ...defaultValues,
     },
   })
@@ -170,6 +172,17 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
     keyName: '_key',
   })
 
+  const playbookStepsArray = useFieldArray({
+    control,
+    name: 'playbook.steps' as any,
+    keyName: '_key',
+  })
+
+  const [playbookEnabled, setPlaybookEnabled] = useState(() => Boolean(defaultValues?.playbook))
+  const [selectedPlaybookTemplateId, setSelectedPlaybookTemplateId] = useState(
+    () => PLAYBOOK_TEMPLATES[0]?.id ?? '',
+  )
+
   const normalizedCategorySet = useMemo(() => {
     return new Set(categories.map((category) => category.trim().toLowerCase()))
   }, [categories])
@@ -214,7 +227,9 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
         notes: defaultValues.notes ?? '',
         evidence: defaultValues.evidence ?? [],
         mitigationSteps: defaultValues.mitigationSteps ?? [],
+        playbook: defaultValues.playbook ?? { title: '', steps: [], lastModified: '' },
       })
+      setPlaybookEnabled(Boolean(defaultValues.playbook))
     }
   }, [categories, defaultValues, reset])
 
@@ -245,10 +260,20 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
   }
 
   const onFormSubmit = (values: RiskFormValues) => {
+    const nowIso = new Date().toISOString()
+    const playbook = playbookEnabled
+      ? {
+          title: (values as any).playbook?.title ?? '',
+          steps: Array.isArray((values as any).playbook?.steps) ? (values as any).playbook.steps : [],
+          lastModified: nowIso,
+        }
+      : undefined
+
     onSubmit({
       ...values,
       probability: Number(values.probability),
       impact: Number(values.impact),
+      ...(playbook ? { playbook } : { playbook: undefined }),
     })
 
       if (mode === 'create') {
@@ -274,9 +299,11 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
           notes: '',
           evidence: [],
           mitigationSteps: [],
+          playbook: { title: '', steps: [], lastModified: '' },
         })
+        setPlaybookEnabled(false)
       }
-    }
+  }
 
   const handleSaveDraft = () => {
     if (!onSaveDraft) return
@@ -961,6 +988,183 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                 >
                   Add step
                 </Button>
+              </div>
+            </details>
+
+            <details className="rounded-2xl bg-surface-secondary/10 p-4">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                Incident response playbook (optional)
+              </summary>
+
+              <div className="mt-3 space-y-3">
+                {!playbookEnabled ? (
+                  <div className="space-y-3">
+                    <label className="space-y-1">
+                      <span className="block text-xs font-semibold text-text-low">Template</span>
+                      <select
+                        className="rr-select w-full"
+                        value={selectedPlaybookTemplateId}
+                        onChange={(event) => setSelectedPlaybookTemplateId(event.target.value)}
+                        aria-label="Select playbook template"
+                      >
+                        {PLAYBOOK_TEMPLATES.map((template) => (
+                          <option key={template.id} value={template.id}>
+                            {template.title}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs text-text-low">
+                        Playbooks are editable checklists you can use during an incident. Forgotten passphrase = data loss if encryption is enabled.
+                      </p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          const template = PLAYBOOK_TEMPLATES.find((item) => item.id === selectedPlaybookTemplateId)
+                          const now = new Date().toISOString()
+                          setValue('playbook', {
+                            title: template?.title ?? 'Incident response playbook',
+                            steps: (template?.steps ?? []).map((description) => ({
+                              id: nanoid(10),
+                              description,
+                              createdAt: now,
+                            })),
+                            lastModified: now,
+                          } as any)
+                          setPlaybookEnabled(true)
+                        }}
+                      >
+                        Add playbook
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <Input
+                      label="Playbook title"
+                      placeholder="e.g. Privacy incident response"
+                      {...register('playbook.title' as any, {
+                        required: 'Provide a playbook title.',
+                      })}
+                    />
+
+                    <div className="space-y-2">
+                      {playbookStepsArray.fields.length ? (
+                        playbookStepsArray.fields.map((field, index) => {
+                          void field
+                          const base = `playbook.steps.${index}` as const
+                          const completedAt = (formValues as any).playbook?.steps?.[index]?.completedAt as
+                            | string
+                            | undefined
+
+                          return (
+                            <div
+                              key={(field as any)._key ?? (field as any).id ?? index}
+                              className="rounded-2xl border border-border-faint bg-surface-primary/70 p-3"
+                            >
+                              <div className="flex items-start gap-3">
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(completedAt)}
+                                  onChange={(event) => {
+                                    const next = event.target.checked ? new Date().toISOString() : undefined
+                                    setValue(`${base}.completedAt` as any, next, { shouldDirty: true })
+                                  }}
+                                  className="mt-1 h-4 w-4"
+                                  aria-label="Mark playbook step complete"
+                                />
+                                <div className="flex-1 space-y-2">
+                                  <Input
+                                    label={`Step ${index + 1}`}
+                                    placeholder="Describe the response action"
+                                    {...register(`${base}.description` as any, {
+                                      required: 'Describe the step.',
+                                    })}
+                                  />
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className="text-xs text-text-low">
+                                      {completedAt ? `Completed ${new Date(completedAt).toLocaleString()}` : 'Open'}
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        disabled={index === 0}
+                                        onClick={() => playbookStepsArray.move(index, index - 1)}
+                                      >
+                                        Up
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        disabled={index === playbookStepsArray.fields.length - 1}
+                                        onClick={() => playbookStepsArray.move(index, index + 1)}
+                                      >
+                                        Down
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => playbookStepsArray.remove(index)}
+                                      >
+                                        Remove
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <input type="hidden" {...register(`${base}.id` as any)} />
+                              <input type="hidden" {...register(`${base}.createdAt` as any)} />
+                              <input type="hidden" {...register(`${base}.completedAt` as any)} />
+                            </div>
+                          )
+                        })
+                      ) : (
+                        <p className="text-sm text-text-low">No steps yet.</p>
+                      )}
+
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() =>
+                            playbookStepsArray.append({
+                              id: nanoid(10),
+                              description: '',
+                              createdAt: new Date().toISOString(),
+                            } as any)
+                          }
+                        >
+                          Add step
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            const confirmed = window.confirm('Remove the playbook from this risk?')
+                            if (!confirmed) return
+                            setValue('playbook', { title: '', steps: [], lastModified: '' } as any, {
+                              shouldDirty: true,
+                            })
+                            setPlaybookEnabled(false)
+                          }}
+                        >
+                          Remove playbook
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </details>
 

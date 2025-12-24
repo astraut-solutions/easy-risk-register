@@ -28,6 +28,9 @@ import {
   openReportWindow,
 } from './utils/reports'
 import { computeReminderSummary, getFrequencyMs } from './utils/reminders'
+import { getEncryptionStatus } from './utils/encryptionManager'
+import { EncryptionSettingsPanel } from './components/privacy/EncryptionSettingsPanel'
+import { EncryptionUnlockGate } from './components/privacy/EncryptionUnlockGate'
 
 type MatrixSelection = {
   probability: number
@@ -122,10 +125,14 @@ function App() {
   }
 
   useEffect(() => {
+    const encryption = getEncryptionStatus()
+    if (encryption.available && encryption.enabled && !encryption.unlocked) return
     actions.seedDemoData()
   }, [actions])
 
   useEffect(() => {
+    const encryption = getEncryptionStatus()
+    if (encryption.available && encryption.enabled && !encryption.unlocked) return
     if (!settings.reminders.enabled) {
       setReminderSummary(null)
       return
@@ -1185,6 +1192,8 @@ function App() {
               </p>
             )}
           </div>
+
+          <EncryptionSettingsPanel />
         </div>
       </Modal>
 
@@ -1200,6 +1209,8 @@ function App() {
         isOpen={isMetricsModalOpen}
         onClose={() => setIsMetricsModalOpen(false)}
       />
+
+      <EncryptionUnlockGate />
     </div>
   )
 }

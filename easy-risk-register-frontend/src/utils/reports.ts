@@ -159,6 +159,29 @@ export const buildRiskRegisterReportHtml = ({
     })
     .join('')
 
+  const playbookCards = risks
+    .filter((risk) => Boolean(risk.playbook && (risk.playbook.steps?.length ?? 0) > 0))
+    .map((risk) => {
+      const playbook = risk.playbook!
+      const steps = (playbook.steps ?? [])
+        .map((step) => {
+          const status = step.completedAt ? 'Done' : 'Open'
+          const timestamp = step.completedAt ? formatIsoDateTime(step.completedAt) : '-'
+          return `<li><strong>${escapeHtml(status)}:</strong> ${escapeHtml(step.description)} <span class="muted">(${escapeHtml(timestamp)})</span></li>`
+        })
+        .join('')
+
+      return `
+        <div class="card">
+          <h3>${escapeHtml(risk.title)} — ${escapeHtml(playbook.title)}</h3>
+          <ul>
+            ${steps || `<li class="muted">No steps.</li>`}
+          </ul>
+        </div>
+      `
+    })
+    .join('')
+
   return `<!doctype html>
   <html lang="en">
     <head>
@@ -215,6 +238,12 @@ export const buildRiskRegisterReportHtml = ({
             ${rows || `<tr><td colspan="8" class="muted">No risks in this view.</td></tr>`}
           </tbody>
         </table>
+
+        ${
+          playbookCards
+            ? `<h2>Incident Response Playbooks</h2><div class="grid">${playbookCards}</div>`
+            : ''
+        }
       </main>
     </body>
   </html>`
@@ -250,6 +279,25 @@ export const buildPrivacyIncidentChecklistReportHtml = ({
     })
     .join('')
 
+  const playbookHtml =
+    risk.playbook && (risk.playbook.steps?.length ?? 0) > 0
+      ? `
+        <h2>Incident Response Playbook</h2>
+        <div class="card">
+          <h3>${escapeHtml(risk.playbook.title)}</h3>
+          <ul>
+            ${risk.playbook.steps
+              .map((step) => {
+                const status = step.completedAt ? 'Done' : 'Open'
+                const timestamp = step.completedAt ? formatIsoDateTime(step.completedAt) : '-'
+                return `<li><strong>${escapeHtml(status)}:</strong> ${escapeHtml(step.description)} <span class="muted">(${escapeHtml(timestamp)})</span></li>`
+              })
+              .join('')}
+          </ul>
+        </div>
+      `
+      : ''
+
   return `<!doctype html>
   <html lang="en">
     <head>
@@ -280,6 +328,8 @@ export const buildPrivacyIncidentChecklistReportHtml = ({
             formatIsoDateTime(risk.lastModified),
           )}</p>
         </div>
+
+        ${playbookHtml}
 
         <h2>Checklist Items</h2>
         <table>

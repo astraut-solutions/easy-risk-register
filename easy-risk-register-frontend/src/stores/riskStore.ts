@@ -5,7 +5,7 @@ import Papa from 'papaparse'
 
 import { DEFAULT_CATEGORIES, LOCAL_STORAGE_KEY } from '../constants/risk'
 import { COMPLIANCE_CHECKLIST_TEMPLATES, buildChecklistInstanceFromTemplate } from '../constants/cyber'
-import type { Risk, RiskFilters, RiskInput } from '../types/risk'
+import type { Risk, RiskFilters, RiskInput, RiskPlaybookStep } from '../types/risk'
 import {
   DEFAULT_FILTERS,
   calculateRiskScore,
@@ -13,7 +13,7 @@ import {
   filterRisks,
 } from '../utils/riskCalculations'
 import { sanitizeRiskInput, sanitizeTextInput, validateCSVContent } from '../utils/sanitization'
-import ZustandEncryptedStorage from '../utils/ZustandEncryptedStorage'
+import { RiskRegisterPersistStorage } from '../utils/RiskRegisterPersistStorage'
 
 export type ReminderFrequency = 'daily' | 'weekly' | 'monthly'
 
@@ -281,6 +281,55 @@ const normalizeMitigationSteps = (value: unknown): Risk['mitigationSteps'] => {
     .filter((step): step is Risk['mitigationSteps'][number] => Boolean(step))
 }
 
+const normalizePlaybook = (value: unknown): Risk['playbook'] => {
+  if (!value || typeof value !== 'object') return undefined
+
+  const raw = value as any
+  const title =
+    typeof raw.title === 'string' && raw.title.trim()
+      ? normalizeText(sanitizeTextInput(raw.title))
+      : ''
+
+  const steps: RiskPlaybookStep[] = Array.isArray(raw.steps)
+    ? raw.steps
+        .map((step: any) => {
+          if (!step || typeof step !== 'object') return null
+          const description =
+            typeof step.description === 'string' && step.description.trim()
+              ? normalizeText(sanitizeTextInput(step.description))
+              : ''
+          if (!description) return null
+
+          const createdAt =
+            typeof step.createdAt === 'string' && step.createdAt.trim()
+              ? step.createdAt.trim()
+              : new Date().toISOString()
+          const completedAt = normalizeISODateOrUndefined(step.completedAt)
+
+          return {
+            id: typeof step.id === 'string' && step.id.trim() ? step.id.trim() : nanoid(10),
+            description,
+            createdAt,
+            ...(completedAt ? { completedAt } : {}),
+          }
+        })
+        .filter((step: RiskPlaybookStep | null): step is RiskPlaybookStep => Boolean(step))
+    : []
+
+  const lastModified =
+    typeof raw.lastModified === 'string' && raw.lastModified.trim()
+      ? raw.lastModified.trim()
+      : new Date().toISOString()
+
+  if (!title && steps.length === 0) return undefined
+
+  return {
+    title: title || 'Incident response playbook',
+    steps,
+    lastModified,
+  }
+}
+
 const normalizeStoredRisk = (raw: unknown): Risk => {
   const now = new Date().toISOString()
   const sanitized = sanitizeRiskInput((raw ?? {}) as Record<string, any>)
@@ -308,6 +357,7 @@ const normalizeStoredRisk = (raw: unknown): Risk => {
   const templateId = normalizeTemplateId(sanitized.templateId)
   const checklists = normalizeChecklists(sanitized.checklists)
   const checklistStatus = normalizeChecklistStatus(checklists)
+  const playbook = normalizePlaybook((sanitized as any).playbook)
 
   return {
     id:
@@ -331,6 +381,7 @@ const normalizeStoredRisk = (raw: unknown): Risk => {
     mitigationSteps: normalizeMitigationSteps(sanitized.mitigationSteps),
     checklists,
     checklistStatus,
+    ...(playbook ? { playbook } : {}),
     owner: typeof sanitized.owner === 'string' ? normalizeText(sanitized.owner) : '',
     ...(typeof sanitized.ownerTeam === 'string' && sanitized.ownerTeam.trim()
       ? { ownerTeam: normalizeText(sanitized.ownerTeam) }
@@ -368,6 +419,7 @@ const buildRisk = (input: RiskInput): Risk => {
 
   const now = new Date().toISOString()
   const checklists = normalizeChecklists(sanitizedInput.checklists)
+  const playbook = normalizePlaybook((sanitizedInput as any).playbook)
   return {
     id: nanoid(12),
     title: normalizeText(sanitizedInput.title),
@@ -383,6 +435,7 @@ const buildRisk = (input: RiskInput): Risk => {
     mitigationSteps: normalizeMitigationSteps(sanitizedInput.mitigationSteps),
     checklists,
     checklistStatus: normalizeChecklistStatus(checklists),
+    ...(playbook ? { playbook } : {}),
     owner: normalizeText(sanitizedInput.owner ?? ''),
     ...(sanitizedInput.ownerTeam ? { ownerTeam: normalizeText(sanitizedInput.ownerTeam) } : {}),
     ...(normalizeISODateOrUndefined(sanitizedInput.dueDate)
@@ -425,18 +478,12 @@ const memoryStorage = (): Storage => {
   } as Storage
 }
 
-// Updated safeStorage function to use encrypted storage when available
 const safeStorage = () => {
   if (typeof window === 'undefined') {
     return memoryStorage()
   }
 
-  // Check if secure storage is available, otherwise default to localStorage
-  if (ZustandEncryptedStorage.isAvailable()) {
-    return new ZustandEncryptedStorage()
-  }
-
-  return window.localStorage
+  return new RiskRegisterPersistStorage(LOCAL_STORAGE_KEY)
 }
 
 export type CSVExportVariant = 'standard' | 'audit_pack'
@@ -841,6 +888,11 @@ export const useRiskStore = create<RiskStoreState>()(
                 ? normalizeChecklists((sanitizedUpdates as any).checklists)
                 : merged.checklists
 
+            const nextPlaybook =
+              'playbook' in sanitizedUpdates
+                ? normalizePlaybook((sanitizedUpdates as any).playbook)
+                : merged.playbook
+
             updatedRisk = {
               ...merged,
               title: sanitizedUpdates.title ? normalizeText(sanitizedUpdates.title) : merged.title,
@@ -867,6 +919,7 @@ export const useRiskStore = create<RiskStoreState>()(
                   : merged.mitigationSteps,
               checklists: nextChecklists,
               checklistStatus: normalizeChecklistStatus(nextChecklists),
+              playbook: nextPlaybook,
               owner:
                 'owner' in sanitizedUpdates
                   ? normalizeText(String(sanitizedUpdates.owner ?? ''))
