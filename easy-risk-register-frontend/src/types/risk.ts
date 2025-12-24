@@ -133,7 +133,7 @@ export interface RiskInput {
 
 export interface RiskFilters {
   search: string
-  category: string
+  category: string | 'all'
   threatType: ThreatType | 'all'
   status: RiskStatus | 'all'
   severity: RiskSeverity | 'all'

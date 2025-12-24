@@ -6,6 +6,13 @@ import Papa from 'papaparse'
 import { DEFAULT_CATEGORIES, LOCAL_STORAGE_KEY } from '../constants/risk'
 import { COMPLIANCE_CHECKLIST_TEMPLATES, buildChecklistInstanceFromTemplate } from '../constants/cyber'
 import type { Risk, RiskFilters, RiskInput, RiskPlaybookStep } from '../types/risk'
+import type {
+  MaturityAssessment,
+  MaturityFrameworkPreset,
+  RiskScoreSnapshot,
+  ScoreHistoryRetention,
+  TrendDefaultMode,
+} from '../types/visualization'
 import {
   DEFAULT_FILTERS,
   calculateRiskScore,
@@ -28,6 +35,13 @@ export interface AppSettings {
   tooltipsEnabled: boolean
   onboardingDismissed: boolean
   reminders: ReminderSettings
+  visualizations: {
+    scoreHistoryEnabled: boolean
+    scoreHistoryRetention: ScoreHistoryRetention
+    defaultTrendMode: TrendDefaultMode
+    maturityEnabled: boolean
+    maturityFrameworkPreset: MaturityFrameworkPreset
+  }
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -38,6 +52,13 @@ export const DEFAULT_SETTINGS: AppSettings = {
     frequency: 'weekly',
     preferNotifications: false,
     lastTriggeredAt: undefined,
+  },
+  visualizations: {
+    scoreHistoryEnabled: true,
+    scoreHistoryRetention: { mode: 'days', value: 365 },
+    defaultTrendMode: 'overall_exposure',
+    maturityEnabled: false,
+    maturityFrameworkPreset: 'acsc_essential_eight',
   },
 }
 
@@ -73,6 +94,21 @@ const isReviewCadence = (value: unknown): value is NonNullable<Risk['reviewCaden
 const isReminderFrequency = (value: unknown): value is ReminderFrequency =>
   value === 'daily' || value === 'weekly' || value === 'monthly'
 
+const isTrendDefaultMode = (value: unknown): value is TrendDefaultMode =>
+  value === 'overall_exposure' || value === 'recent_changes'
+
+const isMaturityFrameworkPreset = (value: unknown): value is MaturityFrameworkPreset =>
+  value === 'acsc_essential_eight' || value === 'nist_csf'
+
+const normalizeScoreHistoryRetention = (value: unknown): ScoreHistoryRetention => {
+  if (!value || typeof value !== 'object') return { ...DEFAULT_SETTINGS.visualizations.scoreHistoryRetention }
+  const raw = value as any
+  const mode = raw.mode === 'count' || raw.mode === 'days' ? raw.mode : 'days'
+  const numeric = typeof raw.value === 'number' && Number.isFinite(raw.value) ? Math.floor(raw.value) : 365
+  const bounded = Math.max(1, Math.min(numeric, 10_000))
+  return { mode, value: bounded }
+}
+
 const normalizeSettings = (value: unknown): AppSettings => {
   if (!value || typeof value !== 'object') return { ...DEFAULT_SETTINGS }
   const raw = value as any
@@ -104,7 +140,28 @@ const normalizeSettings = (value: unknown): AppSettings => {
         : undefined,
   }
 
-  return { tooltipsEnabled, onboardingDismissed, reminders }
+  const visualizationsRaw = raw.visualizations
+  const visualizations: AppSettings['visualizations'] = {
+    scoreHistoryEnabled:
+      visualizationsRaw && typeof visualizationsRaw.scoreHistoryEnabled === 'boolean'
+        ? visualizationsRaw.scoreHistoryEnabled
+        : DEFAULT_SETTINGS.visualizations.scoreHistoryEnabled,
+    scoreHistoryRetention: normalizeScoreHistoryRetention(visualizationsRaw?.scoreHistoryRetention),
+    defaultTrendMode:
+      visualizationsRaw && isTrendDefaultMode(visualizationsRaw.defaultTrendMode)
+        ? visualizationsRaw.defaultTrendMode
+        : DEFAULT_SETTINGS.visualizations.defaultTrendMode,
+    maturityEnabled:
+      visualizationsRaw && typeof visualizationsRaw.maturityEnabled === 'boolean'
+        ? visualizationsRaw.maturityEnabled
+        : DEFAULT_SETTINGS.visualizations.maturityEnabled,
+    maturityFrameworkPreset:
+      visualizationsRaw && isMaturityFrameworkPreset(visualizationsRaw.maturityFrameworkPreset)
+        ? visualizationsRaw.maturityFrameworkPreset
+        : DEFAULT_SETTINGS.visualizations.maturityFrameworkPreset,
+  }
+
+  return { tooltipsEnabled, onboardingDismissed, reminders, visualizations }
 }
 
 const normalizeThreatType = (value: unknown): Risk['threatType'] =>
@@ -725,6 +782,8 @@ export interface RiskStoreState {
   filters: RiskFilters
   stats: ReturnType<typeof computeRiskStats>
   settings: AppSettings
+  riskScoreSnapshots: RiskScoreSnapshot[]
+  maturityAssessments: MaturityAssessment[]
   updateSettings: (updates: Partial<AppSettings>) => void
   updateReminderSettings: (updates: Partial<ReminderSettings>) => void
   addRisk: (input: RiskInput) => Risk
@@ -846,6 +905,8 @@ export const useRiskStore = create<RiskStoreState>()(
       filters: { ...DEFAULT_FILTERS },
       stats: computeRiskStats([]),
       settings: { ...DEFAULT_SETTINGS },
+      riskScoreSnapshots: [],
+      maturityAssessments: [],
       updateSettings: (updates) =>
         set((state) => ({
           settings: normalizeSettings({ ...state.settings, ...updates }),
@@ -1098,13 +1159,13 @@ export const useRiskStore = create<RiskStoreState>()(
     {
       name: LOCAL_STORAGE_KEY,
       storage: createJSONStorage(safeStorage),
-      version: 4,
+      version: 5,
       migrate: (persistedState, version) => {
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState
         }
 
-        if (version >= 4) {
+        if (version >= 5) {
           return persistedState
         }
 
@@ -1134,6 +1195,8 @@ export const useRiskStore = create<RiskStoreState>()(
           categories,
           filters,
           settings,
+          riskScoreSnapshots: Array.isArray(state.riskScoreSnapshots) ? state.riskScoreSnapshots : [],
+          maturityAssessments: Array.isArray(state.maturityAssessments) ? state.maturityAssessments : [],
           filteredRisks: filterRisks(risks, filters),
           stats: computeRiskStats(risks),
         }
@@ -1147,6 +1210,12 @@ export const useRiskStore = create<RiskStoreState>()(
         state.stats = stats
         state.filters = filters
         state.settings = normalizeSettings((state as any).settings)
+        state.riskScoreSnapshots = Array.isArray((state as any).riskScoreSnapshots)
+          ? ((state as any).riskScoreSnapshots as RiskScoreSnapshot[])
+          : []
+        state.maturityAssessments = Array.isArray((state as any).maturityAssessments)
+          ? ((state as any).maturityAssessments as MaturityAssessment[])
+          : []
       },
     },
   ),

@@ -8,7 +8,7 @@ The Easy Risk Register is a lightweight, privacy-first web application for Austr
 Australian SMEs often lack structured, cyber-specific risk management processes, which leaves them vulnerable to common threats (phishing, ransomware, business email compromise) and creates stress when preparing for audits, board reporting, or privacy incident response. Traditional risk tools are too generic, too complex, or too costly; lightweight tools often fail to provide practical guidance, templates, and compliance-aligned reporting.
 
 ### 1.2 Solution Overview
-Easy Risk Register provides a minimalist, fully client-side web application that runs entirely in the browser with no accounts and no backend. It uses local storage for privacy and supports optional local encryption to reduce device-loss risk. The app differentiates through cyber risk templates (based on common Australian SME scenarios), compliance checklists, and export-ready reporting that helps teams take action, not just record risks.
+Easy Risk Register provides a minimalist, fully client-side web application that runs entirely in the browser with no accounts and no backend. It uses local storage for privacy and supports optional local encryption to reduce device-loss risk. The app differentiates through cyber risk templates (based on common Australian SME scenarios), compliance checklists, visual dashboards (heat maps, distribution, trends), and export-ready reporting that helps teams take action, not just record risks.
 
 ### 1.3 Target Market
 The primary audience includes Australian SME owners, office managers, IT generalists, and compliance leads (typically 5–200 employees), especially in industries handling customer data (professional services, healthcare, retail, manufacturing). Users have basic technology skills and need fast, guided workflows rather than formal GRC training.
@@ -51,13 +51,48 @@ The primary audience includes Australian SME owners, office managers, IT general
   - Risk score ranges are clearly defined based on a 5x5 probability-impact matrix (scores 1-25): Low: <=3, Medium: <=6, High: >6
 
 #### 2.1.3 Risk Visualization
-- **Feature Description**: Dynamic probability-impact matrix visualization showing all risks
+- **Feature Description**: Color-coded heat map (enhanced probability-impact matrix) that visualizes all risks and supports drill-down
 - **User Story**: As a stakeholder, I want to visualize risks on a matrix so that I can quickly understand the relative importance of each risk
 - **Acceptance Criteria**:
-  - Interactive matrix displays risks based on probability and impact
+  - Interactive 5x5 matrix displays each risk at its probability/impact coordinate (with cell counts and drill-down to the list)
+  - Cells are color-coded by severity (not color-only: labels/legend and patterns or text indicators available)
+  - Matrix supports filtering by category, threat type, status, and checklist/compliance state
+  - Hover/focus on a cell shows a plain-language summary (e.g., "High likelihood / Major impact") and the number of risks in that cell
+  - Clicking/tapping a cell applies a filter and shows the risks for that cell; users can clear the filter
   - Matrix updates in real-time as risks are added/modified
-  - Risks can be color-coded based on severity
-  - Matrix can be filtered by category
+
+#### 2.1.4 Risk Dashboard Charts (Distribution & Trends)
+- **Feature Description**: A dashboard view that summarizes the risk register with simple charts suitable for non-experts (board-ready, not analyst tooling).
+- **User Story**: As an SME owner, I want a dashboard with charts so that I can quickly understand what needs attention and explain it to leadership.
+- **Acceptance Criteria**:
+  - The dashboard includes at least:
+    - A bar (or stacked bar) chart showing risk distribution by severity and/or category
+    - A trend (line) chart showing overall risk exposure over time (based on stored score snapshots)
+  - Charts respect active filters (e.g., category, threat type, status) and clearly display when filters are applied
+  - Selecting a chart segment (bar/legend/point) drills down to the underlying risks (filter is applied consistently with the matrix)
+  - Charts have accessible equivalents (table view and/or screen-reader summaries) and do not rely solely on color
+  - Charts work offline and do not transmit data externally
+  - Users can export charts as PNG images and include them in PDF reports
+- **Priority**: P1 (high perceived value; improves decision-making and reporting)
+- **Dependencies**: Risk list filtering, score history (2.1.5), export (2.4.7)
+- **Technical Constraints**: Fully client-side; use a lightweight chart library (e.g., Chart.js) and avoid heavy analytics dependencies
+- **UX Considerations**: Progressive disclosure (default to 2-3 charts); avoid clutter; clear legends and plain-language labels
+
+#### 2.1.5 Risk Trend Tracking (Score History)
+- **Feature Description**: Store lightweight time-series snapshots of risk scores so trends can be visualized over time.
+- **User Story**: As a manager, I want to see risk score trends over time so that I can prove improvements and spot deterioration early.
+- **Acceptance Criteria**:
+  - When a risk is created or updated, the system records a score snapshot (timestamp, probability, impact, score)
+  - Trend charts can show:
+    - Overall exposure trend (e.g., sum/average of active risks) and/or
+    - Per-risk score history for selected risks
+  - Users can choose which trend view is the default (e.g., overall exposure vs. recently changed risks)
+  - Users can optionally disable history tracking (privacy/storage preference) with clear explanation of impacts
+  - History storage remains performant with up to 1000 risks (bounded history per risk, e.g., retain last N snapshots or last N days)
+- **Priority**: P1 (enables trends; prerequisite for meaningful dashboards)
+- **Dependencies**: Storage layer, settings
+- **Technical Constraints**: Must be local-storage friendly; bounded retention required to avoid unbounded growth
+- **UX Considerations**: Clear "what changed" microcopy; default settings optimized for simplicity
 
 ### 2.2 User Experience Features
 #### 2.2.1 Responsive UI
@@ -166,6 +201,19 @@ The primary audience includes Australian SME owners, office managers, IT general
 - **Technical Constraints**: Fully client-side PDF generation; avoid network calls
 - **UX Considerations**: Preview or clear confirmation; accessible print styles
 
+#### 2.4.8 Compliance Maturity Radar (ACSC/NIST self-assessment)
+- **Feature Description**: A lightweight self-assessment that visualizes maturity across framework domains as a radar/spider chart (optional, for reporting and gap-finding).
+- **User Story**: As a compliance lead, I want a maturity chart so that I can communicate gaps against a known framework without building my own spreadsheet.
+- **Acceptance Criteria**:
+  - Users can select a framework preset (ACSC Essential Eight-inspired and NIST CSF-inspired domains) and record a simple score per domain (e.g., 0–4)
+  - The radar chart updates immediately and supports exporting as part of PDF reports
+  - The feature is clearly labeled as a self-assessment (assistive, not a certification)
+  - Users can store multiple assessments with timestamps (to show maturity trends at a high level)
+- **Priority**: P2 (valuable for some SMEs; keep optional to avoid overwhelming users)
+- **Dependencies**: Charting (2.1.4), export (2.4.7)
+- **Technical Constraints**: Offline-first; keep domain lists small and editable; avoid implying legal/compliance guarantees
+- **UX Considerations**: Plain-language domain descriptions; tooltips; default to hidden unless enabled in settings
+
 ## 3. Functional Requirements
 
 ### 3.1 Risk Management Functions
@@ -178,6 +226,10 @@ The primary audience includes Australian SME owners, office managers, IT general
 - **REQ-018**: The system shall allow users to attach and complete checklist items for a risk, including completion timestamps
 - **REQ-019**: The system shall allow users to filter risks by cyber threat type and compliance/checklist status
 - **REQ-020**: The system shall allow users to attach an incident response playbook to a risk (template-based, editable)
+- **REQ-026**: The system shall provide a heat map matrix view with drill-down filtering by likelihood/impact cell
+- **REQ-027**: The system shall provide a dashboard view with charts summarizing risk distribution and trends
+- **REQ-028**: The system shall store bounded risk score history snapshots for trend visualizations (with user-configurable retention and ability to disable)
+- **REQ-029**: The system shall allow users to record and view maturity self-assessments across predefined framework domains
 
 ### 3.2 User Interface Functions
 - **REQ-006**: The system shall provide an intuitive, responsive user interface compatible with desktop, tablet, and mobile devices
@@ -190,6 +242,8 @@ The primary audience includes Australian SME owners, office managers, IT general
 - **REQ-011**: The system shall allow users to import risk data from CSV with validation to prevent malformed content and CSV injection
 - **REQ-023**: The system shall allow users to export risk data and filtered views as a PDF document
 - **REQ-024**: The system shall allow users to export a privacy incident/checklist report template as PDF (assistive reporting)
+- **REQ-030**: The system shall allow users to export dashboard charts (including maturity charts where enabled) as part of PDF reports
+- **REQ-031**: The system shall allow users to export dashboard charts as PNG images for embedding in external documents
 
 ### 3.4 Data Management Functions
 - **REQ-014**: The system shall store all user data in browser local storage
@@ -203,11 +257,13 @@ The primary audience includes Australian SME owners, office managers, IT general
 - **NFR-002**: The application shall handle up to 1000 risk entries without significant performance degradation
 - **NFR-003**: All calculations and visual updates shall complete within 1 second of user input
 - **NFR-004**: The application shall maintain responsive UI during all operations
+- **NFR-023**: Chart rendering (matrix + dashboard) shall remain responsive with up to 1000 risks and bounded history enabled
 
 ### 4.2 Usability Requirements
 - **NFR-005**: The application shall be usable by individuals with basic technology skills (no specialized risk management training required)
 - **NFR-006**: The application shall follow common UI/UX best practices and accessibility guidelines
 - **NFR-008**: The learning curve for basic operations shall not exceed 10 minutes
+- **NFR-024**: Visualizations shall include non-visual equivalents (summaries and/or tables) and shall not rely on color alone to convey meaning
 
 ### 4.3 Security Requirements
 - **NFR-009**: All data shall remain local to the user's device and not be transmitted to any server
@@ -239,7 +295,7 @@ The Easy Risk Register follows a client-side-only architecture with no server de
 - **State Management**: Zustand
 - **Forms**: React Hook Form
 - **Data Storage**: Browser local storage (with encryption for stored data)
-- **Visualization**: Interactive 5x5 probability-impact matrix UI (no charting library required)
+- **Visualization**: Interactive 5x5 matrix UI + lightweight charting library (e.g., Chart.js) for dashboard/trend/radar charts
 - **Import/Export**: CSV import/export with validation
 
 ### 5.3 Data Architecture
@@ -256,7 +312,7 @@ The Easy Risk Register follows a client-side-only architecture with no server de
 
 ### 6.1 Dashboard Interface
 - **Header**: Application title, navigation menu, user settings
-- **Main Content**: Risk overview matrix, quick stats
+- **Main Content**: Quick stats, heat map matrix, and a dashboard tab/section for charts (distribution and trends; optional maturity radar)
 - **Sidebar**: Navigation to different sections, filters, and quick actions
 - **Footer**: Legal information, version, and support links
 
@@ -268,7 +324,7 @@ The Easy Risk Register follows a client-side-only architecture with no server de
 
 ### 6.3 Risk Visualization Matrix
 - **Type**: Interactive 5x5 matrix grid with probability and impact axes
-- **Color Coding**: Risk severity indicated by color (Green/Yellow/Red)
+- **Color Coding**: Risk severity indicated by color (Green/Yellow/Red) with a legend and non-color cues for accessibility
 - **Interactivity**: Click to filter by likelihood/impact cell; table/list items open the edit view for updates
 - **Responsive Design**: Adapts to different screen sizes while maintaining usability
 
@@ -280,6 +336,8 @@ The Easy Risk Register follows a client-side-only architecture with no server de
 
 ### 7.1 Data Model
 - Risk Entry: {id, title, description, probability, impact, riskScore, category, status, mitigationPlan, creationDate, lastModified}
+- Risk Score Snapshot: {riskId, timestamp, probability, impact, riskScore}
+- Maturity Assessment: {id, frameworkKey, frameworkName, domains: [{key, name, score, notes?}], createdAt, updatedAt}
 - Category: {id, name, description}
 - User Settings: {theme, defaultProbabilityOptions, defaultImpactOptions}
 
@@ -302,7 +360,8 @@ The Easy Risk Register follows a client-side-only architecture with no server de
 
 ### 8.1 Export Formats
 - **CSV Export**: Structured data export for use in spreadsheets
-- **PDF Export**: Printable reports for risk registers and compliance-related checklists
+- **PDF Export**: Printable reports for risk registers and compliance-related checklists (including dashboard visuals where enabled)
+- **PNG Export**: Export charts (dashboard and maturity where enabled) as PNG images
 
 ## 9. Risk Mitigation and Backup Strategies
 
@@ -365,14 +424,17 @@ The Easy Risk Register follows a client-side-only architecture with no server de
 - Threat type and compliance/checklist status filtering
 - Compliance checklist attachment and completion tracking
 - Educational tooltips and guided onboarding (lightweight)
+- Heat map enhancements (drill-down, accessibility improvements)
 
 ### Phase 3: Reporting & Reminders (Month 2)
 - PDF export for risk register and filtered views
 - Privacy incident/checklist report export templates
 - Optional reminders (notifications with in-app fallback)
+- Dashboard charts (distribution + trends) with drill-down
 
 ### Phase 4: Advanced Privacy Controls (Month 3)
 - Optional local encryption (passphrase, rotation, disable flow)
 - Incident response planner templates and PDF export integration
+- Optional maturity radar (framework self-assessment) and PDF inclusion
 
 This product requirements document outlines the MVP specification for the Easy Risk Register application, providing a roadmap for development and implementation that addresses the critical risk management needs of small and medium-sized businesses.

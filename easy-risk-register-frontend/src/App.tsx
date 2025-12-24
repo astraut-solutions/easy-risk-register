@@ -13,7 +13,7 @@ import { RiskTable } from './components/risk/RiskTable'
 import { useRiskManagement } from './services/riskService'
 import type { Risk, RiskSeverity } from './types/risk'
 import type { CSVExportVariant, ReminderFrequency } from './stores/riskStore'
-import { DEFAULT_FILTERS, getRiskSeverity } from './utils/riskCalculations'
+import { DEFAULT_FILTERS } from './utils/riskCalculations'
 import { Button, Modal, SectionHeader, Select } from './design-system'
 import { cn } from './utils/cn'
 import { useToast } from './components/feedback/ToastProvider'
@@ -371,26 +371,15 @@ function App() {
     })
   }
 
-  const handleMatrixSelect = (riskIds: string[]) => {
-    if (!riskIds.length) return
-    const selected = risks.find((risk) => risk.id === riskIds[0])
-    if (!selected) return
-
+  const handleMatrixSelect = (selection: MatrixSelection) => {
     setMatrixSelection((current) => {
       const isSameCell =
         current &&
-        current.probability === selected.probability &&
-        current.impact === selected.impact
+        current.probability === selection.probability &&
+        current.impact === selection.impact
 
-      if (isSameCell) {
-        return null
-      }
-
-      return {
-        probability: selected.probability,
-        impact: selected.impact,
-        severity: getRiskSeverity(selected.riskScore),
-      }
+      if (isSameCell) return null
+      return selection
     })
   }
 
@@ -590,6 +579,13 @@ function App() {
   }
 
   const tableEmptyState = useMemo(() => {
+    if (matrixSelection && risks.length > 0) {
+      return {
+        title: 'No risks in this matrix cell',
+        description: 'Clear the matrix selection or adjust filters to reveal more risks.',
+      }
+    }
+
     if (stats.total === 0) {
       return {
         title: 'No risks captured yet',
@@ -830,27 +826,95 @@ function App() {
                 onReset={handleResetFilters}
               />
 
+              {matrixSelection && (
+                <div className="rr-panel flex flex-wrap items-center justify-between gap-3 p-4 text-sm text-text-high">
+                  <div>
+                    <span className="font-semibold text-text-high">Matrix filter active:</span>{' '}
+                    Likelihood {matrixSelection.probability} x Impact {matrixSelection.impact}{' '}
+                    <span className="text-text-low">({matrixSelection.severity})</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={clearMatrixSelection}
+                    >
+                      Clear matrix filter
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={handleResetFilters}>
+                      Reset all filters
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {activeView === 'overview' ? (
                 <div className="flex flex-col gap-6">
-                  <RiskMatrix risks={visibleRisks} onSelect={handleMatrixSelect} />
+                  <RiskMatrix
+                    risks={visibleRisks}
+                    onSelect={(selection) =>
+                      handleMatrixSelect({
+                        probability: selection.probability,
+                        impact: selection.impact,
+                        severity: selection.severity,
+                      })
+                    }
+                  />
 
-                  {matrixSelection && (
-                    <div className="rr-panel flex flex-wrap items-center justify-between gap-3 p-4 text-sm text-text-high">
-                      <div>
-                        <span className="font-semibold text-text-high">Matrix filter active:</span>{' '}
-                        Likelihood {matrixSelection.probability} x Impact {matrixSelection.impact}{' '}
-                        <span className="text-text-low">({matrixSelection.severity})</span>
+                  {matrixSelection ? (
+                    <div className="rr-panel p-4">
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-semibold text-text-high">
+                            Risks in selected cell: {visibleRisks.length}
+                          </p>
+                          <p className="mt-1 text-xs text-text-low">
+                            Showing a quick preview. Open the risk table to review and edit.
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => requestNavigate('table')}
+                        >
+                          Open filtered risk table
+                        </Button>
                       </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={clearMatrixSelection}
-                      >
-                        Clear matrix filter
-                      </Button>
+
+                      <ul className="mt-4 grid gap-2" aria-label="Risks in selected matrix cell (preview)">
+                        {visibleRisks
+                          .slice()
+                          .sort((a, b) => b.riskScore - a.riskScore)
+                          .slice(0, 8)
+                          .map((risk) => (
+                            <li
+                              key={risk.id}
+                              className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border-faint bg-surface-secondary/20 px-3 py-2 text-sm"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => handleEditRisk(risk)}
+                                className="font-semibold text-brand-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-primary rounded-md"
+                                aria-label={`View or edit risk: ${risk.title}`}
+                              >
+                                {risk.title}
+                              </button>
+                              <span className="text-xs text-text-low">
+                                Score {risk.riskScore} ({risk.probability}×{risk.impact})
+                              </span>
+                            </li>
+                          ))}
+                      </ul>
+
+                      {visibleRisks.length > 8 ? (
+                        <p className="mt-3 text-xs text-text-low">
+                          Showing 8 of {visibleRisks.length}. Open the table to see all.
+                        </p>
+                      ) : null}
                     </div>
-                  )}
+                  ) : null}
 
                   <div className="rr-panel flex flex-wrap items-center justify-between gap-4 p-4">
                     <div className="space-y-1">
@@ -881,7 +945,7 @@ function App() {
                 </div>
               ) : (
                 <RiskTable
-                  risks={risks}
+                  risks={matrixSelection ? visibleRisks : risks}
                   onEdit={handleEditRisk}
                   onDelete={handleDelete}
                   onView={handleViewRisk}
