@@ -3,6 +3,34 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { RiskFiltersBar } from '../../../src/components/risk/RiskFilters'
 import type { RiskFilters } from '../../../src/types/risk'
 
+vi.mock('../../../src/design-system', async () => {
+  const actual = await vi.importActual<typeof import('../../../src/design-system')>(
+    '../../../src/design-system',
+  )
+
+  return {
+    ...actual,
+    Button: ({ children, ...props }: any) => (
+      <button {...props} data-testid="mock-button">
+        {children}
+      </button>
+    ),
+    Select: ({ options = [], value, onChange, name }: any) => (
+      <select
+        name={name}
+        value={value}
+        onChange={(event) => onChange?.(event.target.value)}
+      >
+        {options.map((option: any) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    ),
+  }
+})
+
 const baseFilters: RiskFilters = {
   search: '',
   category: 'all',

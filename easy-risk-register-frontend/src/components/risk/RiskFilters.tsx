@@ -2,7 +2,7 @@ import type { ChangeEvent } from 'react'
 
 import type { RiskFilters } from '../../types/risk'
 import { CHECKLIST_STATUS_OPTIONS, THREAT_TYPE_OPTIONS } from '../../constants/cyber'
-import { Button } from '../../design-system'
+import { Button, Select } from '../../design-system'
 
 interface RiskFiltersProps {
   filters: RiskFilters
@@ -48,6 +48,17 @@ export const RiskFiltersBar = ({
       const value = event.target.value as RiskFilters[typeof key]
       onChange({ [key]: value })
     }
+
+  const handleSelect =
+    (key: keyof RiskFilters) =>
+    (value: string) => {
+      onChange({ [key]: value as RiskFilters[typeof key] })
+    }
+
+  const categoryOptions = [
+    { label: 'All categories', value: 'all' },
+    ...categories.map((category) => ({ label: category, value: category })),
+  ]
 
   const activeFilterChips = [
     filters.search
@@ -108,74 +119,63 @@ export const RiskFiltersBar = ({
         </div>
 
         <div className="xl:col-span-1">
-          <select
+          <Select
+            label="Category"
+            labelVisibility="sr-only"
+            name="category"
+            options={categoryOptions}
             value={filters.category}
-            onChange={handleInput('category')}
-            className="rr-select w-full"
-          >
-            <option value="all">All categories</option>
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
+            onChange={handleSelect('category')}
+            placeholder="All categories"
+          />
         </div>
 
         <div className="xl:col-span-1">
-          <select
+          <Select
+            label="Threat type"
+            labelVisibility="sr-only"
+            name="threatType"
+            options={threatTypeOptions}
             value={filters.threatType}
-            onChange={handleInput('threatType')}
-            className="rr-select w-full"
-          >
-            {threatTypeOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            onChange={handleSelect('threatType')}
+            placeholder="All threat types"
+          />
         </div>
 
         <div className="xl:col-span-1">
-          <select
+          <Select
+            label="Status"
+            labelVisibility="sr-only"
+            name="status"
+            options={statusOptions}
             value={filters.status}
-            onChange={handleInput('status')}
-            className="rr-select w-full"
-          >
-            {statusOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            onChange={handleSelect('status')}
+            placeholder="All statuses"
+          />
         </div>
 
         <div className="xl:col-span-1">
-          <select
+          <Select
+            label="Severity"
+            labelVisibility="sr-only"
+            name="severity"
+            options={severityOptions}
             value={filters.severity}
-            onChange={handleInput('severity')}
-            className="rr-select w-full"
-          >
-            {severityOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            onChange={handleSelect('severity')}
+            placeholder="All severities"
+          />
         </div>
 
         <div className="xl:col-span-1">
-          <select
+          <Select
+            label="Checklist status"
+            labelVisibility="sr-only"
+            name="checklistStatus"
+            options={checklistStatusOptions}
             value={filters.checklistStatus}
-            onChange={handleInput('checklistStatus')}
-            className="rr-select w-full"
-          >
-            {checklistStatusOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            onChange={handleSelect('checklistStatus')}
+            placeholder="All checklist statuses"
+          />
         </div>
 
       </div>

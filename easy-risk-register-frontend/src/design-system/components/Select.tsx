@@ -13,6 +13,7 @@ type Option = { value: string; label: string }
 
 export interface SelectProps {
   label?: string
+  labelVisibility?: 'visible' | 'sr-only'
   error?: string
   helperText?: string
   options: Option[]
@@ -31,6 +32,7 @@ export interface SelectProps {
 export const Select = ({
   className,
   label,
+  labelVisibility = 'visible',
   error,
   helperText,
   options,
@@ -186,7 +188,10 @@ export const Select = ({
     <div className="w-full" ref={containerRef}>
       {label && (
         <label
-          className="mb-2 block text-sm font-medium text-text-high"
+          className={cn(
+            'mb-2 block text-sm font-medium text-text-high',
+            labelVisibility === 'sr-only' && 'sr-only',
+          )}
           htmlFor={selectId}
         >
           {label}
