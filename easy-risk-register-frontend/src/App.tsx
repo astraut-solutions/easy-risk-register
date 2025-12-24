@@ -37,11 +37,6 @@ const NAV_ITEMS: SidebarNavItem[] = [
     description: 'KPIs, filters, and the interactive matrix',
   },
   {
-    id: 'new',
-    label: 'New risk',
-    description: 'Focused create flow with drafts',
-  },
-  {
     id: 'table',
     label: 'Risk table',
     description: 'Spreadsheet view for faster scanning and edits',
