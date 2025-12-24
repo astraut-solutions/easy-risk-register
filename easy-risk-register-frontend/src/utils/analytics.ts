@@ -4,6 +4,7 @@ export type AnalyticsEventName =
   | 'risk_modal_abandon'
   | 'risk_modal_validation_error'
   | 'risk_modal_save_draft'
+  | 'risk_template_apply'
 
 export type AnalyticsEvent = {
   name: AnalyticsEventName

@@ -188,7 +188,11 @@ const normalizeChecklists = (value: unknown): Risk['checklists'] => {
                 ...(completedAt ? { completedAt } : {}),
               }
             })
-            .filter((item): item is Risk['checklists'][number]['items'][number] => Boolean(item))
+            .filter(
+              (
+                item: Risk['checklists'][number]['items'][number] | null,
+              ): item is Risk['checklists'][number]['items'][number] => Boolean(item),
+            )
         : []
 
       return {
