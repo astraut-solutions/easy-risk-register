@@ -269,7 +269,7 @@ The Easy Risk Register follows a client-side-only architecture with no server de
 ### 6.3 Risk Visualization Matrix
 - **Type**: Interactive 5x5 matrix grid with probability and impact axes
 - **Color Coding**: Risk severity indicated by color (Green/Yellow/Red)
-- **Interactivity**: Click to view details, filter capabilities
+- **Interactivity**: Click to filter by likelihood/impact cell; table/list items open the edit view for updates
 - **Responsive Design**: Adapts to different screen sizes while maintaining usability
 
 ### 6.4 Export Interface

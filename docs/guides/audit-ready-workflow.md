@@ -14,6 +14,7 @@ For each risk, you should be able to show:
 - **Decision history** (status, including acceptance where applicable)
 - **Evidence links** (tickets, docs, runbooks, reports)
 - **Mitigation tracking** (a plan and/or structured steps)
+- **Response planning** (optional playbook steps, when applicable)
 
 See also:
 - `docs/reference/risk-record-schema.md`
@@ -66,13 +67,15 @@ On review:
 
 Tip: If a risk is **accepted**, capture the rationale in Owner response and link to the approval artifact in Evidence.
 
-### 5) Export for audits (“Audit pack”)
+### 5) Export for audits ("Audit pack")
 
 When you need to share or archive evidence:
 - Use **Export CSV → Audit pack** for a spreadsheet-friendly variant that includes evidence URL columns and review/acceptance metadata.
 - Use **Standard CSV** when you primarily need reliable **round-trip** re-import (it includes JSON columns for evidence and mitigation steps).
 
 Security note: CSV exports include spreadsheet injection protection, but you should still treat exported files as sensitive.
+
+For board packs or incident documentation, use PDF exports (print-to-PDF): `docs/guides/pdf-exports.md`.
 
 ### 6) Keep exports and evidence organized
 

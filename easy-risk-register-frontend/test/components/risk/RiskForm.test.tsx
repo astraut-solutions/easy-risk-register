@@ -287,6 +287,7 @@ describe('RiskForm', () => {
         notes: '',
         evidence: [],
         mitigationSteps: [],
+        playbook: { title: '', steps: [], lastModified: '' },
       })
     })
   })

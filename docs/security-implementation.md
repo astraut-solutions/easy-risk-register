@@ -31,6 +31,15 @@ Core directives:
 
 Note: the Docker production server sets a per-request script nonce in the CSP header to support nonce-based allowlisting without enabling `unsafe-inline`.
 
+### PDF export viewer and CSP
+
+The PDF export flow uses a dedicated report viewer page:
+
+- `easy-risk-register-frontend/public/report.html`
+- `easy-risk-register-frontend/public/report.js`
+
+This design exists because CSP includes `script-src-attr 'none'` (inline event handler attributes are blocked) and production CSP does not allow `unsafe-inline` scripts. The report viewer loads the generated report HTML into an iframe and calls `print()` from a same-origin script file, keeping the export workflow CSP-compliant.
+
 ## Input Sanitization
 
 The application sanitizes user-provided input to reduce the risk of XSS and other injection vulnerabilities.
@@ -97,7 +106,8 @@ SQL injection is not applicable because Easy Risk Register does not execute SQL 
 The optional encrypted storage feature is a defense-in-depth measure for data at rest in browser storage, not a protection against active script execution:
 
 - Client-side encryption does not protect against attackers who can execute code in the same origin (for example via XSS).
-- The encryption key is stored in LocalStorage alongside encrypted data, so an attacker who can read LocalStorage can read both the ciphertext and the key material.
+- The encryption key is derived from a user passphrase and kept in memory for the session; it primarily protects against casual/local inspection of storage at rest.
+- If the passphrase is forgotten, there is no recovery; the user must delete local data on that device.
 
 For full details, see `docs/architecture/secure-data-storage.md`.
 

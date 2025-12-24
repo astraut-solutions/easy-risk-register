@@ -40,7 +40,7 @@ The button component is a fundamental interactive element in the Easy Risk Regis
   - Border Radius: 6px
   - Font Weight: 600 (Semibold)
 
-- **Usage Examples**: "Cancel", "View Details", "Previous Step"
+- **Usage Examples**: "Cancel", "Edit", "Previous Step"
 
 ### Tertiary Button
 - **Purpose**: Minimal importance actions, subtle interface elements, icon buttons

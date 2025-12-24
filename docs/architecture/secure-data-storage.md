@@ -1,85 +1,85 @@
-# Secure Data Storage (Client-Side Encryption)
+# Secure Data Storage (Optional Local Encryption)
 
-This document describes the client-side encryption implementation used to protect persisted risk data stored in the browser.
+This document describes the optional **at-rest encryption** used to protect persisted risk data stored in the browser.
 
 ## Overview
 
-When the Web Crypto API is available, Easy Risk Register encrypts the Zustand-persisted state before writing it to LocalStorage. The implementation uses AES-GCM with a unique, randomly generated initialization vector (IV) per encryption operation.
+Easy Risk Register stores its Zustand-persisted state in browser storage under the key `easy-risk-register-data`.
 
-If Web Crypto is unavailable (or the app is running in a non-browser context), the app falls back to unencrypted storage.
+If a user enables encryption (`REQ-025`), that persisted payload is encrypted **at rest** using browser-provided crypto APIs (`NFR-021`):
 
-## Architecture
+- **KDF**: `PBKDF2` (`SHA-256`) with a random salt and configurable iterations
+- **Cipher**: `AES-GCM` (256-bit key) with a random 12-byte IV per encryption
+- **Key handling**: the derived key is kept **in memory for the session** (not stored)
 
-The secure storage implementation consists of three main components:
+If Web Crypto is unavailable (or the app is running in a non-browser context), encryption is unavailable and the app uses plain storage.
 
-### 1. Encryption Utilities (`easy-risk-register-frontend/src/utils/encryption.ts`)
+## Components
 
-- Core encryption and decryption functions using AES-GCM
-- Key generation and import/export helpers
-- Base64 conversion helpers for storage
+### 1) Crypto helpers
 
-### 2. Secure Storage (`easy-risk-register-frontend/src/utils/SecureStorage.ts`)
+- `easy-risk-register-frontend/src/utils/passphraseCrypto.ts`
+  - Passphrase → AES key derivation (`PBKDF2`)
+  - AES-GCM encrypt/decrypt helpers
+  - Base64 encode/decode helpers
 
-- A LocalStorage-like interface (`getItem`, `setItem`, `removeItem`, `clear`, `key`, `length`)
-- Encrypts data before storing and decrypts after retrieval
-- Lazily generates and persists an encryption key on first use
+### 2) Encryption manager
 
-### 3. Zustand Storage Adapter (`easy-risk-register-frontend/src/utils/ZustandEncryptedStorage.ts`)
+- `easy-risk-register-frontend/src/utils/encryptionManager.ts`
+  - Stores encryption config under `easy-risk-register:encryption`
+  - Holds the derived `CryptoKey` in memory for the current session
+  - Implements enable/disable/rotate/unlock flows
+  - Provides a legacy migration from earlier auto-key encryption
 
-- Adapts `SecureStorage` to Zustand’s `StateStorage` interface
-- Used by `easy-risk-register-frontend/src/stores/riskStore.ts` when available
+### 3) Zustand persistence adapter
 
-## Security Features
+- `easy-risk-register-frontend/src/utils/RiskRegisterPersistStorage.ts`
+  - Implements Zustand’s `StateStorage` interface
+  - Encrypts/decrypts only the persisted store key
+  - Returns `null` while locked to avoid accidentally overwriting ciphertext
 
-- **AES-GCM encryption**: Authenticated encryption via Web Crypto API AES-GCM.
-- **Random IVs**: A random 12-byte IV is generated for each encryption call.
-- **Transparent usage**: Zustand persistence uses the encrypted adapter without changing state shape.
+## Storage format
 
-## Implementation Details
+### Persisted store value (`easy-risk-register-data`)
 
-### Key Storage
+When encryption is enabled, the persisted value is stored as a JSON string:
 
-- The key is stored in LocalStorage under `easy-risk-register-key`.
-- The stored value is a base64 string of the raw 256-bit key material.
-- The imported `CryptoKey` used for encryption/decryption is created with `extractable: false`, but the raw key material remains readable from LocalStorage.
+```json
+{"v":1,"ivB64":"...","ctB64":"..."}
+```
 
-### Encrypted Value Format
+- `ivB64`: base64 IV (12 bytes)
+- `ctB64`: base64 ciphertext (includes authentication tag)
 
-`encryptData()` stores the encrypted payload as base64 of:
+### Encryption config (`easy-risk-register:encryption`)
 
-- 12 bytes IV (`window.crypto.getRandomValues(new Uint8Array(12))`)
-- followed by the AES-GCM ciphertext (which includes the authentication tag)
+The config includes:
 
-### Availability and Fallback
+- a KDF salt + iteration count
+- an encrypted test value (used to validate passphrase without storing the key)
 
-- `SecureStorage.isAvailable()` requires `window.crypto.subtle` and `localStorage`.
-- `easy-risk-register-frontend/src/stores/riskStore.ts` selects encrypted storage only when `ZustandEncryptedStorage.isAvailable()` returns `true`; otherwise it uses plain `window.localStorage`.
-- During SSR, the store uses an in-memory storage implementation.
+The passphrase itself is never stored.
 
-## Testing
+## Unlocking and UX integration
 
-Tests live in `easy-risk-register-frontend/test/utils/encryption.test.ts` and cover:
+If encryption is enabled but not unlocked:
 
-- Encryption/decryption round trips
-- Key import/export and key string generation
-- Secure storage operations (including `clear()` preserving the key)
-- Zustand adapter behavior
-- IV randomness (same plaintext encrypts to different ciphertexts)
+- the app shows an **unlock modal** (`EncryptionUnlockGate`)
+- after successful unlock, the app triggers `useRiskStore.persist.rehydrate()` to load decrypted state
 
-## Browser Compatibility
+If the passphrase is forgotten, the only recovery is to **delete local data** on that device (explicit “data loss” warning in the UI).
 
-This implementation relies on the Web Crypto API:
+## Legacy migration
 
-- Requires modern browsers with `crypto.subtle`
-- Requires a secure context for Web Crypto in many environments (HTTPS or `localhost`)
+Earlier builds used an auto-generated AES key stored in LocalStorage (`easy-risk-register-key`) and stored ciphertext as base64 of `IV || ciphertext`.
 
-## Migration Notes
+On startup, if legacy encrypted data is detected and passphrase encryption is not enabled, the app attempts a **one-time migration** by decrypting the legacy payload back to plaintext and removing the legacy key.
 
-If previously persisted state was stored unencrypted under the same LocalStorage key, it will not decrypt successfully. In that case, reads will fail and the app will rehydrate with defaults (effectively a clean state). A future migration could attempt to detect legacy plaintext and re-encrypt it.
+## Security considerations
 
-## Security Considerations
+This feature is defense-in-depth for at-rest storage:
 
-- Client-side encryption does not protect against attackers who can execute code in the same origin (for example via XSS).
-- The encryption key is stored in LocalStorage alongside encrypted data, so an attacker who can read LocalStorage can read both the ciphertext and the key material.
-- This feature primarily protects against casual/passive inspection of LocalStorage at rest (for example, screenshots, shoulder surfing, or accidental disclosure).
+- It does **not** protect against attackers who can execute code in the same origin (for example via XSS).
+- It does not protect against a fully compromised device/account.
+- It primarily helps reduce exposure from casual/local inspection of browser storage (device loss, shared device profiles, etc.).
 

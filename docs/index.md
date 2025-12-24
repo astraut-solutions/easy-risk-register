@@ -8,10 +8,16 @@ Easy Risk Register is a client-side, privacy-focused risk management app that su
 - Development workflow: `docs/guides/development-workflow.md`
 - Testing: `docs/guides/testing.md`
 
+## Cyber templates and checklists
+
+- Cyber templates, threat types, and filters: `docs/reference/high-level.md`
+
 ## Audit-ready and evidence
 
 - Audit-ready workflow: `docs/guides/audit-ready-workflow.md`
+- PDF exports (print-to-PDF): `docs/guides/pdf-exports.md`
 - Evidence guidance: `docs/guides/evidence-guidance.md`
+- Privacy controls (encryption + playbooks): `docs/guides/privacy-controls.md`
 - Risk record schema: `docs/reference/risk-record-schema.md`
 - Risk CSV specification: `docs/reference/risk-csv-spec.md`
 

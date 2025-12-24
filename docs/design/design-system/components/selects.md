@@ -10,7 +10,9 @@ status: draft
 
 ## Overview
 
-Select components in the Easy Risk Register application provide users with a way to choose from a list of predefined options. These components are essential for forms where users need to select categories, status values, risk levels, or other standardized options. The select component offers both single and multiple selection capabilities.
+Select components in the Easy Risk Register application provide users with a way to choose from a list of predefined options. These components are essential for forms where users need to select categories, status values, risk levels, or other standardized options.
+
+Implementation note: the app uses a custom, accessible **Select** component (button + listbox), not the browser-native `<select>`. This keeps the trigger and dropdown fully themeable and consistently rounded.
 
 ## Component Specifications
 
@@ -20,18 +22,18 @@ Select components in the Easy Risk Register application provide users with a way
   - Width: 100% of container or content-based
   - Background: `#ffffff` (Background Primary) with dropdown arrow
   - Border: 1px solid `#cbd5e1` (Border Strong)
-  - Border Radius: 6px
+  - Border Radius: 20px (trigger), 18px (dropdown panel)
   - Padding: `spacing-sm` (8px) vertical, `spacing-md` (16px) horizontal, `spacing-xl` (32px) right (for arrow)
   - Text Color: `#0f172a` (Text High)
   - Font Size: 1rem (16px)
-  - Appearance: Custom-styled native select with proper dropdown arrow
+  - Appearance: Custom trigger button + listbox dropdown
 
 - **Dropdown Options**:
   - Background: `#ffffff` (Background Primary)
   - Hover State: `#f1f5f9` (Background Tertiary)
   - Selected State: `#e0f2fe` (Primary Light with opacity)
   - Border: 1px solid `#e2e8f0` (Border Mid)
-  - Border Radius: 4px
+  - Border Radius: 18px (dropdown panel)
   - Max Height: 200px with scroll
   - Option Padding: `spacing-sm` (8px)
   - Option Font Size: 1rem (16px)
@@ -236,11 +238,12 @@ Select components in the Easy Risk Register application provide users with a way
 ## Accessibility Specifications
 
 ### ARIA Attributes
-- `role="combobox"` for the select element
-- `aria-expanded="true/false"` for dropdown state
+- `role="listbox"` for the dropdown content
+- `role="option"` for each option
 - `aria-haspopup="listbox"` indicating dropdown content
-- `aria-owns` for accessibility tree relationships
+- `aria-expanded="true/false"` for dropdown state
 - `aria-activedescendant` for keyboard navigation
+- `aria-selected="true/false"` for the highlighted/selected option
 
 ### Screen Reader Support
 - Clear announcement of select purpose
@@ -248,6 +251,9 @@ Select components in the Easy Risk Register application provide users with a way
 - Option count announced (e.g., "5 of 20")
 - State changes announced clearly
 - Error messages announced immediately
+
+### Hidden labels (filter bars)
+When the UI needs a compact filter bar, the Select label can be visually hidden (while remaining accessible) using `labelVisibility="sr-only"`.
 
 ### Keyboard Navigation
 - Tab order follows logical sequence

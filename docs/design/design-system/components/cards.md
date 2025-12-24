@@ -156,7 +156,7 @@ Card components in the Easy Risk Register application provide contained sections
 ### Risk Summary Card
 - **Header**: Risk title, status indicator, risk score badge
 - **Body**: Risk description, probability, impact, category
-- **Footer**: Action buttons (edit, delete, view details), metadata
+- **Footer**: Action buttons (edit, delete), metadata
 
 ### Risk Matrix Card
 - **Header**: Probability-impact matrix title

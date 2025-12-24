@@ -43,16 +43,17 @@ Search/filter logic uses simple string matching (not dynamically-constructed reg
 
 ### Data Encryption
 
-Persisted risk data can be encrypted in browser local storage:
-- Uses AES-GCM encryption with 256-bit keys via the Web Crypto API (when available)
-- Each encryption operation uses a randomly generated 12-byte initialization vector (IV)
-- Encrypted values are stored as base64 of `IV || ciphertext`
-- The encryption key is stored in LocalStorage under `easy-risk-register-key` (base64-encoded raw key material)
-- When Web Crypto is unavailable, the app falls back to unencrypted LocalStorage (and uses in-memory storage during SSR)
+Persisted risk data can be encrypted in browser local storage (optional, user-enabled):
+- Uses browser crypto APIs (no custom crypto): PBKDF2 (SHA-256) to derive an AES-GCM key from a user passphrase
+- AES-GCM uses a randomly generated 12-byte initialization vector (IV) per encryption
+- Encrypted values are stored as a JSON payload (`{ v: 1, ivB64, ctB64 }`) under the persisted store key
+- The derived key is kept **in memory for the current session** (the passphrase/key material is not stored)
+- If the passphrase is forgotten, there is no recovery; the user must delete local data on that device
+- When Web Crypto is unavailable, encryption is unavailable and the app falls back to unencrypted LocalStorage (and uses in-memory storage during SSR)
 
 Limitations / threat model notes:
 - Client-side encryption does not protect against attackers who can execute code in the same origin (for example via XSS).
-- The encryption key is stored in LocalStorage alongside encrypted data, so an attacker who can read LocalStorage can read both the ciphertext and the key material.
+- It primarily protects against casual/local inspection of browser storage at rest; it does not protect a compromised browser profile or device.
 
 For details, see `docs/architecture/secure-data-storage.md`.
 

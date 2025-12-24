@@ -2,7 +2,7 @@
 
 ## Concept
 
-A lightweight, cross-industry web app that empowers small and medium-sized organizations to identify, assess, and visualize operational, security, or compliance risks — delivering enterprise-level insights without the bloat, complexity, or high costs of traditional systems.
+A lightweight, privacy-first web app that empowers small and medium-sized organizations to identify, assess, and visualize operational, cyber security, and compliance risks - delivering enterprise-level insights without the bloat, complexity, or high costs of traditional systems.
 
 ## Problem
 
@@ -16,7 +16,10 @@ Easy Risk Register is a minimalist, fully client-side web app that runs entirely
 - Assign probability (on a 1–5 scale), impact levels (1–5 scale), and custom mitigation plans.
 - Automatically compute a risk score based on probability × impact formulas.
 - Visualize risks in a dynamic probability-impact matrix (e.g., a color-coded grid for quick prioritization).
+- Start from cyber templates (phishing, ransomware, BEC) to prefill common scenarios and controls.
+- Classify risks by cyber threat type and filter by threat type and compliance checklist status.
 - Export data to CSV for audits, meetings, or stakeholders.
+- Export print-ready PDF reports (risk register + privacy incident checklist) via the browser print dialog.
 
 ## Why It Works
 
@@ -64,7 +67,7 @@ The application is built with the following tech stack:
    1. Risk Dashboard (home view)
       - Overview matrix visualizing all active risks by probability and impact.
       - Quick filters for sorting by score, category, or status (e.g., open/mitigated).
-      - Users can click into a risk for detailed view, where they edit details, add notes, or mark as resolved.
+      - Users can click a risk title to jump directly into the edit view, update details, add notes, or mark as resolved.
       - Real-time risk score updates as changes are made.
    2. Add New Risk (prominent button, e.g., symbolized by a "+" icon)
       - Launches a guided form: input risk description, select probability/impact sliders, outline mitigation steps.

@@ -286,7 +286,7 @@ Table components in the Easy Risk Register application provide an organized and 
 - **Columns**: ID, Title, Category, Probability, Impact, Status, Owner
 - **Sorting**: Default by status and priority
 - **Filtering**: By category, status, owner
-- **Actions**: Edit, delete, view details
+- **Actions**: Edit, delete (and optionally view-only in future)
 
 ### Risk Report Table
 - **Columns**: Metric, Current, Previous, Variance, Trend

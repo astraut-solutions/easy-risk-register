@@ -139,12 +139,15 @@ src/
 │   └── risk.ts
 └── utils/                    # Utility functions
     ├── cn.ts                 # Tailwind class merging
-    ├── encryption.ts         # Client-side encryption
+    ├── encryptionManager.ts  # Passphrase encryption orchestration
+    ├── passphraseCrypto.ts   # PBKDF2 + AES-GCM helpers
+    ├── RiskRegisterPersistStorage.ts # Zustand persistence adapter (encrypted when enabled)
+    ├── encryption.ts         # Legacy AES helpers (pre-passphrase)
     ├── focusTrap.ts          # Accessibility utility
     ├── riskCalculations.ts
     ├── sanitization.ts       # Input sanitization
-    ├── SecureStorage.ts
-    └── ZustandEncryptedStorage.ts
+    ├── SecureStorage.ts      # Legacy storage wrapper (pre-passphrase)
+    └── ZustandEncryptedStorage.ts # Legacy zustand adapter (pre-passphrase)
 ```
 
 Tests live under `easy-risk-register-frontend/test/` (for example `test/stores/` and `test/utils/`).
@@ -682,12 +685,8 @@ const safeStorage = () => {
     return memoryStorage() // Server-side fallback
   }
 
-  // Check if secure storage is available, otherwise default to localStorage
-  if (ZustandEncryptedStorage.isAvailable()) {
-    return new ZustandEncryptedStorage()
-  }
-
-  return window.localStorage
+  // Uses a passphrase-based encrypted adapter when enabled.
+  return new RiskRegisterPersistStorage(LOCAL_STORAGE_KEY)
 }
 
 // Memory storage implementation for SSR

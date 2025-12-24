@@ -55,7 +55,7 @@ This document maps the design system components and specifications to the specif
 **Design Implementation**:
 - Risk matrix visualization component in `../features/risk-management/implementation.md`
 - Responsive design for matrix in `../design-system/platform-adaptations/web.md`
-- Interactive elements with click-to-view details functionality
+- Interactive elements with click-to-edit functionality
 
 **Acceptance Criteria Mapping**:
 - Interactive matrix displays risks based on probability and impact → Implemented in visualization component
