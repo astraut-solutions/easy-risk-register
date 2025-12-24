@@ -6,8 +6,10 @@ import type { RiskFilters } from '../../../src/types/risk'
 const baseFilters: RiskFilters = {
   search: '',
   category: 'all',
+  threatType: 'all',
   status: 'all',
   severity: 'all',
+  checklistStatus: 'all',
 }
 
 const categories = ['Security', 'Compliance']
@@ -16,7 +18,15 @@ describe('RiskFiltersBar', () => {
   it('renders all filter controls with the provided values', () => {
     render(
       <RiskFiltersBar
-        filters={{ ...baseFilters, search: 'phishing', category: 'Security', status: 'open', severity: 'high' }}
+        filters={{
+          ...baseFilters,
+          search: 'phishing',
+          category: 'Security',
+          threatType: 'phishing',
+          status: 'open',
+          severity: 'high',
+          checklistStatus: 'in_progress',
+        }}
         categories={categories}
         onChange={vi.fn()}
         onReset={vi.fn()}
@@ -25,9 +35,11 @@ describe('RiskFiltersBar', () => {
 
     expect(screen.getByPlaceholderText('Search risks...')).toHaveValue('phishing')
     const selects = screen.getAllByRole('combobox')
-    expect(selects[0]).toHaveValue('Security')
-    expect(selects[1]).toHaveValue('open')
-    expect(selects[2]).toHaveValue('high')
+    expect(selects[0]).toHaveValue('Security') // category
+    expect(selects[1]).toHaveValue('phishing') // threat type
+    expect(selects[2]).toHaveValue('open') // status
+    expect(selects[3]).toHaveValue('high') // severity
+    expect(selects[4]).toHaveValue('in_progress') // checklist status
   })
 
   it('calls onChange when the search input changes', () => {
@@ -55,7 +67,7 @@ describe('RiskFiltersBar', () => {
       <RiskFiltersBar filters={baseFilters} categories={categories} onChange={handleChange} onReset={vi.fn()} />
     )
 
-    const [, statusSelect, severitySelect] = screen.getAllByRole('combobox')
+    const [, , statusSelect, severitySelect] = screen.getAllByRole('combobox')
 
     fireEvent.change(statusSelect, { target: { value: 'mitigated' } })
     fireEvent.change(severitySelect, { target: { value: 'medium' } })

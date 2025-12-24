@@ -271,6 +271,8 @@ describe('RiskForm', () => {
         probability: 3,
         impact: 3,
         category: 'Security',
+        threatType: 'other',
+        templateId: undefined,
         mitigationPlan: '',
         status: 'open',
         owner: '',

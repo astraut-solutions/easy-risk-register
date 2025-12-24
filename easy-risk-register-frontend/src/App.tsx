@@ -14,11 +14,12 @@ import { useRiskManagement } from './services/riskService'
 import type { Risk, RiskSeverity } from './types/risk'
 import type { CSVExportVariant } from './stores/riskStore'
 import { DEFAULT_FILTERS, getRiskSeverity } from './utils/riskCalculations'
-import { Button, Modal, SectionHeader } from './design-system'
+import { Button, Modal, SectionHeader, Select } from './design-system'
 import { cn } from './utils/cn'
 import { useToast } from './components/feedback/ToastProvider'
 import { MetricsModal } from './components/feedback/MetricsModal'
 import { isAnalyticsEnabled, setAnalyticsEnabled, trackEvent } from './utils/analytics'
+import { CYBER_RISK_TEMPLATES } from './constants/cyber'
 
 type MatrixSelection = {
   probability: number
@@ -54,6 +55,8 @@ function App() {
   const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false)
   const [isRiskFormDirty, setIsRiskFormDirty] = useState(false)
   const [riskDraft, setRiskDraft] = useState<Partial<RiskFormValues> | null>(null)
+  const [createDefaults, setCreateDefaults] = useState<Partial<RiskFormValues> | null>(null)
+  const [createTemplateId, setCreateTemplateId] = useState('')
   const [pendingView, setPendingView] = useState<DashboardView | null>(null)
   const [returnView, setReturnView] = useState<DashboardView>('overview')
   const [isExportModalOpen, setIsExportModalOpen] = useState(false)
@@ -161,6 +164,8 @@ function App() {
     setEditingRisk(null)
     setReturnView(activeView === 'new' ? 'overview' : activeView)
     setIsRiskFormDirty(false)
+    setCreateDefaults(null)
+    setCreateTemplateId('')
 
     const draft = loadRiskDraft()
     setRiskDraft(draft)
@@ -190,6 +195,8 @@ function App() {
   const startEditRisk = (risk: Risk) => {
     setEditingRisk(risk)
     setRiskDraft(null)
+    setCreateDefaults(null)
+    setCreateTemplateId('')
     setReturnView(activeView === 'new' ? 'overview' : activeView)
     setIsRiskFormDirty(false)
 
@@ -223,6 +230,8 @@ function App() {
       actions.addRisk(values)
       clearRiskDraft()
       setRiskDraft(null)
+      setCreateDefaults(null)
+      setCreateTemplateId('')
       toast.notify({
         title: 'Risk added',
         description: 'Your new risk is now visible in the workspace.',
@@ -239,6 +248,7 @@ function App() {
 
     setEditingRisk(null)
     setIsRiskFormDirty(false)
+    setCreateDefaults(null)
     formModalOpenedAtRef.current = null
     formModalModeRef.current = null
     formModalOpenedFromDraftRef.current = false
@@ -259,8 +269,9 @@ function App() {
   }
 
   const handleViewRisk = (risk: Risk) => {
-    setViewingRisk(risk)
-    setIsDetailModalOpen(true)
+    // Prefer direct editing rather than opening a read-only modal.
+    handleCloseDetailModal()
+    startEditRisk(risk)
   }
 
   const handleCloseDetailModal = () => {
@@ -384,6 +395,50 @@ function App() {
         risk.impact === matrixSelection.impact,
     )
   }, [matrixSelection, risks])
+
+  const templateSelectOptions = useMemo(
+    () => [
+      { value: '', label: 'Start from scratch' },
+      ...CYBER_RISK_TEMPLATES.map((template) => ({ value: template.id, label: template.label })),
+    ],
+    [],
+  )
+
+  const selectedTemplate = useMemo(
+    () => CYBER_RISK_TEMPLATES.find((template) => template.id === createTemplateId) ?? null,
+    [createTemplateId],
+  )
+
+  const applySelectedTemplate = () => {
+    if (!selectedTemplate) return
+
+    if (isRiskFormDirty && typeof window !== 'undefined') {
+      const confirmed = window.confirm(
+        'Applying a template will replace the current form content. Continue?',
+      )
+      if (!confirmed) return
+    }
+
+    setCreateDefaults({
+      ...selectedTemplate.risk,
+      threatType: selectedTemplate.threatType,
+      templateId: selectedTemplate.id,
+      status: 'open',
+    })
+
+    clearRiskDraft()
+    setRiskDraft(null)
+
+    toast.notify({
+      title: 'Template applied',
+      description: `Prefilled the form with: ${selectedTemplate.label}.`,
+      variant: 'success',
+    })
+
+    trackEvent('risk_template_apply', {
+      templateId: selectedTemplate.id,
+    })
+  }
 
   const tableEmptyState = useMemo(() => {
     if (stats.total === 0) {
@@ -515,10 +570,53 @@ function App() {
               </div>
 
               <div className="mt-6">
+                {!editingRisk ? (
+                  <div className="mb-5 rounded-2xl border border-border-faint bg-surface-secondary/10 p-4">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                      <div className="flex-1">
+                        <Select
+                          label="Start from a cyber template (optional)"
+                          helperText="Choose a common cyber risk to prefill likelihood, impact, and mitigations."
+                          options={templateSelectOptions}
+                          value={createTemplateId}
+                          onChange={(value) => setCreateTemplateId(value)}
+                          placeholder="Start from scratch"
+                        />
+                        {selectedTemplate ? (
+                          <p className="mt-2 text-xs text-text-low">
+                            {selectedTemplate.description}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          disabled={!selectedTemplate}
+                          onClick={applySelectedTemplate}
+                        >
+                          Use template
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          disabled={!createDefaults && !createTemplateId}
+                          onClick={() => {
+                            setCreateDefaults(null)
+                            setCreateTemplateId('')
+                          }}
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
                 <RiskForm
                   mode={editingRisk ? 'edit' : 'create'}
                   categories={categories}
-                  defaultValues={editingRisk ?? riskDraft ?? undefined}
+                  defaultValues={editingRisk ?? createDefaults ?? riskDraft ?? undefined}
                   onSubmit={handleSubmit}
                   onAddCategory={actions.addCategory}
                   onCancel={() => requestNavigate(returnView)}
@@ -607,6 +705,8 @@ function App() {
         isOpen={isDetailModalOpen}
         onClose={handleCloseDetailModal}
         onEdit={handleEditFromDetail}
+        onAttachChecklistTemplate={actions.attachChecklistTemplate}
+        onToggleChecklistItem={actions.toggleChecklistItem}
       />
 
       <Modal

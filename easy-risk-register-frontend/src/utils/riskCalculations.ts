@@ -4,8 +4,10 @@ import type { Risk, RiskFilters, RiskSeverity, RiskStats } from '../types/risk'
 export const DEFAULT_FILTERS: RiskFilters = {
   search: '',
   category: 'all',
+  threatType: 'all',
   status: 'all',
   severity: 'all',
+  checklistStatus: 'all',
 }
 
 /**
@@ -51,6 +53,9 @@ export const filterRisks = (risks: Risk[], filters: RiskFilters): Risk[] =>
       filters.category === 'all' ||
       risk.category.toLowerCase() === filters.category.toLowerCase()
 
+    const matchesThreatType =
+      filters.threatType === 'all' || risk.threatType === filters.threatType
+
     const matchesStatus =
       filters.status === 'all' || risk.status === filters.status
 
@@ -58,7 +63,17 @@ export const filterRisks = (risks: Risk[], filters: RiskFilters): Risk[] =>
     const matchesSeverity =
       filters.severity === 'all' || severity === filters.severity
 
-    return matchesSearch && matchesCategory && matchesStatus && matchesSeverity
+    const matchesChecklistStatus =
+      filters.checklistStatus === 'all' || risk.checklistStatus === filters.checklistStatus
+
+    return (
+      matchesSearch &&
+      matchesCategory &&
+      matchesThreatType &&
+      matchesStatus &&
+      matchesSeverity &&
+      matchesChecklistStatus
+    )
   })
 
 /**

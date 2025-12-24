@@ -46,7 +46,7 @@ export const RiskCard = ({ risk, onEdit, onDelete, onView }: RiskCardProps) => {
               type="button"
               onClick={() => onView(risk)}
               className="text-left text-lg font-semibold text-text-high group-hover:text-brand-primary transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-primary rounded-md"
-              aria-label={`View details for risk: ${risk.title}`}
+              aria-label={`Edit risk: ${risk.title}`}
             >
               {risk.title}
             </button>

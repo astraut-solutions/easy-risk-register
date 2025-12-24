@@ -4,6 +4,19 @@ export type RiskSeverity = 'low' | 'medium' | 'high'
 
 export type RiskResponse = 'treat' | 'transfer' | 'tolerate' | 'terminate'
 
+export type ThreatType =
+  | 'phishing'
+  | 'ransomware'
+  | 'business_email_compromise'
+  | 'malware'
+  | 'vulnerability'
+  | 'data_breach'
+  | 'supply_chain'
+  | 'insider'
+  | 'other'
+
+export type ChecklistStatus = 'not_started' | 'in_progress' | 'done'
+
 export type ReviewCadence =
   | 'weekly'
   | 'monthly'
@@ -33,6 +46,34 @@ export interface RiskMitigationStep {
   completedAt?: string // ISO
 }
 
+export interface RiskChecklistItem {
+  id: string
+  description: string
+  createdAt: string // ISO
+  completedAt?: string // ISO
+}
+
+export interface RiskChecklist {
+  id: string
+  templateId: string
+  title: string
+  items: RiskChecklistItem[]
+  attachedAt: string // ISO
+}
+
+export interface RiskPlaybookStep {
+  id: string
+  description: string
+  createdAt: string // ISO
+  completedAt?: string // ISO
+}
+
+export interface RiskPlaybook {
+  title: string
+  steps: RiskPlaybookStep[]
+  lastModified: string // ISO
+}
+
 export interface Risk {
   id: string
   title: string
@@ -41,9 +82,14 @@ export interface Risk {
   impact: number // 1-5
   riskScore: number
   category: string
+  threatType: ThreatType
+  templateId?: string
   status: RiskStatus
   mitigationPlan: string
   mitigationSteps: RiskMitigationStep[]
+  checklists: RiskChecklist[]
+  checklistStatus: ChecklistStatus
+  playbook?: RiskPlaybook
   owner: string
   ownerTeam?: string
   dueDate?: string // ISO
@@ -65,9 +111,13 @@ export interface RiskInput {
   probability: number
   impact: number
   category: string
+  threatType?: ThreatType
+  templateId?: string
   status?: RiskStatus
   mitigationPlan?: string
   mitigationSteps?: RiskMitigationStep[]
+  checklists?: RiskChecklist[]
+  playbook?: RiskPlaybook
   owner?: string
   ownerTeam?: string
   dueDate?: string
@@ -84,8 +134,10 @@ export interface RiskInput {
 export interface RiskFilters {
   search: string
   category: string
+  threatType: ThreatType | 'all'
   status: RiskStatus | 'all'
   severity: RiskSeverity | 'all'
+  checklistStatus: ChecklistStatus | 'all'
 }
 
 export interface RiskStats {

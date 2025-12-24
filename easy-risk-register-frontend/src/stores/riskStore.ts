@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid'
 import Papa from 'papaparse'
 
 import { DEFAULT_CATEGORIES, LOCAL_STORAGE_KEY } from '../constants/risk'
+import { COMPLIANCE_CHECKLIST_TEMPLATES, buildChecklistInstanceFromTemplate } from '../constants/cyber'
 import type { Risk, RiskFilters, RiskInput } from '../types/risk'
 import {
   DEFAULT_FILTERS,
@@ -24,6 +25,17 @@ const isRiskStatus = (value: unknown): value is Risk['status'] =>
 const isRiskResponse = (value: unknown): value is Risk['riskResponse'] =>
   value === 'treat' || value === 'transfer' || value === 'tolerate' || value === 'terminate'
 
+const isThreatType = (value: unknown): value is Risk['threatType'] =>
+  value === 'phishing' ||
+  value === 'ransomware' ||
+  value === 'business_email_compromise' ||
+  value === 'malware' ||
+  value === 'vulnerability' ||
+  value === 'data_breach' ||
+  value === 'supply_chain' ||
+  value === 'insider' ||
+  value === 'other'
+
 const isReviewCadence = (value: unknown): value is NonNullable<Risk['reviewCadence']> =>
   value === 'weekly' ||
   value === 'monthly' ||
@@ -32,6 +44,16 @@ const isReviewCadence = (value: unknown): value is NonNullable<Risk['reviewCaden
   value === 'annual' ||
   value === 'ad-hoc'
 
+const normalizeThreatType = (value: unknown): Risk['threatType'] =>
+  isThreatType(value) ? value : 'other'
+
+const normalizeTemplateId = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') return undefined
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  return normalizeText(trimmed)
+}
+
 const normalizeISODateOrUndefined = (value: unknown): string | undefined => {
   if (typeof value !== 'string') return undefined
   const trimmed = value.trim()
@@ -39,6 +61,85 @@ const normalizeISODateOrUndefined = (value: unknown): string | undefined => {
   const parsed = Date.parse(trimmed)
   if (Number.isNaN(parsed)) return undefined
   return new Date(parsed).toISOString()
+}
+
+const normalizeChecklistStatus = (checklists: Risk['checklists']): Risk['checklistStatus'] => {
+  if (!checklists.length) return 'not_started'
+  const items = checklists.flatMap((checklist) => checklist.items ?? [])
+  if (!items.length) return 'not_started'
+  const completed = items.filter((item) => Boolean(item.completedAt)).length
+  if (completed === 0) return 'not_started'
+  if (completed >= items.length) return 'done'
+  return 'in_progress'
+}
+
+const normalizeChecklists = (value: unknown): Risk['checklists'] => {
+  if (!Array.isArray(value)) return []
+  const now = new Date().toISOString()
+
+  return value
+    .map((rawChecklist: any) => {
+      if (!rawChecklist || typeof rawChecklist !== 'object') return null
+
+      const templateId =
+        typeof rawChecklist.templateId === 'string' && rawChecklist.templateId.trim()
+          ? normalizeText(rawChecklist.templateId)
+          : ''
+      if (!templateId) return null
+
+      const title =
+        typeof rawChecklist.title === 'string' && rawChecklist.title.trim()
+          ? normalizeText(sanitizeTextInput(rawChecklist.title))
+          : templateId
+
+      const attachedAt =
+        typeof rawChecklist.attachedAt === 'string' && rawChecklist.attachedAt.trim()
+          ? rawChecklist.attachedAt.trim()
+          : now
+
+      const items: Risk['checklists'][number]['items'] = Array.isArray(rawChecklist.items)
+        ? rawChecklist.items
+            .map((rawItem: any) => {
+              if (!rawItem || typeof rawItem !== 'object') return null
+
+              const description =
+                typeof rawItem.description === 'string' && rawItem.description.trim()
+                  ? normalizeText(sanitizeTextInput(rawItem.description))
+                  : ''
+              if (!description) return null
+
+              const createdAt =
+                typeof rawItem.createdAt === 'string' && rawItem.createdAt.trim()
+                  ? rawItem.createdAt.trim()
+                  : now
+
+              const completedAt = normalizeISODateOrUndefined(rawItem.completedAt)
+
+              return {
+                id:
+                  typeof rawItem.id === 'string' && rawItem.id.trim()
+                    ? rawItem.id.trim()
+                    : nanoid(10),
+                description,
+                createdAt,
+                ...(completedAt ? { completedAt } : {}),
+              }
+            })
+            .filter((item): item is Risk['checklists'][number]['items'][number] => Boolean(item))
+        : []
+
+      return {
+        id:
+          typeof rawChecklist.id === 'string' && rawChecklist.id.trim()
+            ? rawChecklist.id.trim()
+            : nanoid(10),
+        templateId,
+        title,
+        attachedAt,
+        items,
+      }
+    })
+    .filter((checklist): checklist is Risk['checklists'][number] => Boolean(checklist))
 }
 
 const normalizeEvidence = (value: unknown): Risk['evidence'] => {
@@ -136,6 +237,11 @@ const normalizeStoredRisk = (raw: unknown): Risk => {
     ? sanitized.riskResponse
     : 'treat'
 
+  const threatType = normalizeThreatType(sanitized.threatType)
+  const templateId = normalizeTemplateId(sanitized.templateId)
+  const checklists = normalizeChecklists(sanitized.checklists)
+  const checklistStatus = normalizeChecklistStatus(checklists)
+
   return {
     id:
       typeof sanitized.id === 'string' && sanitized.id.trim()
@@ -150,10 +256,14 @@ const normalizeStoredRisk = (raw: unknown): Risk => {
       typeof sanitized.category === 'string' && sanitized.category.trim()
         ? normalizeText(sanitized.category)
         : DEFAULT_CATEGORIES[0],
+    threatType,
+    ...(templateId ? { templateId } : {}),
     status,
     mitigationPlan:
       typeof sanitized.mitigationPlan === 'string' ? normalizeText(sanitized.mitigationPlan) : '',
     mitigationSteps: normalizeMitigationSteps(sanitized.mitigationSteps),
+    checklists,
+    checklistStatus,
     owner: typeof sanitized.owner === 'string' ? normalizeText(sanitized.owner) : '',
     ...(typeof sanitized.ownerTeam === 'string' && sanitized.ownerTeam.trim()
       ? { ownerTeam: normalizeText(sanitized.ownerTeam) }
@@ -190,6 +300,7 @@ const buildRisk = (input: RiskInput): Risk => {
   const sanitizedInput = sanitizeRiskInput(input) as RiskInput
 
   const now = new Date().toISOString()
+  const checklists = normalizeChecklists(sanitizedInput.checklists)
   return {
     id: nanoid(12),
     title: normalizeText(sanitizedInput.title),
@@ -198,9 +309,13 @@ const buildRisk = (input: RiskInput): Risk => {
     impact: clampScore(sanitizedInput.impact),
     riskScore: calculateRiskScore(sanitizedInput.probability, sanitizedInput.impact),
     category: normalizeText(sanitizedInput.category) || DEFAULT_CATEGORIES[0],
+    threatType: normalizeThreatType(sanitizedInput.threatType),
+    ...(normalizeTemplateId(sanitizedInput.templateId) ? { templateId: normalizeTemplateId(sanitizedInput.templateId) } : {}),
     status: sanitizedInput.status ?? 'open',
     mitigationPlan: normalizeText(sanitizedInput.mitigationPlan ?? ''),
     mitigationSteps: normalizeMitigationSteps(sanitizedInput.mitigationSteps),
+    checklists,
+    checklistStatus: normalizeChecklistStatus(checklists),
     owner: normalizeText(sanitizedInput.owner ?? ''),
     ...(sanitizedInput.ownerTeam ? { ownerTeam: normalizeText(sanitizedInput.ownerTeam) } : {}),
     ...(normalizeISODateOrUndefined(sanitizedInput.dueDate)
@@ -259,7 +374,7 @@ const safeStorage = () => {
 
 export type CSVExportVariant = 'standard' | 'audit_pack'
 
-const CSV_SPEC_VERSION = 1 as const
+const CSV_SPEC_VERSION = 2 as const
 
 const CSV_STANDARD_COLUMNS = [
   'csvSpecVersion',
@@ -271,6 +386,8 @@ const CSV_STANDARD_COLUMNS = [
   'impact',
   'riskScore',
   'category',
+  'threatType',
+  'templateId',
   'status',
   'mitigationPlan',
   'owner',
@@ -283,6 +400,8 @@ const CSV_STANDARD_COLUMNS = [
   'securityAdvisorComment',
   'vendorResponse',
   'notes',
+  'checklistStatus',
+  'checklistsJson',
   'evidenceJson',
   'mitigationStepsJson',
   'creationDate',
@@ -316,6 +435,8 @@ const toCSV = (risks: Risk[], variant: CSVExportVariant = 'standard'): string =>
       impact: risk.impact,
       riskScore: risk.riskScore,
       category: risk.category,
+      threatType: risk.threatType,
+      templateId: risk.templateId ?? '',
       status: risk.status,
       mitigationPlan: risk.mitigationPlan,
       owner: risk.owner,
@@ -328,6 +449,8 @@ const toCSV = (risks: Risk[], variant: CSVExportVariant = 'standard'): string =>
       securityAdvisorComment: risk.securityAdvisorComment,
       vendorResponse: risk.vendorResponse,
       notes: risk.notes ?? '',
+      checklistStatus: risk.checklistStatus,
+      checklistsJson: JSON.stringify(risk.checklists ?? []),
       evidenceJson: JSON.stringify(risk.evidence ?? []),
       mitigationStepsJson: JSON.stringify(risk.mitigationSteps ?? []),
       creationDate: risk.creationDate,
@@ -421,10 +544,12 @@ const fromCSV = (csv: string): { risks: Risk[]; reason?: CSVImportFailureReason 
 
       const evidenceJson = row.evidenceJson ?? row.evidence ?? ''
       const mitigationStepsJson = row.mitigationStepsJson ?? row.mitigationSteps ?? ''
+      const checklistsJson = row.checklistsJson ?? row.checklists ?? ''
 
       const evidenceFromJson = parseJsonArray<Risk['evidence'][number]>(evidenceJson)
       const mitigationStepsFromJson =
         parseJsonArray<Risk['mitigationSteps'][number]>(mitigationStepsJson)
+      const checklistsFromJson = parseJsonArray<Risk['checklists'][number]>(checklistsJson)
 
       const evidenceFromUrls =
         !evidenceFromJson.length && typeof row.evidenceUrls === 'string' && row.evidenceUrls.trim()
@@ -441,9 +566,12 @@ const fromCSV = (csv: string): { risks: Risk[]; reason?: CSVImportFailureReason 
         probability: Number(row.probability) || 1,
         impact: Number(row.impact) || 1,
         category: row.category || DEFAULT_CATEGORIES[0],
+        threatType: row.threatType || undefined,
+        templateId: row.templateId || undefined,
         status: row.status,
         mitigationPlan: row.mitigationPlan || '',
         mitigationSteps: mitigationStepsFromJson,
+        checklists: checklistsFromJson,
         owner: row.owner || '',
         ownerTeam: row.ownerTeam || undefined,
         dueDate: row.dueDate || undefined,
@@ -488,6 +616,8 @@ export interface RiskStoreState {
     updates: Partial<RiskInput> & { status?: Risk['status'] },
   ) => Risk | null
   deleteRisk: (id: string) => void
+  attachChecklistTemplate: (riskId: string, templateId: string) => void
+  toggleChecklistItem: (riskId: string, checklistId: string, itemId: string) => void
   addCategory: (category: string) => void
   setFilters: (updates: Partial<RiskFilters>) => void
   bulkImport: (risks: Risk[]) => void
@@ -624,6 +754,11 @@ export const useRiskStore = create<RiskStoreState>()(
             const probability = sanitizedUpdates.probability ?? merged.probability
             const impact = sanitizedUpdates.impact ?? merged.impact
 
+            const nextChecklists =
+              'checklists' in sanitizedUpdates
+                ? normalizeChecklists((sanitizedUpdates as any).checklists)
+                : merged.checklists
+
             updatedRisk = {
               ...merged,
               title: sanitizedUpdates.title ? normalizeText(sanitizedUpdates.title) : merged.title,
@@ -633,6 +768,14 @@ export const useRiskStore = create<RiskStoreState>()(
               category: sanitizedUpdates.category
                 ? normalizeText(sanitizedUpdates.category)
                 : merged.category,
+              threatType:
+                'threatType' in sanitizedUpdates
+                  ? normalizeThreatType((sanitizedUpdates as any).threatType)
+                  : merged.threatType,
+              templateId:
+                'templateId' in sanitizedUpdates
+                  ? normalizeTemplateId((sanitizedUpdates as any).templateId)
+                  : merged.templateId,
               mitigationPlan: sanitizedUpdates.mitigationPlan
                 ? normalizeText(sanitizedUpdates.mitigationPlan)
                 : merged.mitigationPlan,
@@ -640,6 +783,8 @@ export const useRiskStore = create<RiskStoreState>()(
                 'mitigationSteps' in sanitizedUpdates
                   ? normalizeMitigationSteps(sanitizedUpdates.mitigationSteps)
                   : merged.mitigationSteps,
+              checklists: nextChecklists,
+              checklistStatus: normalizeChecklistStatus(nextChecklists),
               owner:
                 'owner' in sanitizedUpdates
                   ? normalizeText(String(sanitizedUpdates.owner ?? ''))
@@ -709,6 +854,58 @@ export const useRiskStore = create<RiskStoreState>()(
           const risks = state.risks.filter((risk) => risk.id !== id)
           return recalc(risks, state.filters)
         }),
+      attachChecklistTemplate: (riskId, templateId) =>
+        set((state) => {
+          const template =
+            COMPLIANCE_CHECKLIST_TEMPLATES.find((entry) => entry.id === templateId) ?? null
+          if (!template) return state
+
+          const now = new Date().toISOString()
+          const checklistId = nanoid(10)
+          const instance = buildChecklistInstanceFromTemplate(template, now, checklistId)
+
+          const risks = state.risks.map((risk) => {
+            if (risk.id !== riskId) return risk
+            if (risk.checklists.some((checklist) => checklist.templateId === templateId)) {
+              return risk
+            }
+
+            const checklists = [...risk.checklists, instance]
+            return {
+              ...risk,
+              checklists,
+              checklistStatus: normalizeChecklistStatus(checklists),
+              lastModified: now,
+            }
+          })
+
+          return recalc(risks, state.filters)
+        }),
+      toggleChecklistItem: (riskId, checklistId, itemId) =>
+        set((state) => {
+          const now = new Date().toISOString()
+          const risks = state.risks.map((risk) => {
+            if (risk.id !== riskId) return risk
+
+            const checklists = risk.checklists.map((checklist) => {
+              if (checklist.id !== checklistId) return checklist
+              const items = checklist.items.map((item) => {
+                if (item.id !== itemId) return item
+                return item.completedAt ? { ...item, completedAt: undefined } : { ...item, completedAt: now }
+              })
+              return { ...checklist, items }
+            })
+
+            return {
+              ...risk,
+              checklists,
+              checklistStatus: normalizeChecklistStatus(checklists),
+              lastModified: now,
+            }
+          })
+
+          return recalc(risks, state.filters)
+        }),
       addCategory: (category) =>
         set((state) => {
           // Sanitize the category before adding
@@ -766,13 +963,13 @@ export const useRiskStore = create<RiskStoreState>()(
     {
       name: LOCAL_STORAGE_KEY,
       storage: createJSONStorage(safeStorage),
-      version: 2,
+      version: 3,
       migrate: (persistedState, version) => {
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState
         }
 
-        if (version >= 2) {
+        if (version >= 3) {
           return persistedState
         }
 
@@ -793,7 +990,7 @@ export const useRiskStore = create<RiskStoreState>()(
             )
           : [...DEFAULT_CATEGORIES]
 
-        const filters = state.filters ?? { ...DEFAULT_FILTERS }
+        const filters = { ...DEFAULT_FILTERS, ...(state.filters ?? {}) }
 
         return {
           ...state,
@@ -807,10 +1004,11 @@ export const useRiskStore = create<RiskStoreState>()(
       onRehydrateStorage: () => (state) => {
         if (!state) return
         state.initialized = true
-        const filters = state.filters ?? { ...DEFAULT_FILTERS }
+        const filters = { ...DEFAULT_FILTERS, ...(state.filters ?? {}) }
         const stats = computeRiskStats(state.risks)
         state.filteredRisks = filterRisks(state.risks, filters)
         state.stats = stats
+        state.filters = filters
       },
     },
   ),

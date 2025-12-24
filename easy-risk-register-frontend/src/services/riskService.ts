@@ -32,6 +32,14 @@ export const riskService = {
   /** Removes a risk from the store by its ID */
   remove: (id: string) => useRiskStore.getState().deleteRisk(id),
 
+  /** Attaches a compliance checklist template to a risk */
+  attachChecklistTemplate: (riskId: string, templateId: string) =>
+    useRiskStore.getState().attachChecklistTemplate(riskId, templateId),
+
+  /** Toggles a checklist item's completion state */
+  toggleChecklistItem: (riskId: string, checklistId: string, itemId: string) =>
+    useRiskStore.getState().toggleChecklistItem(riskId, checklistId, itemId),
+
   /** Updates the current risk filtering criteria */
   setFilters: (updates: Partial<RiskFilters>) =>
     useRiskStore.getState().setFilters(updates),
@@ -59,6 +67,8 @@ export const useRiskManagement = () => {
   const addRisk = useRiskStore((state) => state.addRisk)
   const updateRisk = useRiskStore((state) => state.updateRisk)
   const deleteRisk = useRiskStore((state) => state.deleteRisk)
+  const attachChecklistTemplate = useRiskStore((state) => state.attachChecklistTemplate)
+  const toggleChecklistItem = useRiskStore((state) => state.toggleChecklistItem)
   const addCategory = useRiskStore((state) => state.addCategory)
   const setFilters = useRiskStore((state) => state.setFilters)
   const exportToCSV = useRiskStore((state) => state.exportToCSV)
@@ -70,6 +80,8 @@ export const useRiskManagement = () => {
       addRisk,
       updateRisk,
       deleteRisk,
+      attachChecklistTemplate,
+      toggleChecklistItem,
       addCategory,
       setFilters,
       exportToCSV,
@@ -78,12 +90,14 @@ export const useRiskManagement = () => {
     }),
     [
       addRisk,
+      attachChecklistTemplate,
       addCategory,
       deleteRisk,
       exportToCSV,
       importFromCSV,
       seedDemoData,
       setFilters,
+      toggleChecklistItem,
       updateRisk,
     ],
   )

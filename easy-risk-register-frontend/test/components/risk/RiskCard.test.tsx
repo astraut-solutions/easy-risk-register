@@ -32,6 +32,9 @@ const makeRisk = (overrides: Partial<Risk>): Risk => ({
   impact: 3,
   riskScore: 12,
   category: 'Security',
+  threatType: 'other',
+  checklists: [],
+  checklistStatus: 'not_started',
   status: 'open',
   mitigationPlan: 'Test mitigation plan',
   mitigationSteps: [],
@@ -125,7 +128,7 @@ describe('RiskCard', () => {
     const onViewSpy = vi.fn()
     render(<RiskCard {...defaultProps} onView={onViewSpy} />)
 
-    const titleButton = screen.getByRole('button', { name: 'View details for risk: Test Risk' })
+    const titleButton = screen.getByRole('button', { name: 'Edit risk: Test Risk' })
     fireEvent.click(titleButton)
 
     expect(onViewSpy).toHaveBeenCalledWith(mockRisk)

@@ -16,6 +16,9 @@ const makeRisk = (overrides: Partial<Risk>): Risk => ({
   impact: 3,
   riskScore: 9,
   category: 'Operational',
+  threatType: 'other',
+  checklists: [],
+  checklistStatus: 'not_started',
   status: 'open',
   mitigationPlan: '',
   mitigationSteps: [],
@@ -36,8 +39,10 @@ describe('riskCalculations', () => {
       expect(DEFAULT_FILTERS).toEqual({
         search: '',
         category: 'all',
+        threatType: 'all',
         status: 'all',
-        severity: 'all'
+        severity: 'all',
+        checklistStatus: 'all',
       });
     });
   });
@@ -177,8 +182,10 @@ describe('riskCalculations', () => {
       const result = filterRisks(sampleRisks, { 
         search: 'Risk',
         category: 'Operational',
+        threatType: 'all',
         status: 'mitigated',
-        severity: 'low'
+        severity: 'low',
+        checklistStatus: 'all',
       });
       expect(result).toHaveLength(1);
       expect(result[0].title).toBe('Low Operational Risk');

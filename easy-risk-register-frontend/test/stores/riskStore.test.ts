@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useRiskStore } from '../../src/stores/riskStore'
 import type { RiskInput } from '../../src/types/risk'
+import { DEFAULT_FILTERS } from '../../src/utils/riskCalculations'
 
 // Mock nanoid to have predictable IDs for testing
 vi.mock('nanoid', () => ({
@@ -14,10 +15,10 @@ describe('RiskStore', () => {
       risks: [],
       filteredRisks: [],
       categories: [],
-      filters: { search: '', category: 'all', status: 'all', severity: 'all' },
+      filters: { ...DEFAULT_FILTERS },
       stats: {
         total: 0,
-        byStatus: { open: 0, mitigated: 0, closed: 0 },
+        byStatus: { open: 0, mitigated: 0, closed: 0, accepted: 0 },
         bySeverity: { low: 0, medium: 0, high: 0 },
         averageScore: 0,
         maxScore: 0,
@@ -252,7 +253,7 @@ test-id,"Imported Risk","Imported Description",3,4,12,"Financial","open","Import
         risks: [],
         filteredRisks: [],
         categories: [],
-        filters: { search: '', category: 'all', status: 'all', severity: 'all' },
+        filters: { ...DEFAULT_FILTERS },
         stats: {
           total: 0,
           byStatus: { open: 0, mitigated: 0, closed: 0, accepted: 0 },

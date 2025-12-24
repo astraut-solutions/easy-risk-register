@@ -1,6 +1,7 @@
 import type { ChangeEvent } from 'react'
 
 import type { RiskFilters } from '../../types/risk'
+import { CHECKLIST_STATUS_OPTIONS, THREAT_TYPE_OPTIONS } from '../../constants/cyber'
 import { Button } from '../../design-system'
 
 interface RiskFiltersProps {
@@ -23,6 +24,16 @@ const severityOptions = [
   { label: 'Low', value: 'low' },
   { label: 'Medium', value: 'medium' },
   { label: 'High', value: 'high' },
+]
+
+const threatTypeOptions = [
+  { label: 'All threat types', value: 'all' },
+  ...THREAT_TYPE_OPTIONS.map((option) => ({ label: option.label, value: option.value })),
+]
+
+const checklistStatusOptions = [
+  { label: 'All checklist statuses', value: 'all' },
+  ...CHECKLIST_STATUS_OPTIONS.map((option) => ({ label: option.label, value: option.value })),
 ]
 
 export const RiskFiltersBar = ({
@@ -67,69 +78,111 @@ export const RiskFiltersBar = ({
           onClear: () => onChange({ severity: 'all' }),
         }
       : null,
+    filters.threatType !== 'all'
+      ? {
+          key: 'threatType',
+          label: `Threat: ${threatTypeOptions.find((option) => option.value === filters.threatType)?.label ?? filters.threatType}`,
+          onClear: () => onChange({ threatType: 'all' }),
+        }
+      : null,
+    filters.checklistStatus !== 'all'
+      ? {
+          key: 'checklistStatus',
+          label: `Checklist: ${checklistStatusOptions.find((option) => option.value === filters.checklistStatus)?.label ?? filters.checklistStatus}`,
+          onClear: () => onChange({ checklistStatus: 'all' }),
+        }
+      : null,
   ].filter(Boolean) as Array<{ key: string; label: string; onClear: () => void }>
 
   return (
     <div className="rr-panel p-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <input
-          type="search"
-          placeholder="Search risks..."
-          value={filters.search}
-          onChange={handleInput('search')}
-          className="rr-input flex-1 min-w-[200px]"
-        />
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6 xl:items-end">
+        <div className="md:col-span-1 xl:col-span-1">
+          <input
+            type="search"
+            placeholder="Search risks..."
+            value={filters.search}
+            onChange={handleInput('search')}
+            className="rr-input w-full"
+          />
+        </div>
 
-        <select
-          value={filters.category}
-          onChange={handleInput('category')}
-          className="rr-select min-w-[160px]"
-        >
-          <option value="all">All categories</option>
-          {categories.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
+        <div className="xl:col-span-1">
+          <select
+            value={filters.category}
+            onChange={handleInput('category')}
+            className="rr-select w-full"
+          >
+            <option value="all">All categories</option>
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <select
-          value={filters.status}
-          onChange={handleInput('status')}
-          className="rr-select min-w-[140px]"
-        >
-          {statusOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <div className="xl:col-span-1">
+          <select
+            value={filters.threatType}
+            onChange={handleInput('threatType')}
+            className="rr-select w-full"
+          >
+            {threatTypeOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <select
-          value={filters.severity}
-          onChange={handleInput('severity')}
-          className="rr-select min-w-[140px]"
-        >
-          {severityOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <div className="xl:col-span-1">
+          <select
+            value={filters.status}
+            onChange={handleInput('status')}
+            className="rr-select w-full"
+          >
+            {statusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          onClick={onReset}
-          className="ml-auto"
-        >
-          Reset
-        </Button>
+        <div className="xl:col-span-1">
+          <select
+            value={filters.severity}
+            onChange={handleInput('severity')}
+            className="rr-select w-full"
+          >
+            {severityOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="xl:col-span-1">
+          <select
+            value={filters.checklistStatus}
+            onChange={handleInput('checklistStatus')}
+            className="rr-select w-full"
+          >
+            {checklistStatusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
       </div>
 
       {activeFilterChips.length ? (
-        <div className="mt-3 flex flex-wrap items-center gap-2" aria-label="Active filters">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2" aria-label="Active filters">
           {activeFilterChips.map((chip) => (
             <Button
               key={chip.key}
@@ -146,8 +199,19 @@ export const RiskFiltersBar = ({
               </span>
             </Button>
           ))}
+          </div>
+
+          <Button type="button" size="sm" variant="ghost" onClick={onReset}>
+            Reset
+          </Button>
         </div>
-      ) : null}
+      ) : (
+        <div className="mt-3 flex items-center justify-end">
+          <Button type="button" size="sm" variant="ghost" onClick={onReset}>
+            Reset
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

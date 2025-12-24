@@ -36,7 +36,7 @@
   }
 
   .rr-select {
-    @apply w-full appearance-none rounded-2xl border border-border-subtle bg-surface-primary px-4 py-2 text-sm text-text-high transition focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/30 focus:outline-none;
+    @apply w-full appearance-none truncate rounded-2xl border border-border-subtle bg-surface-primary px-4 py-2 text-sm text-text-high transition focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/30 focus:outline-none;
     background-image: linear-gradient(45deg, transparent 50%, #64748b 50%), linear-gradient(135deg, #64748b 50%, transparent 50%);
     background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 13px) calc(50% - 2px);
     background-size: 5px 5px, 5px 5px;

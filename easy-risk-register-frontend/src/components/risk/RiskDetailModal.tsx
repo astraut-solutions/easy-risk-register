@@ -1,4 +1,7 @@
+import { useMemo, useState } from 'react'
+
 import type { Risk } from '../../types/risk'
+import { COMPLIANCE_CHECKLIST_TEMPLATES } from '../../constants/cyber'
 import { Badge, Button, Modal } from '../../design-system'
 
 interface RiskDetailModalProps {
@@ -6,6 +9,8 @@ interface RiskDetailModalProps {
   isOpen: boolean
   onClose: () => void
   onEdit: (risk: Risk) => void
+  onAttachChecklistTemplate: (riskId: string, templateId: string) => void
+  onToggleChecklistItem: (riskId: string, checklistId: string, itemId: string) => void
 }
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
@@ -21,8 +26,34 @@ const formatMaybeDate = (value?: string) => {
 
 const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1)
 
-export const RiskDetailModal = ({ risk, isOpen, onClose, onEdit }: RiskDetailModalProps) => {
+export const RiskDetailModal = ({
+  risk,
+  isOpen,
+  onClose,
+  onEdit,
+  onAttachChecklistTemplate,
+  onToggleChecklistItem,
+}: RiskDetailModalProps) => {
   if (!risk) return null
+
+  const [selectedChecklistTemplateId, setSelectedChecklistTemplateId] = useState(
+    () => COMPLIANCE_CHECKLIST_TEMPLATES[0]?.id ?? '',
+  )
+
+  const checklistTemplateOptions = useMemo(
+    () =>
+      COMPLIANCE_CHECKLIST_TEMPLATES.map((template) => ({
+        id: template.id,
+        title: template.title,
+      })),
+    [],
+  )
+
+  const checklistSummary = useMemo(() => {
+    const items = risk.checklists.flatMap((checklist) => checklist.items ?? [])
+    const completed = items.filter((item) => Boolean(item.completedAt)).length
+    return { completed, total: items.length }
+  }, [risk.checklists])
 
   return (
     <Modal
@@ -143,6 +174,106 @@ export const RiskDetailModal = ({ risk, isOpen, onClose, onEdit }: RiskDetailMod
               <p className="mt-1 text-sm text-text-low">—</p>
             )}
           </div>
+        </div>
+
+        <div className="rr-panel space-y-3 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h4 className="text-sm font-semibold text-text-high">Compliance checklist</h4>
+            <Badge tone="neutral" className="capitalize">
+              {risk.checklistStatus.replace('_', ' ')}
+            </Badge>
+          </div>
+
+          <p className="text-xs text-text-low">
+            Track incident/compliance actions with timestamps (assistive guidance, not legal advice).
+          </p>
+
+          {risk.checklists.length ? (
+            <div className="space-y-3">
+              {risk.checklists.map((checklist) => {
+                const total = checklist.items.length
+                const done = checklist.items.filter((item) => Boolean(item.completedAt)).length
+                return (
+                  <div
+                    key={checklist.id}
+                    className="rounded-2xl border border-border-faint bg-surface-secondary/10 p-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-text-high">{checklist.title}</p>
+                        <p className="mt-0.5 text-xs text-text-low">
+                          Progress: {done}/{total || 0}
+                        </p>
+                      </div>
+                      <Badge tone="neutral">
+                        {total && done === total ? 'Done' : done > 0 ? 'In progress' : 'Not started'}
+                      </Badge>
+                    </div>
+
+                    <ul className="mt-3 space-y-2">
+                      {checklist.items.map((item) => (
+                        <li key={item.id} className="flex items-start gap-3 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(item.completedAt)}
+                            onChange={() =>
+                              onToggleChecklistItem(risk.id, checklist.id, item.id)
+                            }
+                            className="mt-1 h-4 w-4"
+                            aria-label={`Mark checklist item as ${item.completedAt ? 'not completed' : 'completed'}: ${item.description}`}
+                          />
+                          <div className="flex-1">
+                            <p className="text-text-high">{item.description}</p>
+                            {item.completedAt ? (
+                              <p className="mt-0.5 text-xs text-text-low">
+                                Completed {formatMaybeDate(item.completedAt)}
+                              </p>
+                            ) : null}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-text-low">No checklist attached yet.</p>
+          )}
+
+          <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+            <label className="space-y-1">
+              <span className="block text-xs font-semibold text-text-low">Attach checklist</span>
+              <select
+                className="rr-select w-full"
+                value={selectedChecklistTemplateId}
+                onChange={(event) => setSelectedChecklistTemplateId(event.target.value)}
+                aria-label="Select checklist template"
+              >
+                {checklistTemplateOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={
+                !selectedChecklistTemplateId ||
+                risk.checklists.some((checklist) => checklist.templateId === selectedChecklistTemplateId)
+              }
+              onClick={() => onAttachChecklistTemplate(risk.id, selectedChecklistTemplateId)}
+              aria-label="Attach selected checklist template"
+            >
+              Attach
+            </Button>
+          </div>
+
+          <p className="text-xs text-text-low" aria-live="polite">
+            Overall progress: {checklistSummary.completed}/{checklistSummary.total || 0}
+          </p>
         </div>
 
         <div className="rr-panel space-y-3 p-4">

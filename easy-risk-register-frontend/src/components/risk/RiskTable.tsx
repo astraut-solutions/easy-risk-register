@@ -91,7 +91,7 @@ export const RiskTable = ({
                     type="button"
                     onClick={() => onView(risk)}
                     className="text-left font-semibold text-brand-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-primary rounded-md"
-                    aria-label={`View details for risk: ${risk.title}`}
+                    aria-label={`Edit risk: ${risk.title}`}
                   >
                     {risk.title}
                   </button>

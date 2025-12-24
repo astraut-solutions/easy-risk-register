@@ -7,6 +7,7 @@ import { calculateRiskScore, getRiskSeverity } from '../../utils/riskCalculation
 import { Button, Input, Select, Textarea } from '../../design-system'
 import { cn } from '../../utils/cn'
 import { trackEvent } from '../../utils/analytics'
+import { THREAT_TYPE_OPTIONS } from '../../constants/cyber'
 
 export type RiskFormValues = RiskInput & { status: RiskStatus }
 
@@ -69,6 +70,8 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
       probability: 3,
       impact: 3,
       category: categories[0] ?? 'Operational',
+      threatType: 'other',
+      templateId: undefined,
       mitigationPlan: '',
       status: 'open',
       owner: '',
@@ -193,6 +196,8 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
         probability: defaultValues.probability ?? 3,
         impact: defaultValues.impact ?? 3,
         category: defaultValues.category ?? categories[0] ?? 'Operational',
+        threatType: defaultValues.threatType ?? 'other',
+        templateId: defaultValues.templateId,
         mitigationPlan: defaultValues.mitigationPlan ?? '',
         status: defaultValues.status ?? 'open',
         owner: defaultValues.owner ?? '',
@@ -244,30 +249,32 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
       impact: Number(values.impact),
     })
 
-    if (mode === 'create') {
-      reset({
-        title: '',
-        description: '',
-        probability: 3,
-        impact: 3,
-        category: categories[0] ?? 'Operational',
-        mitigationPlan: '',
-        status: 'open',
-        owner: '',
-        ownerTeam: '',
-        dueDate: '',
+      if (mode === 'create') {
+        reset({
+          title: '',
+          description: '',
+          probability: 3,
+          impact: 3,
+          category: categories[0] ?? 'Operational',
+          threatType: 'other',
+          templateId: undefined,
+          mitigationPlan: '',
+          status: 'open',
+          owner: '',
+          ownerTeam: '',
+          dueDate: '',
         reviewDate: '',
         reviewCadence: undefined,
         riskResponse: 'treat',
         ownerResponse: '',
         securityAdvisorComment: '',
         vendorResponse: '',
-        notes: '',
-        evidence: [],
-        mitigationSteps: [],
-      })
+          notes: '',
+          evidence: [],
+          mitigationSteps: [],
+        })
+      }
     }
-  }
 
   const handleSaveDraft = () => {
     if (!onSaveDraft) return
@@ -427,6 +434,27 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                 )}
               />
             </div>
+
+            <Controller
+              name="threatType"
+              control={control}
+              defaultValue="other"
+              render={({ field }) => (
+                <Select
+                  label="Threat type (optional)"
+                  helperText="Used for cyber-focused filtering and reporting."
+                  options={THREAT_TYPE_OPTIONS.map((option) => ({
+                    value: option.value,
+                    label: option.label,
+                  }))}
+                  value={field.value ?? 'other'}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  placeholder="Select a threat type"
+                />
+              )}
+            />
 
             <Textarea
               label="Description *"
