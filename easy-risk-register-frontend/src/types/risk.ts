@@ -74,6 +74,13 @@ export interface RiskPlaybook {
   lastModified: string // ISO
 }
 
+export interface FinancialImpactRange {
+  lowerBound: number
+  upperBound: number
+  expectedMean: number
+  currency?: string
+}
+
 export interface Risk {
   id: string
   title: string
@@ -103,6 +110,10 @@ export interface Risk {
   evidence: RiskEvidence[]
   creationDate: string // ISO
   lastModified: string // ISO
+  financialImpact?: FinancialImpactRange
+  riskPriority?: number
+  immediateAttention?: boolean
+  actionableRecommendations?: string[]
 }
 
 export interface RiskInput {
@@ -129,6 +140,10 @@ export interface RiskInput {
   vendorResponse?: string
   notes?: string
   evidence?: RiskEvidence[]
+  financialImpact?: FinancialImpactRange
+  riskPriority?: number
+  immediateAttention?: boolean
+  actionableRecommendations?: string[]
 }
 
 export interface RiskFilters {

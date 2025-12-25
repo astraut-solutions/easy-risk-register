@@ -576,6 +576,10 @@ const normalizeStoredRisk = (raw: unknown): Risk => {
       ? { notes: normalizeText(sanitized.notes) }
       : {}),
     evidence: normalizeEvidence(sanitized.evidence),
+    financialImpact: sanitized.financialImpact,
+    riskPriority: sanitized.riskPriority,
+    immediateAttention: sanitized.immediateAttention,
+    actionableRecommendations: sanitized.actionableRecommendations,
     creationDate,
     lastModified,
   }
@@ -623,6 +627,10 @@ const buildRisk = (input: RiskInput): Risk => {
     vendorResponse: normalizeText(sanitizedInput.vendorResponse ?? ''),
     ...(sanitizedInput.notes ? { notes: normalizeText(sanitizedInput.notes) } : {}),
     evidence: normalizeEvidence(sanitizedInput.evidence),
+    financialImpact: sanitizedInput.financialImpact,
+    riskPriority: sanitizedInput.riskPriority,
+    immediateAttention: sanitizedInput.immediateAttention,
+    actionableRecommendations: sanitizedInput.actionableRecommendations,
     creationDate: now,
     lastModified: now,
   }
@@ -970,6 +978,19 @@ const seedData: RiskInput[] = [
         createdAt: new Date().toISOString(),
       },
     ],
+    financialImpact: {
+      lowerBound: 500000,
+      upperBound: 2000000,
+      expectedMean: 1200000,
+      currency: 'USD'
+    },
+    immediateAttention: true,
+    riskPriority: 15,
+    actionableRecommendations: [
+      'Implement redundant payment processing system',
+      'Establish real-time monitoring for payment gateway',
+      'Create incident response plan for payment outages'
+    ]
   },
   {
     title: 'Vendor compliance gap',
@@ -993,6 +1014,18 @@ const seedData: RiskInput[] = [
         addedAt: new Date().toISOString(),
       },
     ],
+    financialImpact: {
+      lowerBound: 100000,
+      upperBound: 750000,
+      expectedMean: 300000,
+      currency: 'USD'
+    },
+    riskPriority: 8,
+    actionableRecommendations: [
+      'Update vendor contract with current DPA',
+      'Schedule annual compliance review',
+      'Implement vendor risk assessment process'
+    ]
   },
   {
     title: 'Phishing vulnerability',
@@ -1015,6 +1048,19 @@ const seedData: RiskInput[] = [
         addedAt: new Date().toISOString(),
       },
     ],
+    financialImpact: {
+      lowerBound: 250000,
+      upperBound: 1500000,
+      expectedMean: 750000,
+      currency: 'USD'
+    },
+    immediateAttention: true,
+    riskPriority: 12,
+    actionableRecommendations: [
+      'Implement comprehensive security awareness training',
+      'Deploy advanced email filtering solution',
+      'Enforce multi-factor authentication company-wide'
+    ]
   },
 ]
 
