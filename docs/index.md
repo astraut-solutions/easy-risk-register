@@ -7,10 +7,16 @@ Easy Risk Register is a client-side, privacy-focused risk management app that su
 - Setup: `docs/guides/setup.md`
 - Development workflow: `docs/guides/development-workflow.md`
 - Testing: `docs/guides/testing.md`
+- Code style: `docs/guides/code-style.md`
 
 ## Cyber templates and checklists
 
 - Cyber templates, threat types, and filters: `docs/reference/high-level.md`
+
+## Maturity and Settings
+
+- Maturity self-assessment feature: Built-in capability radar with numbered domain scoring (2-column layout)
+- Settings: Full-page view with customizable preferences for tooltips, reminders, visualizations, and encryption
 
 ## Audit-ready and evidence
 
@@ -26,10 +32,18 @@ Easy Risk Register is a client-side, privacy-focused risk management app that su
 - ISO 27001 mapping (evidence prep): `docs/frameworks/iso-27001-mapping.md`
 - SOC 2 mapping (evidence prep): `docs/frameworks/soc2-mapping.md`
 
-## Architecture and security
+## Architecture and Security
 
 - Architecture diagrams: `docs/architecture/architecture-diagrams.md`
 - Secure data storage: `docs/architecture/secure-data-storage.md`
 - Security policy: `docs/SECURITY.md`
 - Security implementation: `docs/security-implementation.md`
+
+## UI/UX Enhancements (Phase 6)
+
+- Performance testing framework with defined benchmarks
+- WCAG 2.1 AA accessibility compliance checklist
+- Maturity assessment panel: Full-width chart (400px height) + 2-column domain grid (numbered badges, equal-width label/dropdown)
+- Settings: Moved from modal dialog to full-page view for improved usability
+- Header simplified: Removed description text, maintained action buttons (New Risk, Export CSV/PDF, Import CSV)
 

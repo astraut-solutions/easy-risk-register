@@ -9,6 +9,7 @@ import type { Risk, RiskFilters, RiskInput, RiskPlaybookStep } from '../types/ri
 import type {
   MaturityAssessment,
   MaturityFrameworkPreset,
+  MaturityDomainScore,
   RiskScoreSnapshot,
   ScoreHistoryRetention,
   TrendDefaultMode,
@@ -19,6 +20,7 @@ import {
   computeRiskStats,
   filterRisks,
 } from '../utils/riskCalculations'
+import { applySnapshotRetention } from '../utils/snapshotRetention'
 import { sanitizeRiskInput, sanitizeTextInput, validateCSVContent } from '../utils/sanitization'
 import { RiskRegisterPersistStorage } from '../utils/RiskRegisterPersistStorage'
 
@@ -66,6 +68,38 @@ const clampScore = (value: number) => Math.min(Math.max(Math.round(value), 1), 5
 
 const normalizeText = (value: string) => value.trim()
 
+const buildRiskScoreSnapshot = (
+  risk: Pick<Risk, 'id' | 'probability' | 'impact' | 'riskScore'>,
+): RiskScoreSnapshot => ({
+  riskId: risk.id,
+  timestamp: Date.now(),
+  probability: clampScore(risk.probability),
+  impact: clampScore(risk.impact),
+  riskScore: Math.min(Math.max(Math.round(risk.riskScore), 1), 25),
+})
+
+const normalizeRiskScoreSnapshot = (value: unknown): RiskScoreSnapshot | null => {
+  if (!value || typeof value !== 'object') return null
+  const raw = value as any
+  if (typeof raw.riskId !== 'string' || !raw.riskId.trim()) return null
+
+  const timestamp = typeof raw.timestamp === 'number' && Number.isFinite(raw.timestamp) ? raw.timestamp : NaN
+  const probability = typeof raw.probability === 'number' && Number.isFinite(raw.probability) ? raw.probability : NaN
+  const impact = typeof raw.impact === 'number' && Number.isFinite(raw.impact) ? raw.impact : NaN
+  const riskScore = typeof raw.riskScore === 'number' && Number.isFinite(raw.riskScore) ? raw.riskScore : NaN
+
+  if (!Number.isFinite(timestamp)) return null
+  if (!Number.isFinite(probability) || !Number.isFinite(impact) || !Number.isFinite(riskScore)) return null
+
+  return {
+    riskId: raw.riskId.trim(),
+    timestamp,
+    probability: clampScore(probability),
+    impact: clampScore(impact),
+    riskScore: Math.min(Math.max(Math.round(riskScore), 1), 25),
+  }
+}
+
 const isRiskStatus = (value: unknown): value is Risk['status'] =>
   value === 'open' || value === 'mitigated' || value === 'closed' || value === 'accepted'
 
@@ -99,6 +133,83 @@ const isTrendDefaultMode = (value: unknown): value is TrendDefaultMode =>
 
 const isMaturityFrameworkPreset = (value: unknown): value is MaturityFrameworkPreset =>
   value === 'acsc_essential_eight' || value === 'nist_csf'
+
+const maturityPresets: Record<
+  MaturityFrameworkPreset,
+  { frameworkName: string; domains: Array<{ key: string; name: string }> }
+> = {
+  acsc_essential_eight: {
+    frameworkName: 'ACSC Essential Eight (self-assessment)',
+    domains: [
+      { key: 'application_control', name: 'Application control' },
+      { key: 'patch_applications', name: 'Patch applications' },
+      { key: 'patch_operating_systems', name: 'Patch operating systems' },
+      { key: 'mfa', name: 'Multi-factor authentication (MFA)' },
+      { key: 'restrict_admin', name: 'Restrict administrative privileges' },
+      { key: 'backups', name: 'Regular backups' },
+      { key: 'user_application_hardening', name: 'User application hardening' },
+      { key: 'macro_settings', name: 'Macro settings' },
+    ],
+  },
+  nist_csf: {
+    frameworkName: 'NIST CSF (self-assessment)',
+    domains: [
+      { key: 'identify', name: 'Identify' },
+      { key: 'protect', name: 'Protect' },
+      { key: 'detect', name: 'Detect' },
+      { key: 'respond', name: 'Respond' },
+      { key: 'recover', name: 'Recover' },
+    ],
+  },
+}
+
+const clampMaturityScore = (value: number) => Math.max(0, Math.min(Math.floor(value), 4))
+
+const normalizeMaturityDomainScore = (value: unknown): MaturityDomainScore | null => {
+  if (!value || typeof value !== 'object') return null
+  const raw = value as any
+  if (typeof raw.key !== 'string' || !raw.key.trim()) return null
+  if (typeof raw.name !== 'string' || !raw.name.trim()) return null
+  if (typeof raw.score !== 'number' || !Number.isFinite(raw.score)) return null
+  const notes = typeof raw.notes === 'string' && raw.notes.trim() ? raw.notes : undefined
+  return {
+    key: raw.key.trim(),
+    name: raw.name.trim(),
+    score: clampMaturityScore(raw.score),
+    notes,
+  }
+}
+
+const normalizeMaturityAssessment = (value: unknown): MaturityAssessment | null => {
+  if (!value || typeof value !== 'object') return null
+  const raw = value as any
+  if (typeof raw.id !== 'string' || !raw.id.trim()) return null
+  if (!isMaturityFrameworkPreset(raw.frameworkKey)) return null
+
+  const frameworkKey = raw.frameworkKey as MaturityFrameworkPreset
+  const frameworkName =
+    typeof raw.frameworkName === 'string' && raw.frameworkName.trim()
+      ? raw.frameworkName.trim()
+      : maturityPresets[frameworkKey].frameworkName
+
+  const createdAt = typeof raw.createdAt === 'number' && Number.isFinite(raw.createdAt) ? raw.createdAt : NaN
+  const updatedAt = typeof raw.updatedAt === 'number' && Number.isFinite(raw.updatedAt) ? raw.updatedAt : createdAt
+  if (!Number.isFinite(createdAt)) return null
+
+  const domainsRaw: unknown[] = Array.isArray(raw.domains) ? raw.domains : []
+  const domains = domainsRaw
+    .map((domain) => normalizeMaturityDomainScore(domain))
+    .filter((domain): domain is MaturityDomainScore => Boolean(domain))
+
+  return {
+    id: raw.id.trim(),
+    frameworkKey,
+    frameworkName,
+    domains,
+    createdAt,
+    updatedAt: Number.isFinite(updatedAt) ? updatedAt : createdAt,
+  }
+}
 
 const normalizeScoreHistoryRetention = (value: unknown): ScoreHistoryRetention => {
   if (!value || typeof value !== 'object') return { ...DEFAULT_SETTINGS.visualizations.scoreHistoryRetention }
@@ -786,6 +897,13 @@ export interface RiskStoreState {
   maturityAssessments: MaturityAssessment[]
   updateSettings: (updates: Partial<AppSettings>) => void
   updateReminderSettings: (updates: Partial<ReminderSettings>) => void
+  createMaturityAssessment: (preset?: MaturityFrameworkPreset) => MaturityAssessment
+  updateMaturityDomain: (
+    assessmentId: string,
+    domainKey: string,
+    updates: { score?: number; notes?: string },
+  ) => void
+  deleteMaturityAssessment: (assessmentId: string) => void
   addRisk: (input: RiskInput) => Risk
   updateRisk: (
     id: string,
@@ -800,6 +918,11 @@ export interface RiskStoreState {
   exportToCSV: (variant?: CSVExportVariant) => string
   importFromCSV: (csv: string) => CSVImportResult
   seedDemoData: () => number
+  seedPerformanceData: (options?: {
+    riskCount?: number
+    snapshotsPerRisk?: number
+    withHistory?: boolean
+  }) => { risksSeeded: number; snapshotsSeeded: number }
 }
 
 const recalc = (risks: Risk[], filters: RiskFilters) => ({
@@ -895,6 +1018,17 @@ const seedData: RiskInput[] = [
   },
 ]
 
+const createMulberry32 = (seed: number) => {
+  let t = seed >>> 0
+  return () => {
+    t += 0x6d2b79f5
+    let value = t
+    value = Math.imul(value ^ (value >>> 15), value | 1)
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61)
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296
+  }
+}
+
 export const useRiskStore = create<RiskStoreState>()(
   persist(
     (set, get) => ({
@@ -908,9 +1042,22 @@ export const useRiskStore = create<RiskStoreState>()(
       riskScoreSnapshots: [],
       maturityAssessments: [],
       updateSettings: (updates) =>
-        set((state) => ({
-          settings: normalizeSettings({ ...state.settings, ...updates }),
-        })),
+        set((state) => {
+          const nextSettings = normalizeSettings({ ...state.settings, ...updates })
+          const nextRetention = nextSettings.visualizations.scoreHistoryRetention
+          const prevRetention = state.settings.visualizations.scoreHistoryRetention
+          const retentionChanged =
+            nextRetention.mode !== prevRetention.mode || nextRetention.value !== prevRetention.value
+
+          return {
+            settings: nextSettings,
+            ...(retentionChanged
+              ? {
+                  riskScoreSnapshots: applySnapshotRetention(state.riskScoreSnapshots, nextRetention),
+                }
+              : {}),
+          }
+        }),
       updateReminderSettings: (updates) =>
         set((state) => ({
           settings: normalizeSettings({
@@ -918,9 +1065,65 @@ export const useRiskStore = create<RiskStoreState>()(
             reminders: { ...state.settings.reminders, ...updates },
           }),
         })),
+      createMaturityAssessment: (preset) => {
+        const key = preset ?? get().settings.visualizations.maturityFrameworkPreset
+        const now = Date.now()
+        const base = maturityPresets[key]
+
+        const assessment: MaturityAssessment = {
+          id: nanoid(10),
+          frameworkKey: key,
+          frameworkName: base.frameworkName,
+          domains: base.domains.map((domain) => ({ ...domain, score: 0 })),
+          createdAt: now,
+          updatedAt: now,
+        }
+
+        set((state) => ({
+          maturityAssessments: [assessment, ...state.maturityAssessments],
+        }))
+
+        return assessment
+      },
+      updateMaturityDomain: (assessmentId, domainKey, updates) =>
+        set((state) => {
+          const now = Date.now()
+          const maturityAssessments = state.maturityAssessments.map((assessment) => {
+            if (assessment.id !== assessmentId) return assessment
+            const domains = assessment.domains.map((domain) => {
+              if (domain.key !== domainKey) return domain
+              return {
+                ...domain,
+                ...(typeof updates.score === 'number' ? { score: clampMaturityScore(updates.score) } : {}),
+                ...(typeof updates.notes === 'string'
+                  ? { notes: updates.notes.trim() ? updates.notes : undefined }
+                  : {}),
+              }
+            })
+            return { ...assessment, domains, updatedAt: now }
+          })
+          return { maturityAssessments }
+        }),
+      deleteMaturityAssessment: (assessmentId) =>
+        set((state) => ({
+          maturityAssessments: state.maturityAssessments.filter(
+            (assessment) => assessment.id !== assessmentId,
+          ),
+        })),
       addRisk: (input) => {
         const risk = buildRisk(input)
-        set((state) => recalc([risk, ...state.risks], state.filters))
+        set((state) => {
+          const next = recalc([risk, ...state.risks], state.filters)
+          if (!state.settings.visualizations.scoreHistoryEnabled) return next
+
+          const snapshot = buildRiskScoreSnapshot(risk)
+          const riskScoreSnapshots = applySnapshotRetention(
+            [...state.riskScoreSnapshots, snapshot],
+            state.settings.visualizations.scoreHistoryRetention,
+          )
+
+          return { ...next, riskScoreSnapshots }
+        })
         return risk
       },
       updateRisk: (id, updates) => {
@@ -929,6 +1132,7 @@ export const useRiskStore = create<RiskStoreState>()(
 
         let updatedRisk: Risk | null = null
         set((state) => {
+          const previousRisk = state.risks.find((risk) => risk.id === id) ?? null
           const risks = state.risks.map((risk) => {
             if (risk.id !== id) return risk
             const merged: Risk = {
@@ -1041,7 +1245,27 @@ export const useRiskStore = create<RiskStoreState>()(
             }
             return updatedRisk
           })
-          return recalc(risks, state.filters)
+
+          const next = recalc(risks, state.filters)
+          if (!updatedRisk) return next
+          if (!state.settings.visualizations.scoreHistoryEnabled) return next
+
+          const previousProbability = previousRisk?.probability
+          const previousImpact = previousRisk?.impact
+          const previousScore = previousRisk?.riskScore
+          const shouldSnapshot =
+            previousProbability !== updatedRisk.probability ||
+            previousImpact !== updatedRisk.impact ||
+            previousScore !== updatedRisk.riskScore
+          if (!shouldSnapshot) return next
+
+          const snapshot = buildRiskScoreSnapshot(updatedRisk)
+          const riskScoreSnapshots = applySnapshotRetention(
+            [...state.riskScoreSnapshots, snapshot],
+            state.settings.visualizations.scoreHistoryRetention,
+          )
+
+          return { ...next, riskScoreSnapshots }
         })
         return updatedRisk
       },
@@ -1155,6 +1379,93 @@ export const useRiskStore = create<RiskStoreState>()(
         set((current) => recalc([...seeded, ...current.risks], current.filters))
         return seeded.length
       },
+      seedPerformanceData: (options) => {
+        const state = get()
+        if (state.risks.length) return { risksSeeded: 0, snapshotsSeeded: 0 }
+
+        const riskCount = Math.max(1, Math.min(Math.floor(options?.riskCount ?? 1000), 10_000))
+        const snapshotsPerRisk = Math.max(0, Math.min(Math.floor(options?.snapshotsPerRisk ?? 5), 10_000))
+        const withHistory = options?.withHistory ?? true
+
+        const seed = Date.now() >>> 0
+        const rng = createMulberry32(seed)
+        const categoriesPool = [...DEFAULT_CATEGORIES, 'Security', 'Compliance', 'Operations', 'Third-party']
+        const owners = ['IT', 'Finance', 'Operations', 'Compliance', 'Security', 'Leadership']
+        const now = new Date()
+
+        const seededRisks: Risk[] = []
+        const seededSnapshots: RiskScoreSnapshot[] = []
+
+        for (let index = 0; index < riskCount; index += 1) {
+          const probability = 1 + Math.floor(rng() * 5)
+          const impact = 1 + Math.floor(rng() * 5)
+          const category = categoriesPool[Math.floor(rng() * categoriesPool.length)] ?? DEFAULT_CATEGORIES[0]
+          const ownerTeam = owners[Math.floor(rng() * owners.length)] ?? ''
+
+          const dueInDays = 7 + Math.floor(rng() * 180)
+          const reviewInDays = 14 + Math.floor(rng() * 90)
+          const dueDate = new Date(now.getTime() + dueInDays * 24 * 60 * 60 * 1000).toISOString()
+          const reviewDate = new Date(now.getTime() + reviewInDays * 24 * 60 * 60 * 1000).toISOString()
+
+          const risk = buildRisk({
+            title: `Perf risk ${index + 1}`,
+            description: 'Synthetic risk used for performance validation.',
+            probability,
+            impact,
+            category,
+            ownerTeam,
+            owner: ownerTeam ? `${ownerTeam} Lead` : '',
+            mitigationPlan: 'Review controls and update likelihood/impact as needed.',
+            status: rng() < 0.75 ? 'open' : rng() < 0.5 ? 'mitigated' : 'accepted',
+            dueDate,
+            reviewDate,
+          })
+
+          seededRisks.push(risk)
+
+          if (!withHistory || snapshotsPerRisk === 0) continue
+
+          const baseTimestamp = Date.now() - 29 * 24 * 60 * 60 * 1000
+          const step = (29 * 24 * 60 * 60 * 1000) / Math.max(1, snapshotsPerRisk - 1)
+
+          for (let snapshotIndex = 0; snapshotIndex < snapshotsPerRisk; snapshotIndex += 1) {
+            const drift = Math.round((rng() - 0.5) * 2) // -1..1
+            const snapshotProbability = Math.min(5, Math.max(1, probability + drift))
+            const snapshotImpact = Math.min(5, Math.max(1, impact + Math.round((rng() - 0.5) * 2)))
+            const timestamp = Math.round(baseTimestamp + snapshotIndex * step + rng() * 12 * 60 * 60 * 1000)
+            seededSnapshots.push({
+              riskId: risk.id,
+              timestamp,
+              probability: snapshotProbability,
+              impact: snapshotImpact,
+              riskScore: Math.min(25, Math.max(1, snapshotProbability * snapshotImpact)),
+            })
+          }
+        }
+
+        const baseCategories =
+          state.categories && state.categories.length ? state.categories : [...DEFAULT_CATEGORIES]
+        const categories = Array.from(
+          new Set([...baseCategories, ...seededRisks.map((risk) => risk.category)].filter(Boolean)),
+        )
+
+        set((current) => ({
+          ...recalc([...seededRisks, ...current.risks], current.filters),
+          categories,
+          riskScoreSnapshots: applySnapshotRetention(
+            seededSnapshots,
+            current.settings.visualizations.scoreHistoryRetention,
+          ),
+        }))
+
+        return {
+          risksSeeded: seededRisks.length,
+          snapshotsSeeded: applySnapshotRetention(
+            seededSnapshots,
+            state.settings.visualizations.scoreHistoryRetention,
+          ).length,
+        }
+      },
     }),
     {
       name: LOCAL_STORAGE_KEY,
@@ -1188,6 +1499,14 @@ export const useRiskStore = create<RiskStoreState>()(
 
         const filters = { ...DEFAULT_FILTERS, ...(state.filters ?? {}) }
         const settings = normalizeSettings(state.settings)
+        const riskScoreSnapshots: RiskScoreSnapshot[] = Array.isArray(state.riskScoreSnapshots)
+          ? state.riskScoreSnapshots
+              .map((snapshot: unknown) => normalizeRiskScoreSnapshot(snapshot))
+              .filter(
+                (snapshot: RiskScoreSnapshot | null): snapshot is RiskScoreSnapshot =>
+                  Boolean(snapshot),
+              )
+          : []
 
         return {
           ...state,
@@ -1195,8 +1514,18 @@ export const useRiskStore = create<RiskStoreState>()(
           categories,
           filters,
           settings,
-          riskScoreSnapshots: Array.isArray(state.riskScoreSnapshots) ? state.riskScoreSnapshots : [],
-          maturityAssessments: Array.isArray(state.maturityAssessments) ? state.maturityAssessments : [],
+          riskScoreSnapshots: applySnapshotRetention(
+            riskScoreSnapshots,
+            settings.visualizations.scoreHistoryRetention,
+          ),
+          maturityAssessments: Array.isArray(state.maturityAssessments)
+            ? state.maturityAssessments
+                .map((assessment: unknown) => normalizeMaturityAssessment(assessment))
+                .filter(
+                  (assessment: MaturityAssessment | null): assessment is MaturityAssessment =>
+                    Boolean(assessment),
+                )
+            : [],
           filteredRisks: filterRisks(risks, filters),
           stats: computeRiskStats(risks),
         }
@@ -1210,11 +1539,22 @@ export const useRiskStore = create<RiskStoreState>()(
         state.stats = stats
         state.filters = filters
         state.settings = normalizeSettings((state as any).settings)
-        state.riskScoreSnapshots = Array.isArray((state as any).riskScoreSnapshots)
-          ? ((state as any).riskScoreSnapshots as RiskScoreSnapshot[])
+        const snapshotsRaw = Array.isArray((state as any).riskScoreSnapshots)
+          ? ((state as any).riskScoreSnapshots as unknown[])
           : []
+        const snapshots = snapshotsRaw
+          .map((snapshot: unknown) => normalizeRiskScoreSnapshot(snapshot))
+          .filter(
+            (snapshot: RiskScoreSnapshot | null): snapshot is RiskScoreSnapshot => Boolean(snapshot),
+          )
+        state.riskScoreSnapshots = applySnapshotRetention(
+          snapshots,
+          state.settings.visualizations.scoreHistoryRetention,
+        )
         state.maturityAssessments = Array.isArray((state as any).maturityAssessments)
-          ? ((state as any).maturityAssessments as MaturityAssessment[])
+          ? ((state as any).maturityAssessments as unknown[])
+              .map((assessment) => normalizeMaturityAssessment(assessment))
+              .filter((assessment): assessment is MaturityAssessment => Boolean(assessment))
           : []
       },
     },

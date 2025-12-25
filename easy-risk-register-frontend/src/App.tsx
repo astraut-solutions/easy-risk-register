@@ -8,13 +8,15 @@ import { RiskSummaryCards } from './components/risk/RiskSummaryCards'
 import { RiskForm, type RiskFormValues } from './components/risk/RiskForm'
 import { RiskDetailModal } from './components/risk/RiskDetailModal'
 import { RiskMatrix } from './components/risk/RiskMatrix'
+import { RiskDashboardCharts } from './components/risk/RiskDashboardCharts'
 import { RiskFiltersBar } from './components/risk/RiskFilters'
 import { RiskTable } from './components/risk/RiskTable'
+import { MaturityAssessmentPanel } from './components/maturity/MaturityAssessmentPanel'
 import { useRiskManagement } from './services/riskService'
 import type { Risk, RiskSeverity } from './types/risk'
 import type { CSVExportVariant, ReminderFrequency } from './stores/riskStore'
 import { DEFAULT_FILTERS } from './utils/riskCalculations'
-import { Button, Modal, SectionHeader, Select } from './design-system'
+import { Button, Input, Modal, SectionHeader, Select } from './design-system'
 import { cn } from './utils/cn'
 import { useToast } from './components/feedback/ToastProvider'
 import { MetricsModal } from './components/feedback/MetricsModal'
@@ -38,7 +40,9 @@ type MatrixSelection = {
   severity: RiskSeverity
 }
 
-type DashboardView = 'overview' | 'table' | 'new'
+type DashboardView = 'overview' | 'dashboard' | 'maturity' | 'table' | 'new' | 'settings'
+
+type DashboardWorkspaceView = Exclude<DashboardView, 'new'>
 
 const RISK_FORM_DRAFT_KEY = 'easy-risk-register:risk-form-draft'
 
@@ -49,6 +53,16 @@ const NAV_ITEMS: SidebarNavItem[] = [
     description: 'KPIs, filters, and the interactive matrix',
   },
   {
+    id: 'dashboard',
+    label: 'Dashboard charts',
+    description: 'Distribution and trend charts with drill-down',
+  },
+  {
+    id: 'maturity',
+    label: 'Maturity radar',
+    description: 'Self-assessment scoring and exports',
+  },
+  {
     id: 'table',
     label: 'Risk table',
     description: 'Spreadsheet view for faster scanning and edits',
@@ -56,7 +70,17 @@ const NAV_ITEMS: SidebarNavItem[] = [
 ]
 
 function App() {
-  const { risks, allRisks, stats, filters, categories, settings, actions } = useRiskManagement()
+  const {
+    risks,
+    allRisks,
+    stats,
+    filters,
+    categories,
+    settings,
+    riskScoreSnapshots,
+    maturityAssessments,
+    actions,
+  } = useRiskManagement()
   const toast = useToast()
   const [editingRisk, setEditingRisk] = useState<Risk | null>(null)
   const [viewingRisk, setViewingRisk] = useState<Risk | null>(null)
@@ -68,14 +92,13 @@ function App() {
   const [riskDraft, setRiskDraft] = useState<Partial<RiskFormValues> | null>(null)
   const [createDefaults, setCreateDefaults] = useState<Partial<RiskFormValues> | null>(null)
   const [createTemplateId, setCreateTemplateId] = useState('')
-  const [pendingView, setPendingView] = useState<DashboardView | null>(null)
-  const [returnView, setReturnView] = useState<DashboardView>('overview')
+  const [pendingView, setPendingView] = useState<DashboardWorkspaceView | null>(null)
+  const [returnView, setReturnView] = useState<DashboardWorkspaceView>('overview')
   const [isExportModalOpen, setIsExportModalOpen] = useState(false)
   const [exportVariant, setExportVariant] = useState<CSVExportVariant>('standard')
   const [isPdfExportModalOpen, setIsPdfExportModalOpen] = useState(false)
   const [pdfRegisterScope, setPdfRegisterScope] = useState<'filtered' | 'all'>('filtered')
   const [selectedPrivacyRiskId, setSelectedPrivacyRiskId] = useState('')
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   const [isMetricsModalOpen, setIsMetricsModalOpen] = useState(false)
   const [reminderSummary, setReminderSummary] = useState<{
     overdue: number
@@ -201,20 +224,20 @@ function App() {
     }
 
     if (activeView === 'new' && isRiskFormDirty) {
-      setPendingView(nextView)
+      setPendingView(nextView as DashboardWorkspaceView)
       setIsDiscardConfirmOpen(true)
       return
     }
 
     if (activeView === 'new') {
-      leaveNewRiskView(nextView)
+      leaveNewRiskView(nextView as DashboardWorkspaceView)
       return
     }
 
     setActiveView(nextView)
   }
 
-  const leaveNewRiskView = (nextView: DashboardView) => {
+  const leaveNewRiskView = (nextView: DashboardWorkspaceView) => {
     if (!formModalDidSubmitRef.current) {
       const durationMs =
         formModalOpenedAtRef.current === null ? null : Date.now() - formModalOpenedAtRef.current
@@ -239,7 +262,7 @@ function App() {
 
   const startCreateRisk = () => {
     setEditingRisk(null)
-    setReturnView(activeView === 'new' ? 'overview' : activeView)
+    setReturnView(activeView === 'new' ? 'overview' : (activeView as DashboardWorkspaceView))
     setIsRiskFormDirty(false)
     setCreateDefaults(null)
     setCreateTemplateId('')
@@ -622,15 +645,15 @@ function App() {
           items={NAV_ITEMS}
           activeItem={activeView}
           onSelect={(view) => requestNavigate(view as DashboardView)}
+          onSettings={() => requestNavigate('settings')}
         />
 
         <div id="main-content" className="flex flex-1 flex-col gap-8">
           <SectionHeader
             eyebrow="Easy Risk Register"
             title="Risk management workspace"
-             description="Switch between an executive dashboard, a spreadsheet-style table, and a focused New risk tab without leaving the page. Export reports or narrow the data with filters."
-              actions={
-               <div className="flex flex-wrap items-center gap-3">
+            actions={
+              <div className="flex flex-wrap items-center gap-3">
                 <Button
                   size="sm"
                   onClick={() => {
@@ -646,31 +669,31 @@ function App() {
                 >
                   {activeView === 'new' ? 'Back to overview' : 'New risk'}
                 </Button>
-                 <Button
-                   size="sm"
-                   variant="secondary"
-                   onClick={handleExport}
-                   aria-label="Export CSV file"
-                 >
-                   Export CSV
-                 </Button>
-                 <Button
-                   size="sm"
-                   variant="secondary"
-                   onClick={handleExportPdf}
-                   aria-label="Export PDF report"
-                 >
-                   Export PDF
-                 </Button>
-                 <Button
-                   size="sm"
-                   variant="ghost"
-                   onClick={() => fileInputRef.current?.click()}
-                   aria-label="Import CSV file"
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleExport}
+                  aria-label="Export CSV file"
+                >
+                  Export CSV
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleExportPdf}
+                  aria-label="Export PDF report"
+                >
+                  Export PDF
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => fileInputRef.current?.click()}
+                  aria-label="Import CSV file"
                 >
                   Import CSV
                 </Button>
-                 {isMetricsUiEnabled ? (
+                {isMetricsUiEnabled ? (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -682,18 +705,10 @@ function App() {
                   >
                     Metrics
                   </Button>
-                 ) : null}
-                 <Button
-                   size="sm"
-                   variant="ghost"
-                   onClick={() => setIsSettingsModalOpen(true)}
-                   aria-label="Open settings"
-                 >
-                   Settings
-                 </Button>
-               </div>
-               }
-             />
+                ) : null}
+              </div>
+            }
+          />
 
           {!settings.onboardingDismissed ? (
             <OnboardingCard
@@ -813,6 +828,263 @@ function App() {
                   showTooltips={settings.tooltipsEnabled}
                   className="border-0 bg-transparent p-0 shadow-none"
                 />
+              </div>
+            </div>
+          ) : activeView === 'settings' ? (
+            <div className="rr-panel p-6">
+              <div className="mb-6 flex items-start justify-between">
+                <div>
+                  <p className="mb-1 text-xs font-semibold uppercase text-text-low">Preferences</p>
+                  <h2 className="text-2xl font-bold text-text-high">Settings</h2>
+                  <p className="mt-2 text-sm text-text-low">Settings are stored locally in your browser.</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => requestNavigate(returnView)}
+                  className="text-text-low hover:text-text-high"
+                >
+                  ← Back
+                </Button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-text-high">Education</p>
+                  <label className="flex items-start gap-3 text-sm text-text-low">
+                    <input
+                      type="checkbox"
+                      checked={settings.tooltipsEnabled}
+                      onChange={(event) => actions.updateSettings({ tooltipsEnabled: event.target.checked })}
+                      className="mt-1"
+                    />
+                    <span>Show field tooltips</span>
+                  </label>
+
+                  <label className="flex items-start gap-3 text-sm text-text-low">
+                    <input
+                      type="checkbox"
+                      checked={!settings.onboardingDismissed}
+                      onChange={(event) =>
+                        actions.updateSettings({ onboardingDismissed: !event.target.checked })
+                      }
+                      className="mt-1"
+                    />
+                    <span>Show onboarding tips</span>
+                  </label>
+                </div>
+
+                <div className="space-y-3 border-t border-border-faint pt-5">
+                  <p className="text-sm font-semibold text-text-high">Reminders</p>
+                  <label className="flex items-start gap-3 text-sm text-text-low">
+                    <input
+                      type="checkbox"
+                      checked={settings.reminders.enabled}
+                      onChange={(event) => actions.updateReminderSettings({ enabled: event.target.checked })}
+                      className="mt-1"
+                    />
+                    <span>Enable reminders for due/review dates</span>
+                  </label>
+
+                  <Select
+                    label="Frequency"
+                    options={[
+                      { value: 'daily', label: 'Daily' },
+                      { value: 'weekly', label: 'Weekly' },
+                      { value: 'monthly', label: 'Monthly' },
+                    ]}
+                    value={settings.reminders.frequency}
+                    onChange={(value) =>
+                      actions.updateReminderSettings({ frequency: value as ReminderFrequency })
+                    }
+                    disabled={!settings.reminders.enabled}
+                  />
+
+                  <label className="flex items-start gap-3 text-sm text-text-low">
+                    <input
+                      type="checkbox"
+                      checked={settings.reminders.preferNotifications}
+                      onChange={(event) =>
+                        actions.updateReminderSettings({ preferNotifications: event.target.checked })
+                      }
+                      disabled={!settings.reminders.enabled}
+                      className="mt-1"
+                    />
+                    <span>Use desktop notifications when allowed (falls back to in-app banners)</span>
+                  </label>
+
+                  {'Notification' in window ? (
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border-faint bg-surface-secondary/10 p-3 text-sm text-text-low">
+                      <span>
+                        Notification permission: <span className="font-semibold text-text-high">{window.Notification.permission}</span>
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={async () => {
+                          try {
+                            await window.Notification.requestPermission()
+                            toast.notify({
+                              title: 'Notification permission updated',
+                              description: `Current permission: ${window.Notification.permission}`,
+                              variant: 'info',
+                            })
+                          } catch {
+                            toast.notify({
+                              title: 'Unable to request permission',
+                              description: 'Your browser blocked the permission request.',
+                              variant: 'warning',
+                            })
+                          }
+                        }}
+                      >
+                        Request permission
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-text-low">
+                      Desktop notifications are not supported by this browser. Reminders will show as in-app banners.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-4 border-t border-border-faint pt-5">
+                  <p className="text-sm font-semibold text-text-high">Visualizations</p>
+
+                  <label className="flex items-start gap-3 text-sm text-text-low">
+                    <input
+                      type="checkbox"
+                      checked={settings.visualizations.scoreHistoryEnabled}
+                      onChange={(event) =>
+                        actions.updateSettings({
+                          visualizations: {
+                            ...settings.visualizations,
+                            scoreHistoryEnabled: event.target.checked,
+                          },
+                        })
+                      }
+                      className="mt-1"
+                    />
+                    <span>
+                      Enable score history (needed for trend charts). If disabled, trend charts are unavailable; existing history stays on this device.
+                    </span>
+                  </label>
+
+                  <Select
+                    label="Default trend view"
+                    options={[
+                      { value: 'overall_exposure', label: 'Overall exposure (sum/average)' },
+                      { value: 'recent_changes', label: 'Recently changed risks' },
+                    ]}
+                    value={settings.visualizations.defaultTrendMode}
+                    onChange={(value) =>
+                      actions.updateSettings({
+                        visualizations: {
+                          ...settings.visualizations,
+                          defaultTrendMode: value as any,
+                        },
+                      })
+                    }
+                    disabled={!settings.visualizations.scoreHistoryEnabled}
+                  />
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Select
+                      label="History retention"
+                      options={[
+                        { value: 'days', label: 'Keep last N days' },
+                        { value: 'count', label: 'Keep last N snapshots per risk' },
+                      ]}
+                      value={settings.visualizations.scoreHistoryRetention.mode}
+                      onChange={(value) =>
+                        actions.updateSettings({
+                          visualizations: {
+                            ...settings.visualizations,
+                            scoreHistoryRetention: {
+                              ...settings.visualizations.scoreHistoryRetention,
+                              mode: value as any,
+                            },
+                          },
+                        })
+                      }
+                      disabled={!settings.visualizations.scoreHistoryEnabled}
+                    />
+
+                    <Input
+                      type="number"
+                      label={settings.visualizations.scoreHistoryRetention.mode === 'days' ? 'Days' : 'Snapshots'}
+                      min={1}
+                      max={10000}
+                      value={settings.visualizations.scoreHistoryRetention.value}
+                      onChange={(event) => {
+                        const nextValue = Number(event.target.value)
+                        if (!Number.isFinite(nextValue)) return
+                        actions.updateSettings({
+                          visualizations: {
+                            ...settings.visualizations,
+                            scoreHistoryRetention: {
+                              ...settings.visualizations.scoreHistoryRetention,
+                              value: Math.max(1, Math.min(Math.floor(nextValue), 10_000)),
+                            },
+                          },
+                        })
+                      }}
+                      disabled={!settings.visualizations.scoreHistoryEnabled}
+                      helperText={
+                        settings.visualizations.scoreHistoryRetention.mode === 'days'
+                          ? 'Older snapshots are removed automatically.'
+                          : 'Each risk retains up to N snapshots; older snapshots are removed automatically.'
+                      }
+                    />
+                  </div>
+
+                  <div className="mt-4 rounded-2xl border border-border-faint bg-surface-secondary/10 p-4">
+                    <p className="text-sm font-semibold text-text-high">Maturity self-assessment</p>
+                    <p className="mt-1 text-xs text-text-low">
+                      Optional and offline-only. This is a self-assessment to support planning and reporting—it's not a certification.
+                    </p>
+
+                    <label className="mt-3 flex items-start gap-3 text-sm text-text-low">
+                      <input
+                        type="checkbox"
+                        checked={settings.visualizations.maturityEnabled}
+                        onChange={(event) =>
+                          actions.updateSettings({
+                            visualizations: {
+                              ...settings.visualizations,
+                              maturityEnabled: event.target.checked,
+                            },
+                          })
+                        }
+                        className="mt-1"
+                      />
+                      <span>Enable maturity radar</span>
+                    </label>
+
+                    <div className="mt-3">
+                      <Select
+                        label="Default framework preset"
+                        options={[
+                          { value: 'acsc_essential_eight', label: 'ACSC Essential Eight (inspired)' },
+                          { value: 'nist_csf', label: 'NIST CSF (inspired)' },
+                        ]}
+                        value={settings.visualizations.maturityFrameworkPreset}
+                        onChange={(value) =>
+                          actions.updateSettings({
+                            visualizations: {
+                              ...settings.visualizations,
+                              maturityFrameworkPreset: value as any,
+                            },
+                          })
+                        }
+                        disabled={!settings.visualizations.maturityEnabled}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <EncryptionSettingsPanel />
               </div>
             </div>
           ) : (
@@ -942,6 +1214,35 @@ function App() {
                     </div>
                   </div>
 
+                </div>
+              ) : activeView === 'dashboard' ? (
+                <div className="flex flex-col gap-6">
+                  <RiskDashboardCharts
+                    risks={visibleRisks}
+                    snapshots={riskScoreSnapshots}
+                    filters={filters}
+                    matrixFilterLabel={
+                      matrixSelection
+                        ? `Likelihood ${matrixSelection.probability} x Impact ${matrixSelection.impact}`
+                        : undefined
+                    }
+                    historyEnabled={settings.visualizations.scoreHistoryEnabled}
+                    defaultTrendMode={settings.visualizations.defaultTrendMode}
+                    onDrillDown={({ filters: drillFilters }) => {
+                      actions.setFilters({ ...drillFilters })
+                      requestNavigate('table')
+                    }}
+                  />
+                </div>
+              ) : activeView === 'maturity' ? (
+                <div className="flex flex-col gap-6">
+                  <MaturityAssessmentPanel
+                    settings={settings.visualizations}
+                    assessments={maturityAssessments}
+                    onCreate={actions.createMaturityAssessment}
+                    onUpdateDomain={actions.updateMaturityDomain}
+                    onDelete={actions.deleteMaturityAssessment}
+                  />
                 </div>
               ) : (
                 <RiskTable
@@ -1149,117 +1450,7 @@ function App() {
         </div>
       </Modal>
 
-      <Modal
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-        title="Settings"
-        eyebrow="Preferences"
-        description="Settings are stored locally in your browser."
-        size="md"
-      >
-        <div className="space-y-6">
-          <div className="space-y-3">
-            <p className="text-sm font-semibold text-text-high">Education</p>
-            <label className="flex items-start gap-3 text-sm text-text-low">
-              <input
-                type="checkbox"
-                checked={settings.tooltipsEnabled}
-                onChange={(event) => actions.updateSettings({ tooltipsEnabled: event.target.checked })}
-                className="mt-1"
-              />
-              <span>Show field tooltips</span>
-            </label>
 
-            <label className="flex items-start gap-3 text-sm text-text-low">
-              <input
-                type="checkbox"
-                checked={!settings.onboardingDismissed}
-                onChange={(event) =>
-                  actions.updateSettings({ onboardingDismissed: !event.target.checked })
-                }
-                className="mt-1"
-              />
-              <span>Show onboarding tips</span>
-            </label>
-          </div>
-
-          <div className="space-y-3 border-t border-border-faint pt-5">
-            <p className="text-sm font-semibold text-text-high">Reminders</p>
-            <label className="flex items-start gap-3 text-sm text-text-low">
-              <input
-                type="checkbox"
-                checked={settings.reminders.enabled}
-                onChange={(event) => actions.updateReminderSettings({ enabled: event.target.checked })}
-                className="mt-1"
-              />
-              <span>Enable reminders for due/review dates</span>
-            </label>
-
-            <Select
-              label="Frequency"
-              options={[
-                { value: 'daily', label: 'Daily' },
-                { value: 'weekly', label: 'Weekly' },
-                { value: 'monthly', label: 'Monthly' },
-              ]}
-              value={settings.reminders.frequency}
-              onChange={(value) =>
-                actions.updateReminderSettings({ frequency: value as ReminderFrequency })
-              }
-              disabled={!settings.reminders.enabled}
-            />
-
-            <label className="flex items-start gap-3 text-sm text-text-low">
-              <input
-                type="checkbox"
-                checked={settings.reminders.preferNotifications}
-                onChange={(event) =>
-                  actions.updateReminderSettings({ preferNotifications: event.target.checked })
-                }
-                disabled={!settings.reminders.enabled}
-                className="mt-1"
-              />
-              <span>Use desktop notifications when allowed (falls back to in-app banners)</span>
-            </label>
-
-            {'Notification' in window ? (
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border-faint bg-surface-secondary/10 p-3 text-sm text-text-low">
-                <span>
-                  Notification permission: <span className="font-semibold text-text-high">{window.Notification.permission}</span>
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={async () => {
-                    try {
-                      await window.Notification.requestPermission()
-                      toast.notify({
-                        title: 'Notification permission updated',
-                        description: `Current permission: ${window.Notification.permission}`,
-                        variant: 'info',
-                      })
-                    } catch {
-                      toast.notify({
-                        title: 'Unable to request permission',
-                        description: 'Your browser blocked the permission request.',
-                        variant: 'warning',
-                      })
-                    }
-                  }}
-                >
-                  Request permission
-                </Button>
-              </div>
-            ) : (
-              <p className="text-xs text-text-low">
-                Desktop notifications are not supported by this browser. Reminders will show as in-app banners.
-              </p>
-            )}
-          </div>
-
-          <EncryptionSettingsPanel />
-        </div>
-      </Modal>
 
       <input
         ref={fileInputRef}

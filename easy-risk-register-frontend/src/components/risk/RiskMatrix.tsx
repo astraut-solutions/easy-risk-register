@@ -90,7 +90,7 @@ export const RiskMatrix = ({ risks, onSelect }: RiskMatrixProps) => {
     if (accepted) parts.push(`${accepted} accepted`)
     if (nextReview) parts.push(`next review ${nextReview}`)
 
-    return parts.join(' · ')
+    return parts.join(' • ')
   }, [activeCell])
 
   return (
@@ -171,7 +171,7 @@ export const RiskMatrix = ({ risks, onSelect }: RiskMatrixProps) => {
                 </div>
                 <div className="text-[10px] uppercase tracking-wide text-text-low" aria-hidden="true">
                   {cell.severity === 'high' ? 'H' : cell.severity === 'medium' ? 'M' : cell.severity === 'low' ? 'L' : '-'}
-                  {cell.severity ? ` · ${cell.severity}` : ' · none'}
+                  {cell.severity ? ` • ${cell.severity}` : ' • none'}
                 </div>
                 {cell.acceptedCount ? (
                   <div className="mt-1 text-[10px] text-text-low">{cell.acceptedCount} accepted</div>

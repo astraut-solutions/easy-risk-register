@@ -122,6 +122,184 @@ export type RiskRegisterReportInput = {
   matrixFilterLabel?: string
 }
 
+export type DashboardChartsReportInput = {
+  generatedAtIso: string
+  filters: RiskFilters
+  matrixFilterLabel?: string
+  charts: {
+    severity: { title: string; pngDataUrl: string | null; rows?: Array<{ label: string; value: number }> }
+    categories: { title: string; pngDataUrl: string | null; rows?: Array<{ label: string; value: number }> }
+    trend: { title: string; pngDataUrl: string | null; rows?: Array<{ label: string; value: number }>; note?: string }
+  }
+}
+
+const formatFiltersBanner = (filters: RiskFilters, matrixFilterLabel?: string) => {
+  const entries = formatFilters(filters)
+  const hasMatrix = Boolean(matrixFilterLabel?.trim())
+
+  if (!entries.length && !hasMatrix) {
+    return `<span class="pill">No filters applied</span>`
+  }
+
+  const chips = [
+    ...entries.map((entry) => `<span class="pill">${escapeHtml(entry.label)}: ${escapeHtml(entry.value)}</span>`),
+    ...(hasMatrix ? [`<span class="pill">Matrix: ${escapeHtml(matrixFilterLabel ?? '')}</span>`] : []),
+  ]
+
+  return chips.join(' ')
+}
+
+const renderSimpleTable = (rows: Array<{ label: string; value: number }>, valueLabel: string) => {
+  if (!rows.length) return ''
+  const body = rows
+    .map(
+      (row) =>
+        `<tr><td>${escapeHtml(row.label)}</td><td style="text-align:right">${escapeHtml(String(row.value))}</td></tr>`,
+    )
+    .join('')
+  return `
+    <table>
+      <thead>
+        <tr><th>Label</th><th style="text-align:right">${escapeHtml(valueLabel)}</th></tr>
+      </thead>
+      <tbody>${body}</tbody>
+    </table>
+  `
+}
+
+const renderChartBlock = (chart: { title: string; pngDataUrl: string | null; rows?: Array<{ label: string; value: number }>; note?: string }) => {
+  const note = chart.note ? `<p class="muted">${escapeHtml(chart.note)}</p>` : ''
+  const image = chart.pngDataUrl
+    ? `<img src="${chart.pngDataUrl}" alt="${escapeHtml(chart.title)}" style="width:100%;max-width:920px;border:1px solid #e2e8f0;border-radius:14px" />`
+    : `<p class="muted">Chart unavailable.</p>`
+  const table = chart.rows ? renderSimpleTable(chart.rows, 'Value') : ''
+  return `
+    <div class="card">
+      <h3>${escapeHtml(chart.title)}</h3>
+      ${note}
+      <div style="margin-top:10px">${image}</div>
+      ${table ? `<div style="margin-top:10px">${table}</div>` : ''}
+    </div>
+  `
+}
+
+export const buildDashboardChartsReportHtml = ({
+  generatedAtIso,
+  filters,
+  matrixFilterLabel,
+  charts,
+}: DashboardChartsReportInput) => {
+  return `<!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width,initial-scale=1" />
+      <title>Dashboard charts report</title>
+      <style>${baseStyles}</style>
+    </head>
+    <body>
+      <header>
+        <h1>Dashboard charts report</h1>
+        <div class="meta">
+          <div><span class="muted">Generated:</span> ${escapeHtml(formatIsoDateTime(generatedAtIso))}</div>
+          <div><span class="muted">Filters:</span> ${formatFiltersBanner(filters, matrixFilterLabel)}</div>
+        </div>
+      </header>
+      <main>
+        <h2>Charts</h2>
+        ${renderChartBlock(charts.severity)}
+        ${renderChartBlock(charts.categories)}
+        ${renderChartBlock(charts.trend)}
+      </main>
+    </body>
+  </html>`
+}
+
+export type MaturityAssessmentReportInput = {
+  generatedAtIso: string
+  assessment: {
+    frameworkName: string
+    createdAt: number
+    updatedAt: number
+    domains: Array<{ name: string; score: number; notes?: string }>
+  }
+  presetLabel: string
+  pngDataUrl: string | null
+  disclaimer: string
+}
+
+export const buildMaturityAssessmentReportHtml = ({
+  generatedAtIso,
+  assessment,
+  presetLabel,
+  pngDataUrl,
+  disclaimer,
+}: MaturityAssessmentReportInput) => {
+  const rows = assessment.domains
+    .map((domain, index) => {
+      const notes = domain.notes ? escapeHtml(domain.notes) : '<span class="muted">-</span>'
+      return `<tr>
+        <td>${index + 1}</td>
+        <td>${escapeHtml(domain.name)}</td>
+        <td style="text-align:right">${escapeHtml(String(domain.score))}</td>
+        <td>${notes}</td>
+      </tr>`
+    })
+    .join('')
+
+  const image = pngDataUrl
+    ? `<img src="${pngDataUrl}" alt="${escapeHtml(assessment.frameworkName)} radar chart" style="width:100%;max-width:920px;border:1px solid #e2e8f0;border-radius:14px" />`
+    : `<p class="muted">Chart unavailable.</p>`
+
+  return `<!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width,initial-scale=1" />
+      <title>Maturity self-assessment report</title>
+      <style>${baseStyles}</style>
+    </head>
+    <body>
+      <header>
+        <h1>Maturity self-assessment report</h1>
+        <div class="meta">
+          <div><span class="muted">Generated:</span> ${escapeHtml(formatIsoDateTime(generatedAtIso))}</div>
+          <div><span class="muted">Preset:</span> ${escapeHtml(presetLabel)}</div>
+          <div><span class="muted">Created:</span> ${escapeHtml(formatIsoDateTime(new Date(assessment.createdAt).toISOString()))}</div>
+          <div><span class="muted">Updated:</span> ${escapeHtml(formatIsoDateTime(new Date(assessment.updatedAt).toISOString()))}</div>
+        </div>
+      </header>
+      <main>
+        <div class="card">
+          <h3>Self-assessment only</h3>
+          <p>${escapeHtml(disclaimer)}</p>
+        </div>
+
+        <h2>Radar</h2>
+        <div class="card">
+          <h3>${escapeHtml(assessment.frameworkName)}</h3>
+          <div style="margin-top:10px">${image}</div>
+        </div>
+
+        <h2>Scores</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Domain</th>
+              <th style="text-align:right">Score (0–4)</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || `<tr><td colspan="4" class="muted">No domains found.</td></tr>`}
+          </tbody>
+        </table>
+      </main>
+    </body>
+  </html>`
+}
+
 export const buildRiskRegisterReportHtml = ({
   risks,
   filters,

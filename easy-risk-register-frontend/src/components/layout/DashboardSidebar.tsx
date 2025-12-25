@@ -10,12 +10,14 @@ interface DashboardSidebarProps {
   items: SidebarNavItem[]
   activeItem: string
   onSelect: (id: string) => void
+  onSettings: () => void
 }
 
 export const DashboardSidebar = ({
   items,
   activeItem,
   onSelect,
+  onSettings,
 }: DashboardSidebarProps) => {
   return (
     <aside className="hidden shrink-0 lg:flex lg:w-72 lg:flex-none xl:w-80" role="navigation" aria-label="Main navigation">
@@ -27,10 +29,6 @@ export const DashboardSidebar = ({
           <h2 className="mt-2 text-2xl font-semibold text-text-high">
             Risk cockpit
           </h2>
-          <p className="mt-1 text-sm text-text-low">
-            Navigate between the analytic overview and the structured
-            spreadsheet view without endless scrolling.
-          </p>
         </div>
 
         <nav className="flex flex-col gap-2">
@@ -64,8 +62,18 @@ export const DashboardSidebar = ({
           })}
         </nav>
 
-        <div className="mt-auto rounded-2xl border border-dashed border-border-subtle bg-surface-secondary/70 p-4 text-sm text-text-low">
-          Tip: Use the New risk tab in the header to capture a risk without leaving the workspace. Drafts are saved locally so you can return later.
+        <div className="mt-auto flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={onSettings}
+            className="rounded-2xl border border-border-subtle bg-surface-secondary px-4 py-3 text-left text-sm font-semibold text-text-high transition hover:border-brand-primary/60 hover:bg-brand-primary-light/50"
+            aria-label="Open settings"
+          >
+            Settings
+          </button>
+          <div className="rounded-2xl border border-dashed border-border-subtle bg-surface-secondary/70 p-4 text-sm text-text-low">
+            Tip: Use the New risk tab in the header to capture a risk without leaving the workspace. Drafts are saved locally so you can return later.
+          </div>
         </div>
       </div>
     </aside>

@@ -42,6 +42,10 @@ A regional financial advisor firm manages risks including market volatility, cyb
 - Create, edit, and delete risk records with comprehensive details
 - Automatic risk scoring using probability x impact calculations
 - Interactive probability-impact matrix visualization
+- Dashboard view with charts and analytics
+- Spreadsheet-style risk table for detailed management
+- Maturity self-assessment radar for capability tracking
+- Settings page for customization and preferences
 - Responsive design that works across devices
 - Cyber risk templates (phishing, ransomware, BEC) with one-click prefill for fast onboarding
 - Cyber threat type classification + filtering
@@ -56,11 +60,16 @@ A regional financial advisor firm manages risks including market volatility, cyb
 - PDF exports (risk register + privacy checklist) via print-to-PDF (opens a `report.html` tab; popups must be allowed)
 - Real-time updates for risk scores and visualizations
 - Optional local encryption for stored data (passphrase-based, using browser crypto APIs)
+- Maturity self-assessment with numbered domain badges and 2-column layout for efficient space usage
+- Settings panel (full-page view, not modal) for account and visualization preferences
 - WCAG 2.1 AA compliant accessibility features
 - Content Security Policy (CSP) implementation for enhanced security
 - 100% compliance with product requirements
 
-UX note: Clicking a risk title takes you directly to the **Edit risk** view (no intermediate “view-only” modal).
+UX notes:
+- Clicking a risk title takes you directly to the **Edit risk** view (no intermediate "view-only" modal).
+- Settings is accessible via the sidebar button and displays as a full-page view for better usability.
+- Workspace navigation includes five main views: Executive Overview, Dashboard Charts, Maturity Radar, Risk Table, and New Risk form.
 
 Wording note: Easy Risk Register **supports audit evidence preparation for ISO 27001 / SOC 2** but does not provide certification or guarantee compliance.
 

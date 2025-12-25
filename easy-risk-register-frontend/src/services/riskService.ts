@@ -74,6 +74,11 @@ export const useRiskManagement = () => {
   const filters = useRiskStore((state) => state.filters)
   const categories = useRiskStore((state) => state.categories)
   const settings = useRiskStore((state) => state.settings)
+  const riskScoreSnapshots = useRiskStore((state) => state.riskScoreSnapshots)
+  const maturityAssessments = useRiskStore((state) => state.maturityAssessments)
+  const createMaturityAssessment = useRiskStore((state) => state.createMaturityAssessment)
+  const updateMaturityDomain = useRiskStore((state) => state.updateMaturityDomain)
+  const deleteMaturityAssessment = useRiskStore((state) => state.deleteMaturityAssessment)
   const addRisk = useRiskStore((state) => state.addRisk)
   const updateRisk = useRiskStore((state) => state.updateRisk)
   const deleteRisk = useRiskStore((state) => state.deleteRisk)
@@ -101,6 +106,9 @@ export const useRiskManagement = () => {
       seedDemoData,
       updateSettings,
       updateReminderSettings,
+      createMaturityAssessment,
+      updateMaturityDomain,
+      deleteMaturityAssessment,
     }),
     [
       addRisk,
@@ -115,8 +123,21 @@ export const useRiskManagement = () => {
       updateRisk,
       updateReminderSettings,
       updateSettings,
+      createMaturityAssessment,
+      deleteMaturityAssessment,
+      updateMaturityDomain,
     ],
   )
 
-  return { risks, allRisks, stats, filters, categories, settings, actions }
+  return {
+    risks,
+    allRisks,
+    stats,
+    filters,
+    categories,
+    settings,
+    riskScoreSnapshots,
+    maturityAssessments,
+    actions,
+  }
 }
