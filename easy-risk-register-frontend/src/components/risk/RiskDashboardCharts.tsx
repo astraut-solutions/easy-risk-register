@@ -349,38 +349,23 @@ export const RiskDashboardCharts = ({
 
   const drillDownButtons = useMemo(() => {
     const buttons: DrillDownTarget[] = []
-
-    for (const severity of severityOrder) {
-      buttons.push({
-        label: `Show ${severityLabel[severity]} severity`,
-        filters: { severity },
-      })
-    }
-
-    for (const label of categorySeverityCounts.labels.slice(0, 6)) {
-      buttons.push({
-        label: `Show category: ${label}`,
-        filters: { category: label },
-      })
-    }
-
     return buttons
   }, [categorySeverityCounts.labels])
 
   const renderDataTable = (rows: ChartTableRow[], valueLabel: string) => (
-    <div className="mt-3 overflow-x-auto rounded-2xl border border-border-faint bg-surface-secondary/10 p-3">
-      <table className="min-w-[360px] w-full text-sm">
+    <div className="mt-4 overflow-x-auto rounded-lg border border-border-faint bg-surface-secondary/10 p-4">
+      <table className="min-w-full text-sm">
         <thead>
-          <tr className="text-left text-xs uppercase tracking-[0.14em] text-text-low">
-            <th className="py-2 pr-4">Label</th>
-            <th className="py-2 text-right">{valueLabel}</th>
+          <tr className="text-left text-xs uppercase tracking-[0.05em] text-text-medium border-b border-border-faint">
+            <th className="py-3 px-3 font-medium">Label</th>
+            <th className="py-3 px-3 text-right font-medium">{valueLabel}</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.label} className="border-t border-border-faint">
-              <td className="py-2 pr-4 text-text-high">{row.label}</td>
-              <td className="py-2 text-right font-semibold text-text-high">{row.value}</td>
+            <tr key={row.label} className="border-b border-border-faint/50 last:border-0 hover:bg-surface-tertiary/30">
+              <td className="py-3 px-3 text-text-high">{row.label}</td>
+              <td className="py-3 px-3 text-right font-medium text-text-high">{row.value}</td>
             </tr>
           ))}
         </tbody>
@@ -401,17 +386,17 @@ export const RiskDashboardCharts = ({
 
   return (
     <div className="space-y-6">
-      <div className="rr-panel p-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="rr-panel p-6 rounded-xl shadow-sm border border-border-faint">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
           <div>
-            <h3 className="text-lg font-semibold text-text-high">Dashboard charts</h3>
+            <h3 className="text-xl font-semibold text-text-high">Dashboard charts</h3>
           </div>
           <Button type="button" size="sm" variant="secondary" onClick={exportDashboardPdf}>
             Export dashboard PDF
           </Button>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="flex flex-col gap-4">
           <div className="flex flex-wrap gap-2" aria-label="Quick drill-down">
             {drillDownButtons.map((target) => (
               <Button
@@ -425,34 +410,35 @@ export const RiskDashboardCharts = ({
               </Button>
             ))}
           </div>
-        </div>
-
-        <div className="mt-4 max-w-[320px]">
-          <Select
-            label="Trend mode"
-            options={[
-              { value: 'overall_exposure', label: 'Overall exposure (average score)' },
-              { value: 'recent_changes', label: 'Recent score changes (count)' },
-            ]}
-            value={trendMode}
-            onChange={(value) => setTrendMode(value as TrendDefaultMode)}
-            disabled={!historyEnabled}
-            helperText={!historyEnabled ? 'Enable score history in Settings to unlock trends.' : undefined}
-          />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
+            <label className="text-sm font-medium text-text-medium whitespace-nowrap">Trend mode:</label>
+            <div className="flex-1">
+              <Select
+                options={[
+                  { value: 'overall_exposure', label: 'Overall exposure (average score)' },
+                  { value: 'recent_changes', label: 'Recent score changes (count)' },
+                ]}
+                value={trendMode}
+                onChange={(value) => setTrendMode(value as TrendDefaultMode)}
+                disabled={!historyEnabled}
+                helperText={!historyEnabled ? 'Enable score history in Settings to unlock trends.' : undefined}
+              />
+            </div>
+          </div>
         </div>
 
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rr-panel p-5">
-          <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="rr-panel p-6 rounded-xl shadow-sm border border-border-faint">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-end justify-between gap-4 mb-5">
             <div>
-              <h4 className="text-sm font-semibold text-text-high">Risk distribution (severity)</h4>
-              <p className="mt-1 text-xs text-text-low">
+              <h4 className="text-base font-semibold text-text-high">Risk distribution (severity)</h4>
+              <p className="mt-1 text-sm text-text-medium">
                 High/Medium/Low counts for the current view.
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
                 size="sm"
@@ -467,18 +453,44 @@ export const RiskDashboardCharts = ({
             </div>
           </div>
 
-          <div className="mt-4" aria-label="Severity distribution chart">
+          <div className="mt-2 h-80" aria-label="Severity distribution chart">
             <Bar
               ref={severityChartRef}
               data={severityBarData as any}
               options={{
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                   legend: { display: false },
+                  tooltip: {
+                    backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                    titleColor: '#f9fafb',
+                    bodyColor: '#d1d5db',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    borderWidth: 1,
+                    padding: 12,
+                    cornerRadius: 8,
+                    displayColors: false,
+                  },
                 },
                 scales: {
-                  y: { beginAtZero: true, ticks: { precision: 0 } },
+                  y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 },
+                    grid: {
+                      color: 'rgba(0, 0, 0, 0.05)',
+                    }
+                  },
+                  x: {
+                    grid: {
+                      display: false,
+                    }
+                  }
                 },
+                interaction: {
+                  intersect: false,
+                  mode: 'index',
+                }
               }}
               onClick={(event) => {
                 const chart = severityChartRef.current
@@ -497,15 +509,15 @@ export const RiskDashboardCharts = ({
           {showSeverityTable ? renderDataTable(severityTableRows, 'Count') : null}
         </div>
 
-        <div className="rr-panel p-5">
-          <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="rr-panel p-6 rounded-xl shadow-sm border border-border-faint">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-end justify-between gap-4 mb-5">
             <div>
-              <h4 className="text-sm font-semibold text-text-high">Risk distribution (top categories)</h4>
-              <p className="mt-1 text-xs text-text-low">
+              <h4 className="text-base font-semibold text-text-high">Risk distribution (top categories)</h4>
+              <p className="mt-1 text-sm text-text-medium">
                 Top 10 categories, stacked by severity.
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
                 size="sm"
@@ -520,19 +532,52 @@ export const RiskDashboardCharts = ({
             </div>
           </div>
 
-          <div className="mt-4" aria-label="Category distribution chart">
+          <div className="mt-2 h-80" aria-label="Category distribution chart">
             <Bar
               ref={categoryChartRef}
               data={stackedCategoryData as any}
               options={{
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
-                  legend: { position: 'bottom' as const },
+                  legend: {
+                    position: 'bottom' as const,
+                    labels: {
+                      padding: 16,
+                      usePointStyle: true,
+                      pointStyle: 'circle',
+                    }
+                  },
+                  tooltip: {
+                    backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                    titleColor: '#f9fafb',
+                    bodyColor: '#d1d5db',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    borderWidth: 1,
+                    padding: 12,
+                    cornerRadius: 8,
+                  },
                 },
                 scales: {
-                  x: { stacked: true },
-                  y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } },
+                  x: {
+                    stacked: true,
+                    grid: {
+                      display: false,
+                    }
+                  },
+                  y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    ticks: { precision: 0 },
+                    grid: {
+                      color: 'rgba(0, 0, 0, 0.05)',
+                    }
+                  },
                 },
+                interaction: {
+                  intersect: false,
+                  mode: 'index',
+                }
               }}
               onClick={(event) => {
                 const chart = categoryChartRef.current
@@ -557,17 +602,17 @@ export const RiskDashboardCharts = ({
         </div>
       </div>
 
-      <div className="rr-panel p-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="rr-panel p-6 rounded-xl shadow-sm border border-border-faint">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-end justify-between gap-4 mb-5">
           <div>
-            <h4 className="text-sm font-semibold text-text-high">Risk trend (last 30 days)</h4>
-            <p className="mt-1 text-xs text-text-low">
+            <h4 className="text-base font-semibold text-text-high">Risk trend (last 30 days)</h4>
+            <p className="mt-1 text-sm text-text-medium">
               {trendMode === 'recent_changes'
                 ? 'Counts how many score updates were recorded per day.'
                 : 'Tracks average score across risks based on stored snapshots.'}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               type="button"
               size="sm"
@@ -590,24 +635,51 @@ export const RiskDashboardCharts = ({
         </div>
 
         {!historyEnabled ? (
-          <div className="mt-4 rounded-2xl border border-border-faint bg-surface-secondary/10 p-4 text-sm text-text-low">
+          <div className="mt-3 rounded-xl border border-border-faint bg-surface-secondary/10 p-4 text-sm text-text-medium">
             Trend charts are disabled. Enable score history in Settings to capture snapshots for trends.
           </div>
         ) : !trendLineData ? (
-          <div className="mt-4 rounded-2xl border border-border-faint bg-surface-secondary/10 p-4 text-sm text-text-low">
+          <div className="mt-3 rounded-xl border border-border-faint bg-surface-secondary/10 p-4 text-sm text-text-medium">
             No snapshots available for the current selection yet. Update a risk’s likelihood/impact to start capturing trends.
           </div>
         ) : (
-          <div className="mt-4" aria-label="Trend chart">
+          <div className="mt-2 h-80" aria-label="Trend chart">
             <Line
               ref={trendChartRef}
               data={trendLineData as any}
               options={{
                 responsive: true,
-                plugins: { legend: { display: false } },
-                scales: {
-                  y: { beginAtZero: true },
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                    titleColor: '#f9fafb',
+                    bodyColor: '#d1d5db',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    borderWidth: 1,
+                    padding: 12,
+                    cornerRadius: 8,
+                    displayColors: false,
+                  },
                 },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    grid: {
+                      color: 'rgba(0, 0, 0, 0.05)',
+                    }
+                  },
+                  x: {
+                    grid: {
+                      color: 'rgba(0, 0, 0, 0.05)',
+                    }
+                  }
+                },
+                interaction: {
+                  intersect: false,
+                  mode: 'index',
+                }
               }}
             />
           </div>
