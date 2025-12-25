@@ -104,9 +104,9 @@ describe('RiskMatrix', () => {
     // There should be 25 cells (5x5 matrix)
     const cells = screen.getAllByRole('gridcell')
     const buttons = cells.filter(cell => cell.tagName === 'BUTTON')
-    
+
     expect(buttons).toHaveLength(25)
-    
+
     // All cells should show '-' (no risks) and 'none' severity
     buttons.forEach(button => {
       expect(button).toHaveTextContent('-')
@@ -189,7 +189,12 @@ describe('RiskMatrix', () => {
     const highRiskCell = screen.getByLabelText(/Risk cell: Likelihood 5, Impact 5/i)
     fireEvent.click(highRiskCell)
 
-    expect(mockOnSelect).toHaveBeenCalledWith(['1']) // Should pass the risk ID
+    expect(mockOnSelect).toHaveBeenCalledWith({
+      probability: 5,
+      impact: 5,
+      severity: 'high',
+      riskIds: ['1'],
+    })
   })
 
   it('does not call onSelect when a cell without risks is clicked', () => {
@@ -241,7 +246,7 @@ describe('RiskMatrix', () => {
     render(<RiskMatrix risks={[]} />)
 
     expect(
-      screen.getByText('Click on any cell to filter risks by likelihood and impact level')
+      screen.getByText('Click or press Enter on a populated cell to filter risks by likelihood and impact.')
     ).toBeInTheDocument()
   })
 })

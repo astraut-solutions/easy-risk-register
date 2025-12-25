@@ -5,6 +5,7 @@ import { filterRisks, DEFAULT_FILTERS } from '../../src/utils/riskCalculations'
 describe('filterRisks consistency', () => {
     const createMockRisk = (overrides?: Partial<Risk>): Risk => ({
         id: 'risk-' + Math.random().toString(36).substring(7),
+        title: 'Test Risk',
         description: 'Test risk',
         category: 'Cyber Security',
         probability: 3,
@@ -15,9 +16,15 @@ describe('filterRisks consistency', () => {
         riskResponse: 'treat',
         mitigationPlan: 'Test mitigation',
         evidence: [],
-        createdAt: new Date().toISOString(),
+        creationDate: new Date().toISOString(),
         lastModified: new Date().toISOString(),
         checklists: [],
+        checklistStatus: 'not_started',
+        owner: 'Test Owner',
+        ownerResponse: '',
+        securityAdvisorComment: '',
+        vendorResponse: '',
+        mitigationSteps: [],
         ...overrides,
     })
 
@@ -30,7 +37,7 @@ describe('filterRisks consistency', () => {
                 createMockRisk({ status: 'closed' }),
             ]
 
-            const filters: RiskFilters = { ...DEFAULT_FILTERS, statuses: ['open'] }
+            const filters: RiskFilters = { ...DEFAULT_FILTERS, status: 'open' }
             const result = filterRisks(risks, filters)
 
             expect(result).toHaveLength(2)
@@ -44,7 +51,7 @@ describe('filterRisks consistency', () => {
                 createMockRisk({ category: 'Cyber Security' }),
             ]
 
-            const filters: RiskFilters = { ...DEFAULT_FILTERS, categories: ['Cyber Security'] }
+            const filters: RiskFilters = { ...DEFAULT_FILTERS, category: 'Cyber Security' }
             const result = filterRisks(risks, filters)
 
             expect(result).toHaveLength(2)
@@ -59,7 +66,7 @@ describe('filterRisks consistency', () => {
                 createMockRisk({ threatType: 'malware' }),
             ]
 
-            const filters: RiskFilters = { ...DEFAULT_FILTERS, threatTypes: ['phishing'] }
+            const filters: RiskFilters = { ...DEFAULT_FILTERS, threatType: 'phishing' }
             const result = filterRisks(risks, filters)
 
             expect(result).toHaveLength(2)
@@ -74,7 +81,7 @@ describe('filterRisks consistency', () => {
                 createMockRisk({ riskScore: 10 }), // High
             ]
 
-            const filters: RiskFilters = { ...DEFAULT_FILTERS, severities: ['medium'] }
+            const filters: RiskFilters = { ...DEFAULT_FILTERS, severity: 'medium' }
             const result = filterRisks(risks, filters)
 
             expect(result).toHaveLength(2)
@@ -87,7 +94,7 @@ describe('filterRisks consistency', () => {
                 createMockRisk({ category: 'Operational' }),
             ]
 
-            const filters: RiskFilters = { ...DEFAULT_FILTERS, categories: [] }
+            const filters: RiskFilters = { ...DEFAULT_FILTERS, category: 'all' }
             const result = filterRisks(risks, filters)
 
             expect(result).toEqual(risks)
@@ -121,9 +128,9 @@ describe('filterRisks consistency', () => {
 
             const filters: RiskFilters = {
                 ...DEFAULT_FILTERS,
-                statuses: ['open'],
-                categories: ['Cyber Security'],
-                threatTypes: ['phishing'],
+                status: 'open',
+                category: 'Cyber Security',
+                threatType: 'phishing',
             }
             const result = filterRisks(risks, filters)
 
@@ -140,11 +147,11 @@ describe('filterRisks consistency', () => {
                 createMockRisk({ status: 'closed' }),
             ]
 
-            const filters: RiskFilters = { ...DEFAULT_FILTERS, statuses: ['open', 'mitigated'] }
+            const filters: RiskFilters = { ...DEFAULT_FILTERS, status: 'open' }
             const result = filterRisks(risks, filters)
 
-            expect(result).toHaveLength(2)
-            expect(result.every((r) => r.status === 'open' || r.status === 'mitigated')).toBe(true)
+            expect(result).toHaveLength(1)
+            expect(result.every((r) => r.status === 'open')).toBe(true)
         })
 
         it('should maintain consistency with combined status and category filters', () => {
@@ -157,13 +164,14 @@ describe('filterRisks consistency', () => {
 
             const filters: RiskFilters = {
                 ...DEFAULT_FILTERS,
-                statuses: ['open', 'mitigated'],
-                categories: ['Cyber'],
+                status: 'open',
+                category: 'Cyber',
             }
             const result = filterRisks(risks, filters)
 
-            expect(result).toHaveLength(2)
-            expect(result.every((r) => r.category === 'Cyber')).toBe(true)
+            expect(result).toHaveLength(1)
+            expect(result[0].status).toBe('open')
+            expect(result[0].category).toBe('Cyber')
         })
     })
 
@@ -175,7 +183,7 @@ describe('filterRisks consistency', () => {
                 createMockRisk({ description: 'Email phishing campaign' }),
             ]
 
-            const filters: RiskFilters = { ...DEFAULT_FILTERS, searchQuery: 'phishing' }
+            const filters: RiskFilters = { ...DEFAULT_FILTERS, search: 'phishing' }
             const result = filterRisks(risks, filters)
 
             expect(result).toHaveLength(2)
@@ -189,7 +197,7 @@ describe('filterRisks consistency', () => {
                 createMockRisk({ description: 'Phishing Email' }),
             ]
 
-            const filters: RiskFilters = { ...DEFAULT_FILTERS, searchQuery: 'PHISHING' }
+            const filters: RiskFilters = { ...DEFAULT_FILTERS, search: 'PHISHING' }
             const result = filterRisks(risks, filters)
 
             expect(result).toHaveLength(3)
@@ -197,48 +205,30 @@ describe('filterRisks consistency', () => {
 
         it('should search in category when description does not match', () => {
             const risks = [
-                createMockRisk({ description: 'Test', category: 'Cyber Security' }),
-                createMockRisk({ description: 'Test', category: 'Operational' }),
+                createMockRisk({ description: 'Test', title: 'Cyber risk', category: 'Operational' }),
+                createMockRisk({ description: 'Test', title: 'Another risk', category: 'Operational' }),
             ]
 
-            const filters: RiskFilters = { ...DEFAULT_FILTERS, searchQuery: 'cyber' }
+            const filters: RiskFilters = { ...DEFAULT_FILTERS, search: 'cyber' }
             const result = filterRisks(risks, filters)
 
             expect(result).toHaveLength(1)
-            expect(result[0].category).toBe('Cyber Security')
+            expect(result[0].title).toContain('Cyber')
         })
     })
 
     describe('checklist filter consistency', () => {
         it('should filter by checklist completion status', () => {
             const risks = [
-                createMockRisk({ checklists: [] }),
-                createMockRisk({
-                    checklists: [
-                        {
-                            checklistId: 'cl-1',
-                            templateId: 'template-1',
-                            items: [{ itemId: 'item-1', name: 'Check 1', completed: true }],
-                            completedAt: new Date().toISOString(),
-                        },
-                    ],
-                }),
-                createMockRisk({
-                    checklists: [
-                        {
-                            checklistId: 'cl-2',
-                            templateId: 'template-1',
-                            items: [{ itemId: 'item-1', name: 'Check 1', completed: false }],
-                            completedAt: undefined,
-                        },
-                    ],
-                }),
+                createMockRisk({ checklistStatus: 'not_started' }),
+                createMockRisk({ checklistStatus: 'done' }),
+                createMockRisk({ checklistStatus: 'in_progress' }),
             ]
 
-            const filters: RiskFilters = { ...DEFAULT_FILTERS, checklistCompletionStatus: ['not_started'] }
+            const filters: RiskFilters = { ...DEFAULT_FILTERS, checklistStatus: 'not_started' }
             const result = filterRisks(risks, filters)
 
-            // Should include risks without checklists and checklists not started
+            // Should include risks with not_started checklist status
             expect(result.length).toBeGreaterThanOrEqual(1)
         })
     })
@@ -252,16 +242,16 @@ describe('filterRisks consistency', () => {
             expect(result).toEqual(risks)
         })
 
-        it('should return all risks when all filter arrays are empty', () => {
+        it('should return all risks when all filters are set to all/empty', () => {
             const risks = [createMockRisk(), createMockRisk()]
 
             const filters: RiskFilters = {
-                statuses: [],
-                categories: [],
-                threatTypes: [],
-                severities: [],
-                checklistCompletionStatus: [],
-                searchQuery: '',
+                search: '',
+                category: 'all',
+                threatType: 'all',
+                status: 'all',
+                severity: 'all',
+                checklistStatus: 'all',
             }
             const result = filterRisks(risks, filters)
 
@@ -279,8 +269,8 @@ describe('filterRisks consistency', () => {
 
             const filters: RiskFilters = {
                 ...DEFAULT_FILTERS,
-                statuses: ['open'],
-                categories: ['Cyber'],
+                status: 'open',
+                category: 'Cyber',
             }
 
             const result1 = filterRisks(risks, filters)
@@ -323,8 +313,8 @@ describe('filterRisks consistency', () => {
 
             const filters: RiskFilters = {
                 ...DEFAULT_FILTERS,
-                statuses: ['open'],
-                categories: ['Cyber Security'],
+                status: 'open',
+                category: 'Cyber Security',
             }
 
             const startTime = performance.now()
