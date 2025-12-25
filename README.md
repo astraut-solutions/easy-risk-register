@@ -71,6 +71,11 @@ A regional financial advisor firm manages risks including market volatility, cyb
   - Return on Security Investment (ROSI) calculator for security control ROI analysis
   - Interactive Cost Modeling for tracking mitigation investments
   - Range-based impact visualization with upper/lower bounds and expected mean
+- **Advanced Risk Scoring features:**
+  - Dynamic Risk Score system (like SAFE Score) with multiple risk factors and time-based adjustments
+  - Breach Likelihood probability calculations considering threat level, vulnerability, and controls effectiveness
+  - Scenario-based scoring for specific threats (ransomware, data compromise, insider threats, supply chain)
+  - Real-time risk posture measurement with trend analysis and risk capacity monitoring
 
 UX notes:
 - Clicking a risk title takes you directly to the **Edit risk** view (no intermediate "view-only" modal).
@@ -257,6 +262,7 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | **Security** | [Security Policy](docs/SECURITY.md) | Security policy and overview |
 | | [Security Implementation](docs/security-implementation.md) | CSP directives, sanitization, and storage hardening |
 | **Financial Risk** | [Financial Risk Quantification](docs/financial-risk-quantification.md) | Comprehensive guide to financial risk quantification features |
+| **Advanced Risk Scoring** | [Advanced Risk Scoring](docs/advanced-risk-scoring.md) | Comprehensive guide to advanced risk scoring features including dynamic scoring, breach likelihood, scenario analysis, and posture measurement |
 
 ## Integrated Diagrams in Documentation
 

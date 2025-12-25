@@ -48,6 +48,14 @@ Easy Risk Register is a client-side, privacy-focused risk management app that su
 - Interactive Cost Modeling: Model and track costs associated with risk mitigation and security investments
 - Range-based impact visualization: Visualize potential financial impact with lower/upper bounds and expected mean
 
+## Advanced Risk Scoring Features
+
+- [Advanced Risk Scoring Documentation](advanced-risk-scoring.md): Complete guide to advanced risk scoring features
+- Dynamic Risk Score system: Enhanced risk scoring with multiple weighted factors and time-based adjustments
+- Breach Likelihood probability calculations: Calculate breach probability based on threat, vulnerability, and controls effectiveness
+- Scenario-based scoring: Specialized scoring for specific threat scenarios (ransomware, data compromise, insider threats, supply chain)
+- Real-time risk posture measurement: Monitor organizational risk posture with trend analysis and capacity metrics
+
 ## UI/UX Enhancements (Phase 6)
 
 - Performance testing framework with defined benchmarks
