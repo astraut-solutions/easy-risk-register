@@ -9,6 +9,7 @@ import { RiskForm, type RiskFormValues } from './components/risk/RiskForm'
 import { RiskDetailModal } from './components/risk/RiskDetailModal'
 import { RiskMatrix } from './components/risk/RiskMatrix'
 import { RiskDashboardCharts } from './components/risk/RiskDashboardCharts'
+import ComprehensiveDashboard from './components/dashboard/ComprehensiveDashboard'
 import { RiskFiltersBar } from './components/risk/RiskFilters'
 import { RiskTable } from './components/risk/RiskTable'
 import { MaturityAssessmentPanel } from './components/maturity/MaturityAssessmentPanel'
@@ -1217,7 +1218,7 @@ function App() {
                 </div>
               ) : activeView === 'dashboard' ? (
                 <div className="flex flex-col gap-6">
-                  <RiskDashboardCharts
+                  <ComprehensiveDashboard
                     risks={visibleRisks}
                     snapshots={riskScoreSnapshots}
                     filters={filters}

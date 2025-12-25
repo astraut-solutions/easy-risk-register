@@ -14,17 +14,26 @@
     "test:a11y": "echo 'Accessibility tests run in development mode via the AccessibilityTester component'"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.1.0",
+    "@influxdata/influxdb-client": "^1.35.0",
+    "@types/d3": "^7.4.3",
     "@types/papaparse": "^5.5.0",
+    "antd": "^6.1.2",
     "chart.js": "^4.5.0",
+    "d3": "^7.9.0",
     "dompurify": "^3.3.0",
+    "echarts": "^6.0.0",
     "framer-motion": "^12.23.24",
     "isomorphic-dompurify": "^2.30.0",
     "nanoid": "^5.1.6",
+    "neo4j-driver": "^6.0.1",
     "papaparse": "^5.5.3",
     "react": "^19.2.0",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.66.0",
+    "recharts": "^3.6.0",
+    "socket.io-client": "^4.8.3",
     "zustand": "^5.0.8"
   },
   "devDependencies": {

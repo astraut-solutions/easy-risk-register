@@ -76,6 +76,20 @@ A regional financial advisor firm manages risks including market volatility, cyb
   - Breach Likelihood probability calculations considering threat level, vulnerability, and controls effectiveness
   - Scenario-based scoring for specific threats (ransomware, data compromise, insider threats, supply chain)
   - Real-time risk posture measurement with trend analysis and risk capacity monitoring
+- **UI/UX Improvements:**
+  - Executive-focused dashboard with key metrics and visualizations
+  - Clear information hierarchy with progressive disclosure using React hooks
+  - Color-coded risk levels with consistent visual design using Tailwind CSS
+  - Mobile-responsive design optimized for all screen sizes
+  - Enhanced accessibility features with ARIA compliance
+  - Intuitive navigation system for improved user experience
+- **Technical Architecture features:**
+  - Real-time processing engine for continuous risk updates (using Socket.io)
+  - Time-series database integration for historical trend analysis (InfluxDB)
+  - Graph database for modeling risk relationships and dependencies
+  - Integration capabilities with vulnerability scanners (OpenVAS, ZAP, Nessus)
+  - SIEM system integration (Wazuh, ELK Stack, Splunk)
+  - Microservices architecture design for scalability (NestJS/Express on Vercel)
 
 UX notes:
 - Clicking a risk title takes you directly to the **Edit risk** view (no intermediate "view-only" modal).
@@ -238,6 +252,7 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | **Architecture** | [Architecture Documentation](docs/architecture/architecture-diagrams.md) | System architecture with integrated diagrams |
 | | [System Architecture (Overview)](docs/architecture/architecture-output.md) | Implementation-aligned architecture summary |
 | | [Secure Data Storage](docs/architecture/secure-data-storage.md) | Client-side encryption for persisted LocalStorage data |
+| | [Technical Architecture](docs/technical-architecture.md) | Detailed documentation on real-time processing, time-series DB, graph DB, vulnerability scanner integration, SIEM integration, and microservices architecture |
 | **Guides** | [Setup Guide](docs/guides/setup.md) | Complete setup instructions from quick start to advanced development |
 | | [Testing Guide](docs/guides/testing.md) | How to run and write tests |
 | | [Development Workflow](docs/guides/development-workflow.md) | Standard development process and commands |
