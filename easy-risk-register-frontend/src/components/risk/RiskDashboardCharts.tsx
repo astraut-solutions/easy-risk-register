@@ -402,29 +402,16 @@ export const RiskDashboardCharts = ({
   return (
     <div className="space-y-6">
       <div className="rr-panel p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h3 className="text-lg font-semibold text-text-high">Dashboard charts</h3>
-            <p className="mt-1 text-xs text-text-low">
-              Charts respect the current filters. Use drill-down buttons to jump into the risk table.
-            </p>
           </div>
-          <div className="w-full max-w-[320px]">
-            <Select
-              label="Trend mode"
-              options={[
-                { value: 'overall_exposure', label: 'Overall exposure (average score)' },
-                { value: 'recent_changes', label: 'Recent score changes (count)' },
-              ]}
-              value={trendMode}
-              onChange={(value) => setTrendMode(value as TrendDefaultMode)}
-              disabled={!historyEnabled}
-              helperText={!historyEnabled ? 'Enable score history in Settings to unlock trends.' : undefined}
-            />
-          </div>
+          <Button type="button" size="sm" variant="secondary" onClick={exportDashboardPdf}>
+            Export dashboard PDF
+          </Button>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <div className="flex flex-wrap gap-2" aria-label="Quick drill-down">
             {drillDownButtons.map((target) => (
               <Button
@@ -438,33 +425,46 @@ export const RiskDashboardCharts = ({
               </Button>
             ))}
           </div>
-          <Button type="button" size="sm" variant="secondary" onClick={exportDashboardPdf}>
-            Export dashboard PDF
-          </Button>
+        </div>
+
+        <div className="mt-4 max-w-[320px]">
+          <Select
+            label="Trend mode"
+            options={[
+              { value: 'overall_exposure', label: 'Overall exposure (average score)' },
+              { value: 'recent_changes', label: 'Recent score changes (count)' },
+            ]}
+            value={trendMode}
+            onChange={(value) => setTrendMode(value as TrendDefaultMode)}
+            disabled={!historyEnabled}
+            helperText={!historyEnabled ? 'Enable score history in Settings to unlock trends.' : undefined}
+          />
         </div>
 
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rr-panel p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <h4 className="text-sm font-semibold text-text-high">Risk distribution (severity)</h4>
               <p className="mt-1 text-xs text-text-low">
                 High/Medium/Low counts for the current view.
               </p>
             </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => setShowSeverityTable((value) => !value)}
-            >
-              {showSeverityTable ? 'Hide data table' : 'Show data table'}
-            </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={() => exportChartPng('severity')}>
-              Export PNG
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowSeverityTable((value) => !value)}
+              >
+                {showSeverityTable ? 'Hide data table' : 'Show data table'}
+              </Button>
+              <Button type="button" size="sm" variant="secondary" onClick={() => exportChartPng('severity')}>
+                Export PNG
+              </Button>
+            </div>
           </div>
 
           <div className="mt-4" aria-label="Severity distribution chart">
@@ -498,24 +498,26 @@ export const RiskDashboardCharts = ({
         </div>
 
         <div className="rr-panel p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <h4 className="text-sm font-semibold text-text-high">Risk distribution (top categories)</h4>
               <p className="mt-1 text-xs text-text-low">
                 Top 10 categories, stacked by severity.
               </p>
             </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => setShowCategoryTable((value) => !value)}
-            >
-              {showCategoryTable ? 'Hide data table' : 'Show data table'}
-            </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={() => exportChartPng('categories')}>
-              Export PNG
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowCategoryTable((value) => !value)}
+              >
+                {showCategoryTable ? 'Hide data table' : 'Show data table'}
+              </Button>
+              <Button type="button" size="sm" variant="secondary" onClick={() => exportChartPng('categories')}>
+                Export PNG
+              </Button>
+            </div>
           </div>
 
           <div className="mt-4" aria-label="Category distribution chart">
@@ -556,7 +558,7 @@ export const RiskDashboardCharts = ({
       </div>
 
       <div className="rr-panel p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h4 className="text-sm font-semibold text-text-high">Risk trend (last 30 days)</h4>
             <p className="mt-1 text-xs text-text-low">
@@ -565,24 +567,26 @@ export const RiskDashboardCharts = ({
                 : 'Tracks average score across risks based on stored snapshots.'}
             </p>
           </div>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={() => setShowTrendTable((value) => !value)}
-            disabled={!trendLineData}
-          >
-            {showTrendTable ? 'Hide data table' : 'Show data table'}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            onClick={() => exportChartPng('trend')}
-            disabled={!trendLineData}
-          >
-            Export PNG
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowTrendTable((value) => !value)}
+              disabled={!trendLineData}
+            >
+              {showTrendTable ? 'Hide data table' : 'Show data table'}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => exportChartPng('trend')}
+              disabled={!trendLineData}
+            >
+              Export PNG
+            </Button>
+          </div>
         </div>
 
         {!historyEnabled ? (
