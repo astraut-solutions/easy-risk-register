@@ -58,6 +58,12 @@ Easy Risk Register is a client-side, privacy-focused risk management app that su
 
 ## UI/UX Enhancements (Phase 6)
 
+- [Executive-focused dashboard with key metrics and visualizations](ui-ux-improvements.md#executive-dashboard)
+- [Clear information hierarchy with progressive disclosure](ui-ux-improvements.md#information-hierarchy--progressive-disclosure)
+- [Color-coded risk levels with consistent visual design](ui-ux-improvements.md#color-coded-risk-levels)
+- [Mobile-responsive design optimized for all screen sizes](ui-ux-improvements.md#mobile-responsiveness)
+- [Enhanced accessibility features with ARIA compliance](ui-ux-improvements.md#accessibility-features)
+- [Intuitive navigation system for improved user experience](ui-ux-improvements.md#navigation-system)
 - Performance testing framework with defined benchmarks
 - WCAG 2.1 AA accessibility compliance checklist
 - Maturity assessment panel: Full-width chart (400px height) + 2-column domain grid (numbered badges, equal-width label/dropdown)
