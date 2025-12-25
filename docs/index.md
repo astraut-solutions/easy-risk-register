@@ -39,6 +39,15 @@ Easy Risk Register is a client-side, privacy-focused risk management app that su
 - Security policy: `docs/SECURITY.md`
 - Security implementation: `docs/security-implementation.md`
 
+## Financial Risk Quantification Features
+
+- [Financial Risk Quantification Documentation](financial-risk-quantification.md): Complete guide to financial risk features
+- Estimated Financial Impact (EFI) calculator: Calculate potential financial impact with range-based estimates (lower/upper bounds and expected mean)
+- Financial Risk Trend visualization: Visualize financial risk trends over time with potential impact, mitigation investments, and net exposure
+- Return on Security Investment (ROSI) calculator: Calculate risk reduction and return on investment for security controls
+- Interactive Cost Modeling: Model and track costs associated with risk mitigation and security investments
+- Range-based impact visualization: Visualize potential financial impact with lower/upper bounds and expected mean
+
 ## UI/UX Enhancements (Phase 6)
 
 - Performance testing framework with defined benchmarks

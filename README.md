@@ -65,6 +65,12 @@ A regional financial advisor firm manages risks including market volatility, cyb
 - WCAG 2.1 AA compliant accessibility features
 - Content Security Policy (CSP) implementation for enhanced security
 - 100% compliance with product requirements
+- **Financial Risk Quantification features:**
+  - Estimated Financial Impact (EFI) calculator with range-based estimates
+  - Financial Risk Trend visualization showing potential impact over time
+  - Return on Security Investment (ROSI) calculator for security control ROI analysis
+  - Interactive Cost Modeling for tracking mitigation investments
+  - Range-based impact visualization with upper/lower bounds and expected mean
 
 UX notes:
 - Clicking a risk title takes you directly to the **Edit risk** view (no intermediate "view-only" modal).
@@ -250,6 +256,7 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | | [SOC 2 mapping guidance](docs/frameworks/soc2-mapping.md) | Practical evidence mapping + examples |
 | **Security** | [Security Policy](docs/SECURITY.md) | Security policy and overview |
 | | [Security Implementation](docs/security-implementation.md) | CSP directives, sanitization, and storage hardening |
+| **Financial Risk** | [Financial Risk Quantification](docs/financial-risk-quantification.md) | Comprehensive guide to financial risk quantification features |
 
 ## Integrated Diagrams in Documentation
 
