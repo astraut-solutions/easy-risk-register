@@ -52,38 +52,72 @@ The graph database service includes:
 - Pathfinding algorithms to identify risk chains  
 - Impact analysis based on relationship strength  
   
-## Vulnerability Scanner Integration 
-Integration with external vulnerability scanners allows for automated risk import and correlation:  
-  
-- Support for multiple scanner types (OpenVAS, ZAP, Nessus, Nmap)  
-- Automated vulnerability-to-risk conversion  
-- Risk correlation with existing vulnerabilities  
-- Import/export capabilities for scan results  
-  
-### Implementation Details  
-  
-The vulnerability scanner service provides:  
-- Configuration management for different scanner types  
-- Scan initiation and result retrieval  
-- Vulnerability-to-risk mapping algorithms  
-- Export capabilities in multiple formats (JSON, CSV, HTML)  
-  
-## SIEM System Integration 
-Security Information and Event Management (SIEM) integration enables correlation of security events with business risks:  
-  
-- Support for multiple SIEM platforms (Wazuh, ELK Stack, Splunk, Graylog)  
-- Security event to risk conversion  
-- Alert correlation with existing risks  
-- Event statistics and analysis  
-  
-### Implementation Details  
-  
-The SIEM integration service includes:  
-- Configuration management for different SIEM types  
-- Security event fetching and processing  
-- Alert-to-risk conversion functionality  
-- Event correlation with existing risk register  
-- Statistics and reporting capabilities  
+## Vulnerability Scanner Integration
+Integration with external vulnerability scanners allows for automated risk import and correlation:
+
+- Support for multiple scanner types (OpenVAS, ZAP, Nikto)
+- Automated vulnerability-to-risk conversion
+- Risk correlation with existing vulnerabilities
+- Import/export capabilities for scan results
+
+### Implementation Details
+
+The vulnerability scanner service provides:
+- Configuration management for different scanner types
+- Scan initiation and result retrieval
+- Vulnerability-to-risk mapping algorithms
+- Export capabilities in multiple formats (JSON, CSV, HTML)
+
+## SIEM System Integration
+Security Information and Event Management (SIEM) integration enables correlation of security events with business risks:
+
+- Support for multiple SIEM platforms (Wazuh, ELK Stack, Security Onion)
+- Security event to risk conversion
+- Alert correlation with existing risks
+- Event statistics and analysis
+
+### Implementation Details
+
+The SIEM integration service includes:
+- Configuration management for different SIEM types
+- Security event fetching and processing
+- Alert-to-risk conversion functionality
+- Event correlation with existing risk register
+- Statistics and reporting capabilities
+
+## Asset Management/CMDB System Integration
+Integration with asset management and Configuration Management Database (CMDB) systems enables tracking of risks associated with specific assets:
+
+- Support for multiple CMDB platforms (DataGerry, CMDBuild, Snipe-IT)
+- Asset-to-risk correlation and mapping
+- Critical asset identification and risk assessment
+- Asset group and category management
+
+### Implementation Details
+
+The asset management service includes:
+- Configuration management for different CMDB types
+- Asset fetching and categorization
+- Asset-to-risk conversion functionality
+- Asset group management and correlation
+- Criticality assessment and risk mapping
+
+## Third-Party API Integration Framework
+A comprehensive framework for integrating with third-party systems using REST and GraphQL APIs:
+
+- Support for multiple authentication methods (API Key, OAuth, Basic, JWT)
+- Flexible data mapping and transformation
+- Real-time update subscription capabilities
+- GraphQL and REST API support
+
+### Implementation Details
+
+The API integration service includes:
+- Authentication management for various methods
+- REST API call utilities with error handling
+- GraphQL query execution capabilities
+- Data transformation and mapping utilities
+- Real-time update subscription mechanisms
   
 ## Microservices Architecture Design 
 The system is designed with a microservices architecture for scalability and maintainability:  

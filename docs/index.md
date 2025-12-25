@@ -38,6 +38,7 @@ Easy Risk Register is a client-side, privacy-focused risk management app that su
 - Secure data storage: `docs/architecture/secure-data-storage.md`
 - Security policy: `docs/SECURITY.md`
 - Security implementation: `docs/security-implementation.md`
+- Security & Compliance Features: `security-and-compliance.md`
 
 ## Financial Risk Quantification Features
 
@@ -55,6 +56,15 @@ Easy Risk Register is a client-side, privacy-focused risk management app that su
 - Breach Likelihood probability calculations: Calculate breach probability based on threat, vulnerability, and controls effectiveness
 - Scenario-based scoring: Specialized scoring for specific threat scenarios (ransomware, data compromise, insider threats, supply chain)
 - Real-time risk posture measurement: Monitor organizational risk posture with trend analysis and capacity metrics
+
+## Differentiating Features
+
+- [Differentiating Features Documentation](differentiating-features.md): Complete guide to all differentiating features
+- Financial Risk Translation: Converting technical risk data into business-friendly language with natural language generation
+- Scenario Modeling and What-If Analysis: Monte Carlo simulations and sensitivity analysis capabilities
+- Board-Ready PDF Reporting: Professional reports for executive presentations and board meetings
+- Executive Communication Tools: Pre-built templates and sharing capabilities for stakeholder communication
+- ROI Measurement for Security Investments: Financial analysis tools for security investment decisions with cost-benefit analysis and prioritization
 
 ## UI/UX Enhancements (Phase 6)
 

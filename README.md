@@ -87,9 +87,17 @@ A regional financial advisor firm manages risks including market volatility, cyb
   - Real-time processing engine for continuous risk updates (using Socket.io)
   - Time-series database integration for historical trend analysis (InfluxDB)
   - Graph database for modeling risk relationships and dependencies
-  - Integration capabilities with vulnerability scanners (OpenVAS, ZAP, Nessus)
-  - SIEM system integration (Wazuh, ELK Stack, Splunk)
+  - Integration capabilities with vulnerability scanners (OpenVAS, ZAP, Nikto)
+  - SIEM system integration (Wazuh, ELK Stack, Security Onion)
+  - Asset management/CMDB system integration (DataGerry, CMDBuild, Snipe-IT)
+  - API framework for third-party integrations (REST/GraphQL support)
   - Microservices architecture design for scalability (NestJS/Express on Vercel)
+- **Differentiating Features:**
+  - Financial risk translation for business stakeholders with natural language generation
+  - Scenario modeling and what-if analysis capabilities using Monte Carlo simulation
+  - Board-ready PDF reporting tools with professional formatting and visualizations
+  - Executive communication tools with pre-built email templates and sharing capabilities
+  - ROI measurement for security investments with cost-benefit analysis and prioritization
 
 UX notes:
 - Clicking a risk title takes you directly to the **Edit risk** view (no intermediate "view-only" modal).
@@ -292,6 +300,15 @@ The Easy Risk Register documentation includes Mermaid diagrams directly within m
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](docs/LICENSE) file for details.
+
+## Security & Compliance Features
+
+- **Role-Based Access Control (RBAC)**: Implemented using JWT with jsonwebtoken for secure user authentication and authorization
+- **Audit Logging**: Comprehensive audit logging for risk modifications using Winston logger with file transports
+- **Data Encryption**: Client-side and server-side encryption for sensitive information using Crypto.js and Node crypto
+- **Compliance Reporting**: NIST framework-aligned compliance reporting with template-based PDF generation using jsPDF
+- **API Security**: Secure API endpoints with authentication middleware and role-based access control
+- **Frontend Security**: React context-based security management with protected routes and role checking
 
 ## Security Policy
 
