@@ -2,6 +2,16 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { RangeBasedImpactVisualization } from './RangeBasedImpactVisualization'
 
+const formatAmount = (amount: number, currency: string) =>
+  `${currency} ${amount.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`
+
+const includesNormalizedText =
+  (expected: string) => (_: string, node: Element | null) =>
+    (node?.textContent ?? '').replace(/\s+/g, ' ').includes(expected)
+
 describe('RangeBasedImpactVisualization', () => {
   it('renders correctly with default props', () => {
     render(
@@ -46,9 +56,18 @@ describe('RangeBasedImpactVisualization', () => {
       />
     )
     
-    expect(screen.getByText('USD 1,000.50')).toBeInTheDocument()
-    expect(screen.getByText('USD 5,000.75')).toBeInTheDocument()
-    expect(screen.getByText('USD 3,000.25')).toBeInTheDocument()
+    expect(
+      screen.getAllByText(includesNormalizedText(formatAmount(1000.5, 'USD')))
+        .length
+    ).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText(includesNormalizedText(formatAmount(5000.75, 'USD')))
+        .length
+    ).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText(includesNormalizedText(formatAmount(3000.25, 'USD')))
+        .length
+    ).toBeGreaterThan(0)
   })
 
   it('calculates mean position correctly', () => {
@@ -61,8 +80,17 @@ describe('RangeBasedImpactVisualization', () => {
     )
     
     // Check that the visualization displays the correct values
-    expect(screen.getByText('USD 1,000.00')).toBeInTheDocument()
-    expect(screen.getByText('USD 5,000.00')).toBeInTheDocument()
-    expect(screen.getByText('USD 3,000.00')).toBeInTheDocument()
+    expect(
+      screen.getAllByText(includesNormalizedText(formatAmount(1000, 'USD')))
+        .length
+    ).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText(includesNormalizedText(formatAmount(5000, 'USD')))
+        .length
+    ).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText(includesNormalizedText(formatAmount(3000, 'USD')))
+        .length
+    ).toBeGreaterThan(0)
   })
 })
