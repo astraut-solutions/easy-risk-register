@@ -1,8 +1,7 @@
-import React from 'react';
-import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import { FinancialRiskTrend } from './FinancialRiskTrend';
-import type { Risk } from '../../types/risk';
+import { describe, it, expect } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import { FinancialRiskTrend } from './FinancialRiskTrend'
+import type { Risk } from '../../types/risk'
 
 describe('FinancialRiskTrend', () => {
   const mockRisks: Risk[] = [
@@ -44,24 +43,28 @@ describe('FinancialRiskTrend', () => {
       mitigationSteps: [],
       checklists: [],
     }
-  ];
+  ]
 
   it('renders correctly', () => {
-    render(<FinancialRiskTrend risks={mockRisks} />);
+    render(<FinancialRiskTrend risks={mockRisks} />)
     
-    expect(screen.getByText('Financial Risk Trend Visualization')).toBeInTheDocument();
-    expect(screen.getByText('Track potential financial impact over time with mitigation investments')).toBeInTheDocument();
-  });
+    expect(screen.getByText('Financial Risk Trend Visualization')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Track potential financial impact over time with mitigation investments'
+      )
+    ).toBeInTheDocument()
+  })
 
   it('renders with custom currency', () => {
-    render(<FinancialRiskTrend risks={mockRisks} currency="EUR" />);
+    render(<FinancialRiskTrend risks={mockRisks} currency="EUR" />)
     
-    expect(screen.getByText('Financial Risk Trend Visualization')).toBeInTheDocument();
-  });
+    expect(screen.getByText('Financial Risk Trend Visualization')).toBeInTheDocument()
+  })
 
   it('renders with empty risks array', () => {
-    render(<FinancialRiskTrend risks={[]} />);
+    render(<FinancialRiskTrend risks={[]} />)
     
-    expect(screen.getByText('Financial Risk Trend Visualization')).toBeInTheDocument();
-  });
-});
+    expect(screen.getByText('Financial Risk Trend Visualization')).toBeInTheDocument()
+  })
+})
