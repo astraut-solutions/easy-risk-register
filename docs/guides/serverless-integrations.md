@@ -11,6 +11,19 @@ In Vite, any environment variable prefixed with `VITE_` is bundled into the fron
 - Frontend calls `/api/...` (same-origin on Vercel) or `VITE_API_BASE_URL + /api/...` (when pointing at a separate API host).
 - Serverless functions live in `api/` and read **server-only** environment variables (no `VITE_` prefix).
 
+## Auth-protected APIs (serverless)
+
+Some serverless routes require a JWT Bearer token:
+
+- `GET/POST /api/users` (admin only; currently mock/in-memory)
+- `GET/POST /api/audit`
+- `POST /api/data-protection` (encrypt/decrypt)
+
+Server-side environment variables:
+
+- `JWT_SECRET` (required in production)
+- `ENCRYPTION_KEY` (required in production; used by `/api/data-protection`)
+
 ## Time-series (InfluxDB)
 
 API routes:

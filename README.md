@@ -119,6 +119,8 @@ Optional integrations (time-series, threat intel, etc.) are designed to keep sec
 - Never put API keys/tokens in `VITE_*` variables (anything prefixed with `VITE_` is bundled into the browser build).
 - Use serverless APIs (Vercel functions under `api/`) for any calls that require credentials.
 
+Server-side APIs live in the repo root `api/` folder (Vercel Serverless Functions). There is no separate backend server to run when deploying on Vercel.
+
 Diagrams and a deeper breakdown are in [Architecture Documentation](docs/architecture/architecture-diagrams.md).
 
 ## Getting Started
