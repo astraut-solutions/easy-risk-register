@@ -27,7 +27,6 @@ interface ExecutiveOverviewDashboardProps {
 
 const ExecutiveOverviewDashboard: React.FC<ExecutiveOverviewDashboardProps> = ({
   risks,
-  snapshots,
   onDrillDown
 }) => {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
@@ -39,7 +38,7 @@ const ExecutiveOverviewDashboard: React.FC<ExecutiveOverviewDashboardProps> = ({
     const mediumRisks = risks.filter(risk => risk.riskScore >= 4 && risk.riskScore <= 6).length;
     const lowRisks = risks.filter(risk => risk.riskScore < 4).length;
     const openRisks = risks.filter(risk => risk.status !== 'mitigated').length;
-    const totalFinancialImpact = risks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0);
+    const totalFinancialImpact = risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0);
     const avgRiskScore = totalRisks > 0
       ? risks.reduce((sum, risk) => sum + risk.riskScore, 0) / totalRisks
       : 0;
@@ -83,7 +82,7 @@ const ExecutiveOverviewDashboard: React.FC<ExecutiveOverviewDashboardProps> = ({
 
     risks.forEach(risk => {
       const category = risk.category || 'Uncategorized';
-      const impact = risk.financialImpact || 0;
+      const impact = risk.financialImpact?.expectedMean ?? 0;
       categoryMap[category] = (categoryMap[category] || 0) + impact;
     });
 
@@ -112,10 +111,6 @@ const ExecutiveOverviewDashboard: React.FC<ExecutiveOverviewDashboardProps> = ({
           riskDate = new Date(risk.creationDate);
         } else if (risk.lastModified) {
           riskDate = new Date(risk.lastModified);
-        } else if (risk.createdAt) {
-          riskDate = new Date(risk.createdAt);
-        } else if (risk.updatedAt) {
-          riskDate = new Date(risk.updatedAt);
         }
 
         if (!riskDate || isNaN(riskDate.getTime())) {
@@ -133,10 +128,6 @@ const ExecutiveOverviewDashboard: React.FC<ExecutiveOverviewDashboardProps> = ({
           riskDate = new Date(risk.creationDate);
         } else if (risk.lastModified) {
           riskDate = new Date(risk.lastModified);
-        } else if (risk.createdAt) {
-          riskDate = new Date(risk.createdAt);
-        } else if (risk.updatedAt) {
-          riskDate = new Date(risk.updatedAt);
         }
 
         if (!riskDate || isNaN(riskDate.getTime())) {
@@ -163,7 +154,6 @@ const ExecutiveOverviewDashboard: React.FC<ExecutiveOverviewDashboardProps> = ({
   }, [risks, timeRange]);
 
   // Color palette for charts
-  const SEVERITY_COLORS = ['#ef4444', '#f59e0b', '#10b981'];
   const CATEGORY_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#14b8a6', '#f59e0b', '#6366f1', '#8b5cf6'];
 
   return (
@@ -221,7 +211,7 @@ const ExecutiveOverviewDashboard: React.FC<ExecutiveOverviewDashboardProps> = ({
             label="Avg Risk Score"
             value={executiveMetrics.avgRiskScore}
             description="Average probability x impact score"
-            accent="info"
+            accent="brand"
             className="h-full"
           />
         </motion.div>
@@ -275,7 +265,7 @@ const ExecutiveOverviewDashboard: React.FC<ExecutiveOverviewDashboardProps> = ({
                   cx="50%"
                   cy="50%"
                   labelLine={true}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
@@ -306,7 +296,7 @@ const ExecutiveOverviewDashboard: React.FC<ExecutiveOverviewDashboardProps> = ({
                 <Tooltip />
                 <Legend />
                 <Bar dataKey="value" name="Risk Count">
-                  {categoryDistribution.map((entry, index) => (
+                  {categoryDistribution.map((_entry, index) => (
                     <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />
                   ))}
                 </Bar>

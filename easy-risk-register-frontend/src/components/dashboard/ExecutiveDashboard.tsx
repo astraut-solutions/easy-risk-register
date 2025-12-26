@@ -34,7 +34,7 @@ const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ risks, snapshot
   const financialImpactByCategory = risks.reduce((acc: Array<{name: string, impact: number}>, risk) => {
     const category = risk.category || 'Uncategorized';
     const existing = acc.find(item => item.name === category);
-    const impact = risk.financialImpact || 0;
+    const impact = risk.financialImpact?.expectedMean ?? 0;
     if (existing) {
       existing.impact += impact;
     } else {

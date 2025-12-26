@@ -25,10 +25,6 @@ interface ComprehensiveDashboardProps {
 const ComprehensiveDashboard: React.FC<ComprehensiveDashboardProps> = ({
   risks,
   snapshots,
-  filters,
-  matrixFilterLabel,
-  historyEnabled = true,
-  defaultTrendMode = 'overall_exposure',
   onDrillDown = () => {}
 }) => {
   const [activeTab, setActiveTab] = useState('executive');

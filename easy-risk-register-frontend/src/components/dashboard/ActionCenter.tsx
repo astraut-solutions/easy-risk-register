@@ -1,8 +1,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../design-system/components/Card';
 import type { Risk } from '../../types/risk';
-import { Table, Tag, Button, Space, Badge, Progress } from 'antd';
-import { ArrowUpOutlined, ArrowDownOutlined, CaretRightOutlined, CheckCircleOutlined, ClockCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { Table, Tag, Button, Space, Progress } from 'antd';
+import { ArrowDownOutlined, CaretRightOutlined, CheckCircleOutlined, ClockCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 
 interface ActionCenterProps {
@@ -37,8 +37,8 @@ const ActionCenter: React.FC<ActionCenterProps> = ({ risks }) => {
           priority: 'high',
           status: 'pending',
           dueDate: risk.dueDate,
-          impact: risk.financialImpact || 0,
-          roi: risk.returnOnInvestment,
+          impact: risk.financialImpact?.expectedMean ?? 0,
+          roi: undefined,
           category: risk.category || 'Uncategorized',
           description: `Implement controls to reduce the likelihood or impact of ${risk.title}`
         });
@@ -53,8 +53,8 @@ const ActionCenter: React.FC<ActionCenterProps> = ({ risks }) => {
           priority: 'medium',
           status: 'pending',
           dueDate: risk.dueDate,
-          impact: risk.financialImpact || 0,
-          roi: risk.returnOnInvestment,
+          impact: risk.financialImpact?.expectedMean ?? 0,
+          roi: undefined,
           category: risk.category || 'Uncategorized',
           description: `Monitor and review ${risk.title} to prevent escalation`
         });
@@ -69,8 +69,8 @@ const ActionCenter: React.FC<ActionCenterProps> = ({ risks }) => {
           priority: risk.riskScore > 6 ? 'high' : risk.riskScore >= 4 ? 'medium' : 'low',
           status: 'pending',
           dueDate: risk.dueDate,
-          impact: risk.financialImpact || 0,
-          roi: risk.returnOnInvestment,
+          impact: risk.financialImpact?.expectedMean ?? 0,
+          roi: undefined,
           category: risk.category || 'Uncategorized',
           description: `Review controls and effectiveness for ${risk.title}`
         });
@@ -158,17 +158,13 @@ const ActionCenter: React.FC<ActionCenterProps> = ({ risks }) => {
       key: 'status',
       sorter: (a, b) => a.status.localeCompare(b.status),
       render: (status) => {
-        let color = 'default';
         let icon = null;
         
         if (status === 'completed') {
-          color = 'green';
           icon = <CheckCircleOutlined />;
         } else if (status === 'in-progress') {
-          color = 'blue';
           icon = <ClockCircleOutlined />;
         } else {
-          color = 'default';
           icon = <ExclamationCircleOutlined />;
         }
         
@@ -208,7 +204,7 @@ const ActionCenter: React.FC<ActionCenterProps> = ({ risks }) => {
     {
       title: 'Action',
       key: 'action',
-      render: (_, record) => (
+      render: () => (
         <Space size="middle">
           <Button type="link" size="small">View Risk</Button>
           <Button type="primary" size="small">Take Action</Button>

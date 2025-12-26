@@ -44,7 +44,7 @@ const FinancialImpactCharts: React.FC<FinancialImpactChartsProps> = ({ risks }) 
   const financialImpactByCategory = risks.reduce((acc: Array<{category: string, impact: number}>, risk) => {
     const category = risk.category || 'Uncategorized';
     const existing = acc.find(item => item.category === category);
-    const impact = risk.financialImpact || 0;
+    const impact = risk.financialImpact?.expectedMean ?? 0;
     
     if (existing) {
       existing.impact += impact;
@@ -66,7 +66,7 @@ const FinancialImpactCharts: React.FC<FinancialImpactChartsProps> = ({ risks }) 
     }
     
     const existing = acc.find(item => item.level === level);
-    const impact = risk.financialImpact || 0;
+    const impact = risk.financialImpact?.expectedMean ?? 0;
     
     if (existing) {
       existing.impact += impact;
@@ -78,18 +78,18 @@ const FinancialImpactCharts: React.FC<FinancialImpactChartsProps> = ({ risks }) 
 
   // Prepare data for trend analysis (simulated over time)
   const trendData = [
-    { month: 'Jan', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0) * 0.8 },
-    { month: 'Feb', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0) * 0.85 },
-    { month: 'Mar', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0) * 0.9 },
-    { month: 'Apr', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0) * 0.95 },
-    { month: 'May', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0) },
-    { month: 'Jun', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0) * 1.1 },
-    { month: 'Jul', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0) * 1.15 },
-    { month: 'Aug', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0) * 1.2 },
-    { month: 'Sep', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0) * 1.18 },
-    { month: 'Oct', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0) * 1.25 },
-    { month: 'Nov', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0) * 1.3 },
-    { month: 'Dec', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0) * 1.35 },
+    { month: 'Jan', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0) * 0.8 },
+    { month: 'Feb', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0) * 0.85 },
+    { month: 'Mar', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0) * 0.9 },
+    { month: 'Apr', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0) * 0.95 },
+    { month: 'May', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0) },
+    { month: 'Jun', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0) * 1.1 },
+    { month: 'Jul', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0) * 1.15 },
+    { month: 'Aug', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0) * 1.2 },
+    { month: 'Sep', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0) * 1.18 },
+    { month: 'Oct', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0) * 1.25 },
+    { month: 'Nov', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0) * 1.3 },
+    { month: 'Dec', impact: risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0) * 1.35 },
   ];
 
   // Chart data for financial impact by category
@@ -253,8 +253,8 @@ const FinancialImpactCharts: React.FC<FinancialImpactChartsProps> = ({ risks }) 
         <Card className="shadow-sm">
           <CardContent className="p-6">
             <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">
-                ${risks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0).toLocaleString()}
+                <div className="text-3xl font-bold text-blue-600">
+                ${risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0).toLocaleString()}
               </div>
               <div className="text-sm text-gray-600 mt-2">Total Financial Impact</div>
             </div>
@@ -266,7 +266,7 @@ const FinancialImpactCharts: React.FC<FinancialImpactChartsProps> = ({ risks }) 
             <div className="text-center">
               <div className="text-3xl font-bold text-green-600">
                 ${risks.length > 0 
-                  ? (risks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0) / risks.length).toLocaleString(undefined, { maximumFractionDigits: 0 }) 
+                  ? (risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0) / risks.length).toLocaleString(undefined, { maximumFractionDigits: 0 }) 
                   : '0'}
               </div>
               <div className="text-sm text-gray-600 mt-2">Average Financial Impact</div>
@@ -278,7 +278,7 @@ const FinancialImpactCharts: React.FC<FinancialImpactChartsProps> = ({ risks }) 
           <CardContent className="p-6">
             <div className="text-center">
               <div className="text-3xl font-bold text-purple-600">
-                {risks.filter(risk => risk.financialImpact && risk.financialImpact > 0).length}
+                {risks.filter(risk => (risk.financialImpact?.expectedMean ?? 0) > 0).length}
               </div>
               <div className="text-sm text-gray-600 mt-2">Risks with Financial Impact</div>
             </div>

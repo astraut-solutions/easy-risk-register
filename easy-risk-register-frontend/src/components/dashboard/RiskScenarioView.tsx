@@ -13,7 +13,7 @@ const RiskScenarioView: React.FC<RiskScenarioViewProps> = ({ risks }) => {
   const scenarioRef = useRef<SVGSVGElement>(null);
 
   // Function to create a risk scenario visualization using D3
-  const createScenarioVisualization = (containerRef: React.RefObject<SVGSVGElement>, scenarioType: string) => {
+  const createScenarioVisualization = (containerRef: React.RefObject<SVGSVGElement | null>, scenarioType: string) => {
     if (!containerRef.current) return;
 
     // Clear previous content
@@ -21,7 +21,6 @@ const RiskScenarioView: React.FC<RiskScenarioViewProps> = ({ risks }) => {
 
     const width = 600;
     const height = 400;
-    const margin = { top: 20, right: 30, bottom: 40, left: 40 };
 
     const svg = d3.select(containerRef.current)
       .attr("width", width)
@@ -49,18 +48,12 @@ const RiskScenarioView: React.FC<RiskScenarioViewProps> = ({ risks }) => {
       scenarioRisks = risks;
     }
 
-    // Create a simple force-directed graph
-    const simulation = d3.forceSimulation()
-      .force("link", d3.forceLink().id((d: any) => d.index).distance(100).strength(1))
-      .force("charge", d3.forceManyBody().strength(-300))
-      .force("center", d3.forceCenter(width / 2, height / 2));
-
     // Create nodes (risks)
     const nodes = scenarioRisks.map((risk, index) => ({
       id: risk.id,
       title: risk.title.substring(0, 20) + (risk.title.length > 20 ? '...' : ''),
       riskScore: risk.riskScore,
-      financialImpact: risk.financialImpact || 0,
+      financialImpact: risk.financialImpact?.expectedMean ?? 0,
       index: index
     }));
 
@@ -71,6 +64,17 @@ const RiskScenarioView: React.FC<RiskScenarioViewProps> = ({ risks }) => {
         links.push({ source: i, target: i + 1 });
       }
     }
+
+    const linkForce = d3.forceLink<any, any>(links)
+      .id((d: any) => d.index)
+      .distance(100)
+      .strength(1)
+
+    // Create a simple force-directed graph
+    const simulation = d3.forceSimulation<any>(nodes)
+      .force("link", linkForce)
+      .force("charge", d3.forceManyBody().strength(-300))
+      .force("center", d3.forceCenter(width / 2, height / 2));
 
     // Add links to the graph
     const link = svg.append("g")
@@ -107,7 +111,7 @@ const RiskScenarioView: React.FC<RiskScenarioViewProps> = ({ risks }) => {
       .attr("dy", 4);
 
     // Update positions based on simulation
-    simulation.nodes(nodes).on("tick", () => {
+    simulation.on("tick", () => {
       link
         .attr("x1", (d: any) => d.source.x)
         .attr("y1", (d: any) => d.source.y)
@@ -122,9 +126,6 @@ const RiskScenarioView: React.FC<RiskScenarioViewProps> = ({ risks }) => {
         .attr("x", (d: any) => d.x)
         .attr("y", (d: any) => d.y);
     });
-
-    // Add simulation forces
-    simulation.force("link")?.links(links);
   };
 
   useEffect(() => {
@@ -169,7 +170,7 @@ const RiskScenarioView: React.FC<RiskScenarioViewProps> = ({ risks }) => {
               </div>
               <div className="text-center p-3 bg-red-50 rounded-lg">
                 <div className="text-2xl font-bold text-red-600">
-                  ${ransomwareRisks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0).toLocaleString()}
+                  ${ransomwareRisks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0).toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600">Financial Impact</div>
               </div>
@@ -193,7 +194,7 @@ const RiskScenarioView: React.FC<RiskScenarioViewProps> = ({ risks }) => {
               </div>
               <div className="text-center p-3 bg-red-50 rounded-lg">
                 <div className="text-2xl font-bold text-red-600">
-                  ${dataBreachRisks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0).toLocaleString()}
+                  ${dataBreachRisks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0).toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600">Financial Impact</div>
               </div>
@@ -218,7 +219,7 @@ const RiskScenarioView: React.FC<RiskScenarioViewProps> = ({ risks }) => {
             </div>
             <div className="text-center p-3 bg-blue-50 rounded-lg">
               <div className="text-2xl font-bold text-blue-600">
-                ${risks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0).toLocaleString()}
+                ${risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0).toLocaleString()}
               </div>
               <div className="text-sm text-gray-600">Total Financial Impact</div>
             </div>

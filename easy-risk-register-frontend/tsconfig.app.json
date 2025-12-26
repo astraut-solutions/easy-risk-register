@@ -26,5 +26,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "files": ["src/vite-env.d.ts", "src/react.d.ts", "src/main.tsx"]
 }

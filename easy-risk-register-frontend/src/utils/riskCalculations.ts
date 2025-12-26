@@ -247,5 +247,5 @@ const processLargeDatasetSync = (dataset: Risk[]): any => {
  * Helper function for simple score calculation
  */
 const calculateSimpleScore = (risk: Risk): number => {
-  return (risk.probability || 0) * (risk.impact || 0) * (risk.exposure || 1);
-};
+  return calculateRiskScore(risk.probability || 0, risk.impact || 0)
+}

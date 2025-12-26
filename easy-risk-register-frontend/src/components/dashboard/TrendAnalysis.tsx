@@ -9,15 +9,17 @@ interface TrendAnalysisProps {
   snapshots: RiskScoreSnapshot[];
 }
 
-const TrendAnalysis: React.FC<TrendAnalysisProps> = ({ risks, snapshots }) => {
+const TrendAnalysis: React.FC<TrendAnalysisProps> = ({ risks }) => {
   const trendChartRef = useRef<HTMLDivElement>(null);
   const riskScoreChartRef = useRef<HTMLDivElement>(null);
   const financialImpactChartRef = useRef<HTMLDivElement>(null);
   const categoryTrendChartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (trendChartRef.current) {
-      const chart = echarts.init(trendChartRef.current);
+    const root = trendChartRef.current
+    if (!root) return
+
+    const chart = echarts.init(root);
 
       // Prepare trend data
       const now = new Date();
@@ -36,10 +38,6 @@ const TrendAnalysis: React.FC<TrendAnalysisProps> = ({ risks, snapshots }) => {
             riskDate = new Date(risk.creationDate);
           } else if (risk.lastModified) {
             riskDate = new Date(risk.lastModified);
-          } else if (risk.createdAt) {
-            riskDate = new Date(risk.createdAt);
-          } else if (risk.updatedAt) {
-            riskDate = new Date(risk.updatedAt);
           }
 
           // Check if the date is valid
@@ -96,12 +94,13 @@ const TrendAnalysis: React.FC<TrendAnalysisProps> = ({ risks, snapshots }) => {
         chart.dispose();
         window.removeEventListener('resize', handleResize);
       };
-    }
   }, [risks]);
 
   useEffect(() => {
-    if (riskScoreChartRef.current) {
-      const chart = echarts.init(riskScoreChartRef.current);
+    const root = riskScoreChartRef.current
+    if (!root) return
+
+    const chart = echarts.init(root);
 
       // Prepare risk score trend data
       const now = new Date();
@@ -120,10 +119,6 @@ const TrendAnalysis: React.FC<TrendAnalysisProps> = ({ risks, snapshots }) => {
             riskDate = new Date(risk.creationDate);
           } else if (risk.lastModified) {
             riskDate = new Date(risk.lastModified);
-          } else if (risk.createdAt) {
-            riskDate = new Date(risk.createdAt);
-          } else if (risk.updatedAt) {
-            riskDate = new Date(risk.updatedAt);
           }
 
           // Check if the date is valid
@@ -186,12 +181,13 @@ const TrendAnalysis: React.FC<TrendAnalysisProps> = ({ risks, snapshots }) => {
         chart.dispose();
         window.removeEventListener('resize', handleResize);
       };
-    }
   }, [risks]);
 
   useEffect(() => {
-    if (financialImpactChartRef.current) {
-      const chart = echarts.init(financialImpactChartRef.current);
+    const root = financialImpactChartRef.current
+    if (!root) return
+
+    const chart = echarts.init(root);
 
       // Prepare financial impact trend data
       const now = new Date();
@@ -211,10 +207,6 @@ const TrendAnalysis: React.FC<TrendAnalysisProps> = ({ risks, snapshots }) => {
               riskDate = new Date(risk.creationDate);
             } else if (risk.lastModified) {
               riskDate = new Date(risk.lastModified);
-            } else if (risk.createdAt) {
-              riskDate = new Date(risk.createdAt);
-            } else if (risk.updatedAt) {
-              riskDate = new Date(risk.updatedAt);
             }
 
             // Check if the date is valid
@@ -224,7 +216,7 @@ const TrendAnalysis: React.FC<TrendAnalysisProps> = ({ risks, snapshots }) => {
 
             return riskDate.toISOString().split('T')[0] === dateStr;
           })
-          .reduce((sum, risk) => sum + (risk.financialImpact || 0), 0);
+          .reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0);
 
         trendData.push({
           date: date.getDate() + '/' + (date.getMonth() + 1),
@@ -279,12 +271,13 @@ const TrendAnalysis: React.FC<TrendAnalysisProps> = ({ risks, snapshots }) => {
         chart.dispose();
         window.removeEventListener('resize', handleResize);
       };
-    }
   }, [risks]);
 
   useEffect(() => {
-    if (categoryTrendChartRef.current) {
-      const chart = echarts.init(categoryTrendChartRef.current);
+    const root = categoryTrendChartRef.current
+    if (!root) return
+
+    const chart = echarts.init(root);
 
       // Prepare category trend data
       const categories = Array.from(new Set(risks.map(risk => risk.category || 'Uncategorized')));
@@ -304,10 +297,6 @@ const TrendAnalysis: React.FC<TrendAnalysisProps> = ({ risks, snapshots }) => {
               riskDate = new Date(risk.creationDate);
             } else if (risk.lastModified) {
               riskDate = new Date(risk.lastModified);
-            } else if (risk.createdAt) {
-              riskDate = new Date(risk.createdAt);
-            } else if (risk.updatedAt) {
-              riskDate = new Date(risk.updatedAt);
             }
 
             // Check if the date is valid
@@ -370,7 +359,6 @@ const TrendAnalysis: React.FC<TrendAnalysisProps> = ({ risks, snapshots }) => {
         chart.dispose();
         window.removeEventListener('resize', handleResize);
       };
-    }
   }, [risks]);
 
   // Calculate summary statistics
@@ -378,7 +366,7 @@ const TrendAnalysis: React.FC<TrendAnalysisProps> = ({ risks, snapshots }) => {
   const avgRiskScore = risks.length > 0 
     ? (risks.reduce((sum, risk) => sum + risk.riskScore, 0) / risks.length).toFixed(2) 
     : '0.00';
-  const totalFinancialImpact = risks.reduce((sum, risk) => sum + (risk.financialImpact || 0), 0);
+  const totalFinancialImpact = risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0);
   const highRiskCount = risks.filter(risk => risk.riskScore > 6).length;
 
   return (
