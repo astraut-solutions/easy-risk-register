@@ -84,3 +84,4 @@ tmp/
 #  Reports
 # ────────────────────────────────
 docs/report/*.pdf
+.vercel

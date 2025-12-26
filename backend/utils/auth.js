@@ -2,7 +2,16 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET must be set in production');
+  }
+  console.warn('JWT_SECRET is not set; using an insecure development fallback');
+}
+
+const EFFECTIVE_JWT_SECRET = JWT_SECRET || 'dev-insecure-jwt-secret';
 
 // In-memory user storage (in production, use a proper database)
 const users = [
@@ -28,7 +37,7 @@ export function authenticateToken(req, res, next) {
     return res.status(401).json({ error: 'Access token required' });
   }
 
-  jwt.verify(token, JWT_SECRET, (err, user) => {
+  jwt.verify(token, EFFECTIVE_JWT_SECRET, (err, user) => {
     if (err) {
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
@@ -55,7 +64,7 @@ export function requireRole(requiredRole) {
 export function generateToken(user) {
   return jwt.sign(
     { userId: user.id, username: user.username, role: user.role },
-    JWT_SECRET,
+    EFFECTIVE_JWT_SECRET,
     { expiresIn: '24h' }
   );
 }

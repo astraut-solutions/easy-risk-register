@@ -151,6 +151,7 @@ All backend services are integrated into the frontend through dedicated service 
 - HTTPS enforcement  
 - Environment variable management  
 - Database access controls  
+ - Do not ship secrets to the browser (no API keys/tokens in `VITE_*`; use serverless APIs for credentialed calls)  
   
 ## Deployment Architecture  
   

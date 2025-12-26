@@ -115,6 +115,10 @@ The application follows a client-side-only architecture with no server dependenc
 - Zustand for state management
 - Framer Motion for animations
 
+Optional integrations (time-series, threat intel, etc.) are designed to keep secrets off the client:
+- Never put API keys/tokens in `VITE_*` variables (anything prefixed with `VITE_` is bundled into the browser build).
+- Use serverless APIs (Vercel functions under `api/`) for any calls that require credentials.
+
 Diagrams and a deeper breakdown are in [Architecture Documentation](docs/architecture/architecture-diagrams.md).
 
 ## Getting Started

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   BarChart,
@@ -18,6 +18,7 @@ import {
 import { StatCard, Badge, Card } from '../../design-system';
 import type { Risk } from '../../types/risk';
 import type { RiskScoreSnapshot } from '../../types/visualization';
+import { timeSeriesService } from '../../services/timeSeriesService';
 
 interface ExecutiveOverviewDashboardProps {
   risks: Risk[];
@@ -30,6 +31,7 @@ const ExecutiveOverviewDashboard: React.FC<ExecutiveOverviewDashboardProps> = ({
   onDrillDown
 }) => {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
+  const [serverAvgScoreByDate, setServerAvgScoreByDate] = useState<Record<string, number> | null>(null);
 
   // Calculate key executive metrics
   const executiveMetrics = useMemo(() => {
@@ -146,12 +148,68 @@ const ExecutiveOverviewDashboard: React.FC<ExecutiveOverviewDashboardProps> = ({
           ? date.toLocaleDateString(undefined, { weekday: 'short' })
           : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
         newRisks: risksOnDate,
-        avgRiskScore: parseFloat(avgScore.toFixed(2))
+        avgRiskScore: parseFloat(avgScore.toFixed(2)),
+        _isoDate: dateStr,
       });
     }
 
     return trendData;
   }, [risks, timeRange]);
+
+  const mergedTrendData = useMemo(() => {
+    if (!serverAvgScoreByDate) return getTrendData;
+    return getTrendData.map((point: any) => ({
+      ...point,
+      avgRiskScore:
+        typeof serverAvgScoreByDate[point._isoDate] === 'number'
+          ? serverAvgScoreByDate[point._isoDate]
+          : point.avgRiskScore,
+    }));
+  }, [getTrendData, serverAvgScoreByDate]);
+
+  useEffect(() => {
+    const enabled = import.meta.env.VITE_ENABLE_TIMESERIES === 'true';
+    if (!enabled) {
+      setServerAvgScoreByDate(null);
+      return;
+    }
+
+    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
+    const now = new Date();
+    const start = new Date(now);
+    start.setDate(start.getDate() - (days - 1));
+    start.setHours(0, 0, 0, 0);
+
+    let cancelled = false;
+
+    (async () => {
+      const points = await timeSeriesService.query({ startDate: start, endDate: now, limit: 5000 });
+      if (cancelled) return;
+
+      const sums: Record<string, { total: number; count: number }> = {};
+      for (const p of points) {
+        const d = new Date(p.timestamp);
+        if (Number.isNaN(d.getTime())) continue;
+        const iso = d.toISOString().split('T')[0];
+        if (!sums[iso]) sums[iso] = { total: 0, count: 0 };
+        sums[iso].total += p.riskScore;
+        sums[iso].count += 1;
+      }
+
+      const avgs: Record<string, number> = {};
+      for (const [iso, agg] of Object.entries(sums)) {
+        avgs[iso] = parseFloat((agg.total / agg.count).toFixed(2));
+      }
+
+      setServerAvgScoreByDate(Object.keys(avgs).length ? avgs : null);
+    })().catch(() => {
+      if (!cancelled) setServerAvgScoreByDate(null);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [timeRange]);
 
   // Color palette for charts
   const CATEGORY_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#14b8a6', '#f59e0b', '#6366f1', '#8b5cf6'];
@@ -368,7 +426,7 @@ const ExecutiveOverviewDashboard: React.FC<ExecutiveOverviewDashboardProps> = ({
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={getTrendData}
+                data={mergedTrendData}
                 margin={{ top: 5, right: 30, left: 20, bottom: 50 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />

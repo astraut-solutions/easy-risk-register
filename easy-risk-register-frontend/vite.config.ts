@@ -39,6 +39,8 @@ function cspHeader({ mode }: { mode: string }) {
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
   server: {
+    port: Number(process.env.PORT) || 5173,
+    strictPort: true,
     headers: {
       'Content-Security-Policy': cspHeader({ mode }),
     },

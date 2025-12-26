@@ -4,6 +4,7 @@ import type { Risk, RiskFilters, RiskInput } from '../types/risk'
 import { useRiskStore } from '../stores/riskStore'
 import type { CSVExportVariant } from '../stores/riskStore'
 import type { AppSettings, ReminderSettings } from '../stores/riskStore'
+import { timeSeriesService } from './timeSeriesService'
 
 /**
  * Cache Utility for frequently accessed data
@@ -167,7 +168,9 @@ export const riskService = {
     cacheUtil.delete('filteredRisks');
     cacheUtil.delete('allRisks');
     cacheUtil.delete('risk_stats');
-    return useRiskStore.getState().addRisk(input);
+    const risk = useRiskStore.getState().addRisk(input);
+    void timeSeriesService.writeSnapshot(risk).catch(() => {})
+    return risk
   },
 
   /** Updates an existing risk with the provided partial updates */
@@ -180,7 +183,13 @@ export const riskService = {
     cacheUtil.delete('filteredRisks');
     cacheUtil.delete('allRisks');
     cacheUtil.delete('risk_stats');
-    return useRiskStore.getState().updateRisk(id, updates);
+    const risk = useRiskStore.getState().updateRisk(id, updates);
+    const maybeScoreChanged = Object.prototype.hasOwnProperty.call(updates, 'probability')
+      || Object.prototype.hasOwnProperty.call(updates, 'impact')
+    if (risk && maybeScoreChanged) {
+      void timeSeriesService.writeSnapshot(risk).catch(() => {})
+    }
+    return risk
   },
 
   /** Removes a risk from the store by its ID */
@@ -267,8 +276,6 @@ export const useRiskManagement = () => {
   const createMaturityAssessment = useRiskStore((state) => state.createMaturityAssessment)
   const updateMaturityDomain = useRiskStore((state) => state.updateMaturityDomain)
   const deleteMaturityAssessment = useRiskStore((state) => state.deleteMaturityAssessment)
-  const addRisk = useRiskStore((state) => state.addRisk)
-  const updateRisk = useRiskStore((state) => state.updateRisk)
   const deleteRisk = useRiskStore((state) => state.deleteRisk)
   const attachChecklistTemplate = useRiskStore((state) => state.attachChecklistTemplate)
   const toggleChecklistItem = useRiskStore((state) => state.toggleChecklistItem)
@@ -282,8 +289,8 @@ export const useRiskManagement = () => {
 
   const actions = useMemo(
     () => ({
-      addRisk,
-      updateRisk,
+      addRisk: riskService.create,
+      updateRisk: riskService.update,
       deleteRisk,
       attachChecklistTemplate,
       toggleChecklistItem,
@@ -299,7 +306,6 @@ export const useRiskManagement = () => {
       deleteMaturityAssessment,
     }),
     [
-      addRisk,
       attachChecklistTemplate,
       addCategory,
       deleteRisk,
@@ -308,7 +314,6 @@ export const useRiskManagement = () => {
       seedDemoData,
       setFilters,
       toggleChecklistItem,
-      updateRisk,
       updateReminderSettings,
       updateSettings,
       createMaturityAssessment,
