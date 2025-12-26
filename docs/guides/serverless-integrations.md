@@ -11,6 +11,18 @@ In Vite, any environment variable prefixed with `VITE_` is bundled into the fron
 - Frontend calls `/api/...` (same-origin on Vercel) or `VITE_API_BASE_URL + /api/...` (when pointing at a separate API host).
 - Serverless functions live in `api/` and read **server-only** environment variables (no `VITE_` prefix).
 
+## Feature flags (frontend)
+
+Integrations are feature-flagged and **off by default**. See `easy-risk-register-frontend/.env.example` for the current list, including:
+
+- `VITE_ENABLE_TIMESERIES`
+- `VITE_ENABLE_GRAPH_DB`
+- `VITE_ENABLE_REALTIME`
+- `VITE_ENABLE_SIEM`
+- `VITE_ENABLE_VULN_SCANNER`
+
+When an integration is enabled, the app must show clear "data leaves device" messaging and still behave safely when the integration backend is unavailable.
+
 ## Auth-protected APIs (serverless)
 
 Some serverless routes require a JWT Bearer token:
@@ -43,10 +55,33 @@ Server-side environment variables:
 Create a `risk_trends` table (recommended types):
 - `risk_id` (text), `probability` (int), `impact` (int), `risk_score` (int), `timestamp` (bigint), `category` (text), `status` (text)
 
+### Docker Compose (dev only)
+
+This repo includes a minimal Supabase-compatible local stack (Postgres + PostgREST + a small gateway) under the `development` Docker Compose profile.
+
+Start it:
+
+- From the repo root: `docker-compose --profile development up -d supabase-db supabase-rest supabase-gateway`
+
+Set server-side env vars for your local serverless runtime (`vercel dev`):
+
+- `SUPABASE_URL=http://127.0.0.1:54321`
+- `SUPABASE_SERVICE_ROLE_KEY=<dev key>`
+
+Dev-only key (already wired into the compose stack):
+
+- JWT secret: `dev-supabase-jwt-secret`
+- Service role key: `REDACTED_GITLEAKS`
+
+Notes:
+
+- Dev only; do not reuse these keys in production.
+- The gateway exposes PostgREST at `/rest/v1` so `@supabase/supabase-js` works with `SUPABASE_URL=http://127.0.0.1:54321`.
+
 Server-side environment variables:
 
 - `SUPABASE_URL` (local CLI default: `http://127.0.0.1:54321`)
-- `SUPABASE_SERVICE_ROLE_KEY` (local CLI prints this as “Secret”; keep it server-side only)
+- `SUPABASE_SERVICE_ROLE_KEY` (local CLI prints this as "Secret"; keep it server-side only)
 
 ## Local development options
 

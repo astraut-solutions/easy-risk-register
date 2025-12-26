@@ -32,6 +32,7 @@ import {
 import { computeReminderSummary, getFrequencyMs } from './utils/reminders'
 import { getEncryptionStatus } from './utils/encryptionManager'
 import { EncryptionSettingsPanel } from './components/privacy/EncryptionSettingsPanel'
+import { IntegrationSettingsPanel } from './components/integrations/IntegrationSettingsPanel'
 import { EncryptionUnlockGate } from './components/privacy/EncryptionUnlockGate'
 
 type MatrixSelection = {
@@ -1083,6 +1084,8 @@ function App() {
                     </div>
                   </div>
                 </div>
+
+                <IntegrationSettingsPanel />
 
                 <EncryptionSettingsPanel />
               </div>

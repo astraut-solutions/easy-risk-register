@@ -18,7 +18,11 @@ class RealtimeService {
   private eventHandlers: Map<string, Array<(data: any) => void>> = new Map();
 
   constructor() {
-    this.initializeSocket();
+    // Integration feature flag: off by default.
+    // Avoid connecting (or even initializing) unless explicitly enabled.
+    if (import.meta.env.VITE_ENABLE_REALTIME === 'true') {
+      this.initializeSocket();
+    }
   }
 
   private initializeSocket() {
@@ -67,6 +71,7 @@ class RealtimeService {
   }
 
   public connect(): void {
+    if (import.meta.env.VITE_ENABLE_REALTIME !== 'true') return;
     if (this.socket && !this.isConnected) {
       this.socket.connect();
     }
