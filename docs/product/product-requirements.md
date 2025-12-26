@@ -8,13 +8,13 @@ The Easy Risk Register is a lightweight, privacy-first web application for Austr
 Australian SMEs often lack structured, cyber-specific risk management processes, which leaves them vulnerable to common threats (phishing, ransomware, business email compromise) and creates stress when preparing for audits, board reporting, or privacy incident response. Traditional risk tools are too generic, too complex, or too costly; lightweight tools often fail to provide practical guidance, templates, and compliance-aligned reporting.
 
 ### 1.2 Solution Overview
-Easy Risk Register provides a minimalist, fully client-side web application that runs entirely in the browser with no accounts and no backend. It uses local storage for privacy and supports optional local encryption to reduce device-loss risk. The app differentiates through cyber risk templates (based on common Australian SME scenarios), compliance checklists, visual dashboards (heat maps, distribution, trends), and export-ready reporting that helps teams take action, not just record risks.
+Easy Risk Register provides a minimalist, privacy-first web application that runs in the browser with no mandatory accounts. The core experience is client-side and offline-first (local storage + optional local encryption), with **optional backend/integrations** to support advanced features such as real-time collaboration, external threat intelligence, and time-series/history storage. The app differentiates through cyber risk templates (based on common Australian SME scenarios), compliance checklists, visual dashboards (heat maps, distribution, trends), and export-ready reporting that helps teams take action, not just record risks.
 
 ### 1.3 Target Market
 The primary audience includes Australian SME owners, office managers, IT generalists, and compliance leads (typically 5–200 employees), especially in industries handling customer data (professional services, healthcare, retail, manufacturing). Users have basic technology skills and need fast, guided workflows rather than formal GRC training.
 
 ### 1.4 Key Value Propositions
-- Instant setup with no installations, accounts, or backend requirements
+- Instant setup with no mandatory accounts; works without backend configuration
 - Privacy-first approach with local data storage
 - Cyber-security-first templates and guidance for common threats
 - Australia-focused privacy incident and reporting support (assistive, not a substitute for legal advice)
@@ -71,11 +71,11 @@ The primary audience includes Australian SME owners, office managers, IT general
   - Charts respect active filters (e.g., category, threat type, status) and clearly display when filters are applied
   - Selecting a chart segment (bar/legend/point) drills down to the underlying risks (filter is applied consistently with the matrix)
   - Charts have accessible equivalents (table view and/or screen-reader summaries) and do not rely solely on color
-  - Charts work offline and do not transmit data externally
+  - Charts work offline by default; optional integrations may sync or enrich chart data when explicitly enabled
   - Users can export charts as PNG images and include them in PDF reports
 - **Priority**: P1 (high perceived value; improves decision-making and reporting)
 - **Dependencies**: Risk list filtering, score history (2.1.5), export (2.4.7)
-- **Technical Constraints**: Fully client-side; use a lightweight chart library (e.g., Chart.js) and avoid heavy analytics dependencies
+- **Technical Constraints**: Client-side-first; use a lightweight chart library (e.g., Chart.js) and avoid heavy analytics dependencies; integrations must remain optional
 - **UX Considerations**: Progressive disclosure (default to 2-3 charts); avoid clutter; clear legends and plain-language labels
 
 #### 2.1.5 Risk Trend Tracking (Score History)
@@ -118,6 +118,7 @@ The primary audience includes Australian SME owners, office managers, IT general
   - All risk data is stored in browser local storage
   - Data persists across browser sessions
   - Users can view and manage their stored data
+  - If integrations are enabled, users can still operate locally and choose what data (if any) is synced
   - Clear warnings are provided about local storage limitations
 
 ### 2.4 Cyber Security & Australia Compliance Features
@@ -130,7 +131,7 @@ The primary audience includes Australian SME owners, office managers, IT general
   - Edge case: If I edit a template-derived risk, it becomes an independent record (template stays unchanged).
 - **Priority**: P0 (high impact, low effort; accelerates onboarding and differentiation)
 - **Dependencies**: Category model, risk form
-- **Technical Constraints**: Must be fully client-side; templates stored as bundled JSON and/or user-customizable in local storage
+- **Technical Constraints**: Templates must be available offline (bundled JSON and/or user-customizable local templates). Optional integrations may provide additional template packs, but the core set remains local.
 - **UX Considerations**: Template picker with preview; keep edits simple; include brief plain-language definitions
 
 #### 2.4.2 Compliance Checklists (NDB / Privacy Act assist)
@@ -266,11 +267,12 @@ The primary audience includes Australian SME owners, office managers, IT general
 - **NFR-024**: Visualizations shall include non-visual equivalents (summaries and/or tables) and shall not rely on color alone to convey meaning
 
 ### 4.3 Security Requirements
-- **NFR-009**: All data shall remain local to the user's device and not be transmitted to any server
+- **NFR-009**: By default, all data shall remain local to the user's device and not be transmitted to any server; if integrations are enabled, any transmission must be explicit, configurable, and limited to user-selected endpoints/features
 - **NFR-010**: The application shall implement appropriate security measures to prevent XSS and other web vulnerabilities
 - **NFR-012**: The application shall provide secure methods for data backup and transfer
 - **NFR-021**: If local encryption is enabled, cryptographic operations shall use browser-provided crypto APIs and vetted primitives (no custom crypto)
 - **NFR-022**: The application shall not require network access for core functionality (offline-first for templates and checklists)
+- **NFR-025**: Integrations (APIs, feeds, databases, real-time sync) shall be opt-in, clearly indicated in the UI, and safely disable-able without breaking core usage
 
 ### 4.4 Compatibility Requirements
 - **NFR-013**: The application shall be compatible with modern browsers (Chrome, Firefox, Safari, Edge)
@@ -286,7 +288,7 @@ The primary audience includes Australian SME owners, office managers, IT general
 ## 5. Technical Architecture
 
 ### 5.1 System Architecture
-The Easy Risk Register follows a client-side-only architecture with no server dependencies. The entire application runs in the user's browser and utilizes local storage for data persistence. This architecture provides privacy-focused operation while maintaining accessibility across platforms.
+The Easy Risk Register follows a **client-side-first** architecture where the core risk register runs in the user's browser and utilizes local storage for data persistence (with optional local encryption). For advanced deployments, the product also supports **optional backend/integrations** (for example, Vercel serverless functions and externally hosted open source services such as time-series and graph databases). Core functionality remains usable without any server configuration.
 
 ### 5.2 Technology Stack
 - **Frontend Framework**: React with Vite
@@ -294,7 +296,9 @@ The Easy Risk Register follows a client-side-only architecture with no server de
 - **Styling**: Tailwind CSS
 - **State Management**: Zustand
 - **Forms**: React Hook Form
-- **Data Storage**: Browser local storage (with encryption for stored data)
+- **Data Storage (Core)**: Browser local storage (with encryption for stored data)
+- **Backend (Optional)**: Vercel serverless functions (Node.js) for integrations/sync
+- **External Services (Optional)**: Open source databases/services (e.g., time-series, graph) hosted by the user/org and connected via configured endpoints
 - **Visualization**: Interactive 5x5 matrix UI + lightweight charting library (e.g., Chart.js) for dashboard/trend/radar charts
 - **Import/Export**: CSV import/export with validation
 
@@ -303,10 +307,16 @@ The Easy Risk Register follows a client-side-only architecture with no server de
 - Data structure includes risk ID, description, probability, impact, mitigation plan, creation date, and metadata
 - Data validation occurs before storing to ensure data integrity
 
+Optional integration data flows (when enabled) may include:
+- Syncing selected risk records or snapshots to a configured backend endpoint
+- Pulling threat intelligence feeds or vulnerability metadata from configured sources
+- Storing time-series snapshots in an external database for long-term trend analysis
+
 ### 5.4 Security Architecture
-- All data remains client-side with no data transmission to external servers
+- By default, data remains client-side with no transmission to external servers
+- When integrations are enabled, the app must clearly indicate that data may leave the device and provide controls to disable integrations
 - Input sanitization prevents XSS attacks
-- Session management is handled through browser storage mechanisms
+- Session/auth management (if enabled for backend access) is handled using secure, modern mechanisms (e.g., token-based auth) with least-privilege scopes and safe storage guidance
 
 ## 6. User Interface Design Specifications
 
@@ -351,10 +361,11 @@ The Easy Risk Register follows a client-side-only architecture with no server de
 - Warning system alerts users about local storage limitations
 
 ### 7.4 Data Security
-- Data never leaves the user's device
+- By default, data never leaves the user's device
+- If integrations are enabled, only the minimum necessary data is transmitted for the enabled feature(s), and the UI provides clear controls to disable syncing/integrations
 - Input sanitization prevents injection attacks
 - Sensitive information is not stored in plain text
-- Access control is not necessary since data is local
+- Access control is not necessary for local-only mode; if backend features are enabled, appropriate access controls apply to server-side resources
 
 ## 8. Export Features
 
@@ -445,7 +456,7 @@ The Easy Risk Register follows a client-side-only architecture with no server de
 Add visual charts to Easy Risk Register to make cyber risk data more intuitive and actionable for Australian SMEs, starting with an enhanced risk heat map and expanding into a simple dashboard (distribution + trends) and an optional maturity radar for compliance reporting.
 
 ### Assumptions
-- The app remains fully client-side (offline-first) and stores all data in local storage (with optional encryption).
+- The app remains client-side-first (offline-first) and stores all data in local storage (with optional encryption), with optional backend/integrations available for advanced use cases.
 - Charts are for decision support and reporting; they are not meant to be "advanced analytics" or a SOC dashboard.
 - Users have basic tech skills and limited time; the UI must avoid clutter and use progressive disclosure.
 
