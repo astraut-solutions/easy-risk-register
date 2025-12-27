@@ -83,16 +83,19 @@ For a quick start with the frontend application:
 - `docs/` - Documentation organized by category
 - `scripts/` - Helper scripts for common operations
 - `docker-compose.yml` - Docker configuration with services for both development and production
-- `.env` - Environment variables for local development
+- `.env.example` - Template for root environment variables (copy to `.env`)
+- `.env` - Root environment variables (git-ignored; used by Docker Compose variable substitution)
 
 ## Environment Configuration
 
 The application includes environment configuration files:
 
+- `.env.example` - Template for root env vars used by `docker-compose.yml` (copy to `.env`)
+- `.env` - Root env vars (git-ignored; only needed for running local Supabase-compatible services via Docker Compose)
 - `easy-risk-register-frontend/.env.example` - Template with available environment variables
 - `easy-risk-register-frontend/.env` - Your local environment configuration (git-ignored)
 
-The setup process automatically creates a `.env` file from the example if one doesn't exist.
+The setup process automatically creates `easy-risk-register-frontend/.env` from its example if one doesn't exist.
 
 ## Available Scripts
 

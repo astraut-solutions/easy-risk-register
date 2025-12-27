@@ -109,8 +109,8 @@ services:
       - supabase-db
       - supabase-rest
     environment:
-      - ANON_KEY=REDACTED_GITLEAKS
-      - SERVICE_KEY=REDACTED_GITLEAKS
+      - ANON_KEY=${SUPABASE_ANON_KEY:-__MISSING_SUPABASE_ANON_KEY__}
+      - SERVICE_KEY=${SUPABASE_SERVICE_KEY:-__MISSING_SUPABASE_SERVICE_KEY__}
       - POSTGREST_URL=http://supabase-rest:3000
       - PGRST_JWT_SECRET=dev-supabase-jwt-secret
       - DATABASE_URL=postgres://postgres:postgres@supabase-db:5432/postgres
@@ -193,8 +193,8 @@ services:
       - POSTGRES_PASSWORD=postgres
       - JWT_SECRET=dev-supabase-jwt-secret
       - SUPABASE_URL=http://supabase-gateway
-      - SUPABASE_ANON_KEY=REDACTED_GITLEAKS
-      - SUPABASE_SERVICE_KEY=REDACTED_GITLEAKS
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-__MISSING_SUPABASE_ANON_KEY__}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY:-__MISSING_SUPABASE_SERVICE_KEY__}
       - DEFAULT_ORGANIZATION_NAME=Easy Risk Register
       - DEFAULT_PROJECT_NAME=Local Dev
     profiles:

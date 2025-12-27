@@ -72,10 +72,10 @@ Set server-side env vars for your local serverless runtime (`vercel dev`):
 - `SUPABASE_ANON_KEY=<dev key>`
 - `SUPABASE_JWT_SECRET=<dev jwt secret>` (optional but recommended for local verification)
 
-Dev-only key (already wired into the compose stack):
+Dev-only defaults used by the minimal compose stack:
 
 - JWT secret: `dev-supabase-jwt-secret`
-- Service role key: `REDACTED_GITLEAKS`
+- Service role key: `<set SUPABASE_SERVICE_KEY in your root .env>`
 
 Notes:
 

@@ -159,6 +159,12 @@ docker compose --profile development up --build frontend-dev
 
 > If your system uses the legacy `docker-compose` binary, replace `docker compose` with `docker-compose`.
 
+If you run the full dev profile (including the local Supabase-compatible services), create a root `.env` file first:
+```bash
+cp .env.example .env
+```
+Then set `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_KEY` in `.env` (do not commit `.env`).
+
 Then open [http://localhost:5173](http://localhost:5173).
 
 To stop/remove containers:
