@@ -1,5 +1,6 @@
-const { handleOptions, setCors } = require('../_lib/http')
+const { ensureRequestId, handleOptions, setCors } = require('../_lib/http')
 const { requireApiContext } = require('../_lib/context')
+const { logApiError, logApiRequest, logApiResponse, logApiWarn } = require('../_lib/logger')
 
 async function readJsonBody(req) {
   if (req.body && typeof req.body === 'object') return req.body
@@ -15,12 +16,16 @@ async function readJsonBody(req) {
 
 module.exports = async function handler(req, res) {
   setCors(req, res)
+  const requestId = ensureRequestId(req, res)
   if (handleOptions(req, res)) return
 
   if (req.method !== 'POST') {
     res.setHeader('allow', 'POST,OPTIONS')
     return res.status(405).json({ error: 'Method Not Allowed' })
   }
+
+  const start = Date.now()
+  logApiRequest({ requestId, method: req.method, path: req.url, origin: req.headers?.origin })
 
   try {
     const ctx = await requireApiContext(req, res)
@@ -59,11 +64,21 @@ module.exports = async function handler(req, res) {
 
     const { error } = await supabase.from('risk_trends').insert(row)
     if (error) {
+      logApiWarn('supabase_insert_failed', { requestId, workspaceId, message: error.message })
       return res.status(502).json({ error: `Supabase insert failed: ${error.message}` })
     }
 
     return res.status(204).end()
   } catch (error) {
+    logApiError({ requestId, method: req.method, path: req.url, error })
     return res.status(500).json({ error: 'Failed to write time-series data' })
+  } finally {
+    logApiResponse({
+      requestId,
+      method: req.method,
+      path: req.url,
+      status: res.statusCode,
+      durationMs: Date.now() - start,
+    })
   }
 }

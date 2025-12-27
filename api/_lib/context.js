@@ -1,5 +1,6 @@
 const { requireSupabaseAuth } = require('./auth')
 const { resolveWorkspaceId } = require('./workspace')
+const { logSecurityEvent } = require('./logger')
 
 async function requireApiContext(req, res, { requireWorkspace = true } = {}) {
   const auth = await requireSupabaseAuth(req, res)
@@ -26,6 +27,13 @@ async function requireApiContext(req, res, { requireWorkspace = true } = {}) {
   })
 
   if (error) {
+    logSecurityEvent('workspace_resolution_failed', {
+      requestId: req.requestId,
+      path: req.url,
+      status: error.status,
+      message: error.message,
+      requestedWorkspaceId: rawWorkspaceId || undefined,
+    })
     res.status(error.status).json({ error: error.message })
     return null
   }

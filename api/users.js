@@ -1,40 +1,63 @@
-const { handleOptions, setCors } = require('./_lib/http')
+const { ensureRequestId, handleOptions, setCors } = require('./_lib/http')
 const { requireApiContext } = require('./_lib/context')
+const { logApiError, logApiRequest, logApiResponse, logApiWarn } = require('./_lib/logger')
 
 module.exports = async function handler(req, res) {
   setCors(req, res)
+  const requestId = ensureRequestId(req, res)
   if (handleOptions(req, res)) return
 
-  const ctx = await requireApiContext(req, res)
-  if (!ctx) return
+  const start = Date.now()
+  logApiRequest({ requestId, method: req.method, path: req.url, origin: req.headers?.origin })
 
-  switch (req.method) {
-    case 'GET': {
-      let workspaceName = null
-      try {
-        const { data } = await ctx.supabase
-          .from('workspaces')
-          .select('name')
-          .eq('id', ctx.workspaceId)
-          .maybeSingle()
-        if (data?.name) workspaceName = data.name
-      } catch {
-        // ignore
+  try {
+    const ctx = await requireApiContext(req, res)
+    if (!ctx) return
+
+    switch (req.method) {
+      case 'GET': {
+        let workspaceName = null
+        try {
+          const { data } = await ctx.supabase
+            .from('workspaces')
+            .select('name')
+            .eq('id', ctx.workspaceId)
+            .maybeSingle()
+          if (data?.name) workspaceName = data.name
+        } catch (error) {
+          logApiWarn('workspace_name_lookup_failed', {
+            requestId,
+            workspaceId: ctx.workspaceId,
+            userId: ctx.user.id,
+            message: typeof error?.message === 'string' ? error.message : undefined,
+          })
+        }
+
+        return res.status(200).json({
+          user: { id: ctx.user.id, email: ctx.user.email ?? null },
+          workspaceId: ctx.workspaceId,
+          workspaceName,
+        })
       }
 
-      return res.status(200).json({
-        user: { id: ctx.user.id, email: ctx.user.email ?? null },
-        workspaceId: ctx.workspaceId,
-        workspaceName,
-      })
-    }
+      case 'POST': {
+        return res.status(501).json({ error: 'Not implemented' })
+      }
 
-    case 'POST': {
-      return res.status(501).json({ error: 'Not implemented' })
+      default:
+        res.setHeader('allow', 'GET,POST,OPTIONS')
+        return res.status(405).json({ error: 'Method not allowed' })
     }
-
-    default:
-      res.setHeader('allow', 'GET,POST,OPTIONS')
-      return res.status(405).json({ error: 'Method not allowed' })
+  } catch (error) {
+    logApiError({ requestId, method: req.method, path: req.url, error })
+    return res.status(500).json({ error: 'Unexpected API error' })
+  } finally {
+    logApiResponse({
+      requestId,
+      method: req.method,
+      path: req.url,
+      status: res.statusCode,
+      durationMs: Date.now() - start,
+    })
   }
 }

@@ -32,6 +32,7 @@ async function verifySupabaseJwt(accessToken) {
 async function requireSupabaseAuth(req, res) {
   const accessToken = getBearerToken(req)
   if (!accessToken) {
+    logSecurityEvent('missing_bearer_token', { path: req.url, requestId: req.requestId })
     res.status(401).json({ error: 'Unauthenticated' })
     return null
   }
@@ -39,7 +40,7 @@ async function requireSupabaseAuth(req, res) {
   try {
     const verified = await verifySupabaseJwt(accessToken)
     if (!verified) {
-      logSecurityEvent('invalid_supabase_jwt', { path: req.url })
+      logSecurityEvent('invalid_supabase_jwt', { path: req.url, requestId: req.requestId })
       res.status(401).json({ error: 'Unauthenticated' })
       return null
     }
@@ -47,10 +48,10 @@ async function requireSupabaseAuth(req, res) {
     const supabase = getSupabaseUserClient(accessToken)
     return { user: verified.user, accessToken, supabase }
   } catch {
+    logSecurityEvent('supabase_auth_error', { path: req.url, requestId: req.requestId })
     res.status(401).json({ error: 'Unauthenticated' })
     return null
   }
 }
 
 module.exports = { requireSupabaseAuth }
-

@@ -54,7 +54,7 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
   - [x] MVP: show current workspace name (read-only), no switcher UI
   - [x] Centralize API client to optionally attach `x-workspace-id` later (when switcher ships)
 - [x] [deploy] Document required env vars (Supabase URL, anon key for client, server-side secrets for APIs) and Vercel setup
-- [ ] [verify] Smoke test: cannot read/write outside workspace; no unauthenticated access to protected APIs
+- [x] [verify] Smoke test: cannot read/write outside workspace; no unauthenticated access to protected APIs
 
 ### Feature: Risk data model + CRUD as system of record
 - [ ] [database] Define `risks` table fields (description/title, category, probability, impact, mitigation, status, timestamps)
