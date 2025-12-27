@@ -24,8 +24,12 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 ## Cycle 1 (Phase 1): Core DB-Backed Register (MVP)
 
 ### Feature: Auth + workspace scoping baseline
-- [ ] [arch] Decide workspace model for MVP (one workspace per user vs multi-workspace + switcher)
-- [ ] [arch] Decide how `workspace_id` is derived (JWT claim vs membership join)
+- [ ] [arch] Workspace model decision (MVP): ship single-workspace UX, keep multi-workspace-ready schema
+  - [ ] Define MVP behavior: auto-create a “Personal” workspace on first login; user is Owner/Admin; UI shows current workspace (no switcher)
+  - [ ] Define post-MVP: add multi-workspace switcher + invites (P2) without schema changes
+- [ ] [arch] Workspace scoping decision: derive `workspace_id` via `workspace_members` (no custom JWT claim in MVP)
+  - [ ] Define request resolution: accept `x-workspace-id` (or query param) -> verify membership -> else fallback to user’s personal workspace
+  - [ ] Document backend convention and rationale (revocation correctness; supports multi-workspace later)
 - [ ] [database] Create `workspaces` + `workspace_members` tables (roles: Owner/Admin, Member, Viewer)
 - [ ] [database] Add required `workspace_id` + audit fields to core tables (at minimum: `risks`, `categories`)
 - [ ] [database] Implement RLS policies for workspace isolation (and role constraints where applicable)
