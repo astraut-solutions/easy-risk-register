@@ -97,8 +97,8 @@ Notes:
 
 Server-side environment variables:
 
-- `SUPABASE_URL` (local CLI default: `http://127.0.0.1:54321`)
-- `SUPABASE_ANON_KEY` (local CLI prints this as "anon key")
+- `SUPABASE_URL` (compose gateway: `http://127.0.0.1:54321`)
+- `SUPABASE_ANON_KEY` (set in `/.env.local` or your shell)
 - `SUPABASE_JWT_SECRET` (optional; local JWT verification)
 
 ## Local development options
@@ -108,19 +108,23 @@ Server-side environment variables:
 
 ### Local test checklist (Supabase + `/api/timeseries/*`)
 
-1) Start Supabase:
-- From the repo root: `supabase start`
+1) Start the local Supabase stack (Docker Compose):
+- From the repo root: `docker-compose --profile development up -d supabase-studio`
 - Open Studio: `http://127.0.0.1:54323`
 
-2) Apply the Supabase init SQLs (SQL editor):
+2) Apply the Supabase init SQLs (psql):
 
-- `supabase/init/001_roles_and_schema.sql`
-- `supabase/init/002_workspaces_core_tables_rls.sql`
-- `supabase/init/003_risk_trends_workspace_rls.sql`
+- `docker exec -i easy-risk-register-supabase-db-1 psql -U postgres -d postgres < supabase/init/001_roles_and_schema.sql`
+- `docker exec -i easy-risk-register-supabase-db-1 psql -U postgres -d postgres < supabase/init/002_workspaces_core_tables_rls.sql`
+- `docker exec -i easy-risk-register-supabase-db-1 psql -U postgres -d postgres < supabase/init/003_risk_trends_workspace_rls.sql`
+
+Notes:
+
+- The container name may differ depending on your Docker project name; use `docker ps` to find the Postgres container.
 
 3) Set server env vars for local `vercel dev`:
 - `SUPABASE_URL=http://127.0.0.1:54321`
-- `SUPABASE_ANON_KEY=sb_anon_...` (from `supabase start` output)
+- `SUPABASE_ANON_KEY=...` (from your `/.env.local` or `scripts/generate-local-supabase-keys.mjs`)
 - `SUPABASE_JWT_SECRET=...` (optional; enables local JWT verification)
 
 4) Run local serverless + frontend:
