@@ -1,0 +1,29 @@
+#!/bin/sh
+set -eu
+
+if command -v gitleaks >/dev/null 2>&1; then
+  GITLEAKS="gitleaks"
+else
+  echo "pre-push: gitleaks not found; refusing push." >&2
+  echo "Install gitleaks and retry: https://github.com/gitleaks/gitleaks#installation" >&2
+  exit 1
+fi
+
+zero="0000000000000000000000000000000000000000"
+
+# stdin format: <local ref> <local sha> <remote ref> <remote sha>
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -z "${local_ref:-}" ] && continue
+
+  # Deleting a ref; nothing to scan.
+  [ "$local_sha" = "$zero" ] && continue
+
+  if [ "$remote_sha" = "$zero" ]; then
+    log_opts="--no-merges --first-parent $local_sha"
+  else
+    log_opts="--no-merges --first-parent $remote_sha..$local_sha"
+  fi
+
+  $GITLEAKS detect --redact --exit-code 2 --log-opts="$log_opts"
+done
+

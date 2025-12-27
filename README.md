@@ -143,6 +143,17 @@ Diagrams and a deeper breakdown are in [Architecture Documentation](docs/archite
    ```bash
    npm install
    ```
+
+Optional (recommended): enable local secret-scanning hooks (blocks commits/pushes that contain secrets).
+
+From the repo root:
+
+```bash
+npm run install:hooks
+```
+
+This requires `gitleaks` installed locally: https://github.com/gitleaks/gitleaks#installation
+
 4. Start the development server:
    ```bash
    npm run dev

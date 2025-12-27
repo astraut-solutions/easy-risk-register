@@ -11,7 +11,8 @@
     "check:no-vite-secrets": "node scripts/check-no-vite-secrets.js",
     "build": "npm run check:no-vite-secrets && cd easy-risk-register-frontend && npm run build",
     "setup": "npm run install && echo 'Setup complete! Run \"npm run dev\" to start the development server.'",
-    "audit": "npm outdated && npm audit --omit=dev"
+    "audit": "npm outdated && npm audit --omit=dev",
+    "install:hooks": "node scripts/install-git-hooks.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.56.0",

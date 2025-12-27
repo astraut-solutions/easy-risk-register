@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+
+if command -v gitleaks >/dev/null 2>&1; then
+  GITLEAKS="gitleaks"
+else
+  echo "pre-commit: gitleaks not found; refusing commit." >&2
+  echo "Install gitleaks and retry: https://github.com/gitleaks/gitleaks#installation" >&2
+  exit 1
+fi
+
+# Scan staged changes only (fast, blocks secrets before they enter history).
+$GITLEAKS protect --staged --redact --verbose
+
