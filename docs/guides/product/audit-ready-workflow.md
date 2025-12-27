@@ -47,7 +47,7 @@ Use the Evidence description to clarify:
 - Scope (system/team/asset)
 - Date/time relevance (if not obvious from the URL)
 
-More guidance: `docs/guides/evidence-guidance.md`
+More guidance: `docs/guides/product/evidence-guidance.md`
 
 ### 3) Track mitigation as steps (not just free text)
 
@@ -75,7 +75,7 @@ When you need to share or archive evidence:
 
 Security note: CSV exports include spreadsheet injection protection, but you should still treat exported files as sensitive.
 
-For board packs or incident documentation, use PDF exports (print-to-PDF): `docs/guides/pdf-exports.md`.
+For board packs or incident documentation, use PDF exports (print-to-PDF): `docs/guides/product/pdf-exports.md`.
 
 ### 6) Keep exports and evidence organized
 

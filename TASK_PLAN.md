@@ -53,7 +53,7 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [frontend] Add sign-in/out UX and a clear "current workspace" indicator (even if only one workspace)
   - [x] MVP: show current workspace name (read-only), no switcher UI
   - [x] Centralize API client to optionally attach `x-workspace-id` later (when switcher ships)
-- [ ] [deploy] Document required env vars (Supabase URL, anon key for client, server-side secrets for APIs) and Vercel setup
+- [x] [deploy] Document required env vars (Supabase URL, anon key for client, server-side secrets for APIs) and Vercel setup
 - [ ] [verify] Smoke test: cannot read/write outside workspace; no unauthenticated access to protected APIs
 
 ### Feature: Risk data model + CRUD as system of record

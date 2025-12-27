@@ -1,4 +1,4 @@
-# Phase 6 — Quality Gates: Implementation Summary
+# Phase 6 - Quality Gates: Implementation Summary
 
 ## Overview
 
@@ -330,9 +330,9 @@ Comprehensive guide covering:
 ## Files Modified / Created
 
 ### New Files
-- `docs/guides/accessibility-qa-phase6.md` — WCAG 2.1 AA checklist and procedures
-- `docs/guides/performance-testing-phase6.md` — Performance testing guide and benchmarks
-- `docs/guides/user-guide-dashboards.md` — Comprehensive user guide for new features
+- `docs/guides/dev/accessibility-qa-phase6.md` — WCAG 2.1 AA checklist and procedures
+- `docs/guides/dev/performance-testing-phase6.md` — Performance testing guide and benchmarks
+- `docs/guides/product/user-guide-dashboards.md` — Comprehensive user guide for new features
 - `test/utils/snapshotRetention.test.ts` — Snapshot retention test suite (18 tests)
 - `test/utils/filterRisks.test.ts` — Filtering consistency test suite (22 tests)
 

@@ -244,7 +244,7 @@ Aim for at least 80% test coverage for business logic, especially for:
 - Data import/export functionality
 - Filtering and search functionality
 
-For more details on testing, see [Testing Guide](docs/guides/testing.md).
+For more details on testing, see [Testing Guide](docs/guides/dev/testing.md).
 
 ## Tech Stack
 
@@ -267,14 +267,16 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | | [System Architecture (Overview)](docs/architecture/architecture-output.md) | Implementation-aligned architecture summary |
 | | [Secure Data Storage](docs/architecture/secure-data-storage.md) | Client-side encryption for persisted LocalStorage data |
 | | [Technical Architecture](docs/technical-architecture.md) | Detailed documentation on real-time processing, time-series DB, graph DB, vulnerability scanner integration, SIEM integration, and microservices architecture |
-| **Guides** | [Setup Guide](docs/guides/setup.md) | Complete setup instructions from quick start to advanced development |
-| | [Testing Guide](docs/guides/testing.md) | How to run and write tests |
-| | [Development Workflow](docs/guides/development-workflow.md) | Standard development process and commands |
-| | [Code Style Guide](docs/guides/code-style.md) | Coding standards and best practices |
-| | [Audit-ready workflow](docs/guides/audit-ready-workflow.md) | Owners, reviews, evidence, and audit pack exports |
-| | [PDF exports](docs/guides/pdf-exports.md) | Print-to-PDF reports + troubleshooting |
-| | [Evidence guidance](docs/guides/evidence-guidance.md) | What counts as evidence and how to capture it |
-| | [Privacy controls](docs/guides/privacy-controls.md) | Local encryption + incident playbooks |
+| **Guides** | [Setup Guide](docs/guides/dev/setup.md) | Complete setup instructions from quick start to advanced development |
+| | [Testing Guide](docs/guides/dev/testing.md) | How to run and write tests |
+| | [Development Workflow](docs/guides/dev/development-workflow.md) | Standard development process and commands |
+| | [Code Style Guide](docs/guides/dev/code-style.md) | Coding standards and best practices |
+| | [Audit-ready workflow](docs/guides/product/audit-ready-workflow.md) | Owners, reviews, evidence, and audit pack exports |
+| | [PDF exports](docs/guides/product/pdf-exports.md) | Print-to-PDF reports + troubleshooting |
+| | [Evidence guidance](docs/guides/product/evidence-guidance.md) | What counts as evidence and how to capture it |
+| | [Privacy controls](docs/guides/security/privacy-controls.md) | Local encryption + incident playbooks |
+| | [Deploying to Vercel](docs/guides/deploy/deploy-vercel.md) | Required env vars + Vercel setup |
+| | [Auth + workspace scoping baseline](docs/guides/security/auth-workspace-scoping-baseline.md) | How auth and workspace tenancy work |
 | **Reference** | [System Diagrams](docs/reference/diagrams.md) | Visual representations of system architecture and data flows |
 | | [High-level Overview](docs/reference/high-level.md) | Product overview + current implementation summary |
 | | [Risk record schema](docs/reference/risk-record-schema.md) | Field definitions for risk records |
@@ -340,7 +342,7 @@ We welcome contributions to the Easy Risk Register project! To contribute:
 5. Push to the branch (`git push origin feature/amazing-feature`)
 6. Open a Pull Request
 
-Please ensure your code follows our [Code Style Guide](docs/guides/code-style.md) and includes appropriate tests.
+Please ensure your code follows our [Code Style Guide](docs/guides/dev/code-style.md) and includes appropriate tests.
 
 ## Project Status
 - **Last Updated**: November 2025

@@ -4,10 +4,12 @@ Easy Risk Register is a client-side, privacy-focused risk management app that su
 
 ## Start here
 
-- Setup: `docs/guides/setup.md`
-- Development workflow: `docs/guides/development-workflow.md`
-- Testing: `docs/guides/testing.md`
-- Code style: `docs/guides/code-style.md`
+- Setup: `docs/guides/dev/setup.md`
+- Development workflow: `docs/guides/dev/development-workflow.md`
+- Testing: `docs/guides/dev/testing.md`
+- Code style: `docs/guides/dev/code-style.md`
+- Deployment (Vercel + env vars): `docs/guides/deploy/deploy-vercel.md`
+- Auth + workspace scoping baseline: `docs/guides/security/auth-workspace-scoping-baseline.md`
 
 ## Cyber templates and checklists
 
@@ -20,10 +22,10 @@ Easy Risk Register is a client-side, privacy-focused risk management app that su
 
 ## Audit-ready and evidence
 
-- Audit-ready workflow: `docs/guides/audit-ready-workflow.md`
-- PDF exports (print-to-PDF): `docs/guides/pdf-exports.md`
-- Evidence guidance: `docs/guides/evidence-guidance.md`
-- Privacy controls (encryption + playbooks): `docs/guides/privacy-controls.md`
+- Audit-ready workflow: `docs/guides/product/audit-ready-workflow.md`
+- PDF exports (print-to-PDF): `docs/guides/product/pdf-exports.md`
+- Evidence guidance: `docs/guides/product/evidence-guidance.md`
+- Privacy controls (encryption + playbooks): `docs/guides/security/privacy-controls.md`
 - Risk record schema: `docs/reference/risk-record-schema.md`
 - Risk CSV specification: `docs/reference/risk-csv-spec.md`
 

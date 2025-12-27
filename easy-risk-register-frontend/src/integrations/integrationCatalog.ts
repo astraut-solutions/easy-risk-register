@@ -24,7 +24,7 @@ export const integrationCatalog = (): IntegrationCatalogItem[] => [
     dataLeavesDevice: true,
     disclosure:
       'When enabled, this app sends time-series snapshots (risk score, probability, impact, timestamps, and optional category/status) from your browser to your configured serverless API endpoints (`/api/timeseries/*`).',
-    docsPath: 'docs/guides/serverless-integrations.md',
+    docsPath: 'docs/guides/deploy/serverless-integrations.md',
   },
   {
     id: 'realtime',
@@ -43,7 +43,7 @@ export const integrationCatalog = (): IntegrationCatalogItem[] => [
     dataLeavesDevice: true,
     disclosure:
       'When enabled, graph relationship queries run via an integration backend. Do not store graph DB credentials in the browser.',
-    docsPath: 'docs/guides/serverless-integrations.md',
+    docsPath: 'docs/guides/deploy/serverless-integrations.md',
   },
   {
     id: 'siem',
@@ -53,7 +53,7 @@ export const integrationCatalog = (): IntegrationCatalogItem[] => [
     dataLeavesDevice: true,
     disclosure:
       'When enabled, SIEM queries are executed by server-side APIs. Do not enter SIEM API keys or passwords into the browser.',
-    docsPath: 'docs/guides/serverless-integrations.md',
+    docsPath: 'docs/guides/deploy/serverless-integrations.md',
   },
   {
     id: 'vulnerabilityScanner',
@@ -63,6 +63,6 @@ export const integrationCatalog = (): IntegrationCatalogItem[] => [
     dataLeavesDevice: true,
     disclosure:
       'When enabled, scanner queries are executed by server-side APIs. Do not enter scanner tokens into the browser.',
-    docsPath: 'docs/guides/serverless-integrations.md',
+    docsPath: 'docs/guides/deploy/serverless-integrations.md',
   },
 ]

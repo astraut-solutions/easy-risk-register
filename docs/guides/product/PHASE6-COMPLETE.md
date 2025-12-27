@@ -1,4 +1,4 @@
-# Phase 6 Quality Gates — Complete Implementation
+# Phase 6 Quality Gates - Complete Implementation
 
 **Status**: ✅ **COMPLETE**
 
@@ -21,7 +21,7 @@ Phase 6 completes the Quality Gates for the Visual Charts & Dashboards project, 
 
 ### 1. Performance Testing Framework
 
-**File**: [docs/guides/performance-testing-phase6.md](./performance-testing-phase6.md)
+**File**: [docs/guides/dev/performance-testing-phase6.md](../dev/performance-testing-phase6.md)
 
 **Includes**:
 - Performance target metrics for all views:
@@ -50,7 +50,7 @@ Phase 6 completes the Quality Gates for the Visual Charts & Dashboards project, 
 
 ### 2. Accessibility Audit (WCAG 2.1 AA)
 
-**File**: [docs/guides/accessibility-qa-phase6.md](./accessibility-qa-phase6.md)
+**File**: [docs/guides/dev/accessibility-qa-phase6.md](../dev/accessibility-qa-phase6.md)
 
 **Verification Checklist** covering:
 
@@ -175,7 +175,7 @@ npm test -- test/utils/snapshotRetention.test.ts test/utils/filterRisks.test.ts
 
 #### Main User Guide
 
-**File**: [docs/guides/user-guide-dashboards.md](./user-guide-dashboards.md)
+**File**: [docs/guides/product/user-guide-dashboards.md](./user-guide-dashboards.md)
 
 **Sections** (11 comprehensive sections):
 
@@ -241,7 +241,7 @@ npm test -- test/utils/snapshotRetention.test.ts test/utils/filterRisks.test.ts
 
 #### Phase 6 Implementation Summary
 
-**File**: [docs/guides/phase6-summary.md](./phase6-summary.md)
+**File**: [docs/guides/product/phase6-summary.md](./phase6-summary.md)
 
 **Includes**:
 - Overview of Phase 6 objectives
@@ -299,10 +299,10 @@ npm test -- test/utils/snapshotRetention.test.ts test/utils/filterRisks.test.ts
 
 | File | Purpose |
 |------|---------|
-| [docs/guides/performance-testing-phase6.md](./performance-testing-phase6.md) | Performance testing procedures and benchmarks |
-| [docs/guides/accessibility-qa-phase6.md](./accessibility-qa-phase6.md) | WCAG 2.1 AA compliance checklist |
-| [docs/guides/user-guide-dashboards.md](./user-guide-dashboards.md) | Comprehensive user guide for new features |
-| [docs/guides/phase6-summary.md](./phase6-summary.md) | Phase 6 deliverables and implementation summary |
+| [docs/guides/dev/performance-testing-phase6.md](../dev/performance-testing-phase6.md) | Performance testing procedures and benchmarks |
+| [docs/guides/dev/accessibility-qa-phase6.md](../dev/accessibility-qa-phase6.md) | WCAG 2.1 AA compliance checklist |
+| [docs/guides/product/user-guide-dashboards.md](./user-guide-dashboards.md) | Comprehensive user guide for new features |
+| [docs/guides/product/phase6-summary.md](./phase6-summary.md) | Phase 6 deliverables and implementation summary |
 | [test/utils/snapshotRetention.test.ts](../easy-risk-register-frontend/test/utils/snapshotRetention.test.ts) | Snapshot retention test suite (18 tests) |
 | [test/utils/filterRisks.test.ts](../easy-risk-register-frontend/test/utils/filterRisks.test.ts) | Filter consistency test suite (22 tests) |
 
@@ -408,7 +408,7 @@ npm test -- test/utils/snapshotRetention.test.ts test/utils/filterRisks.test.ts
 ## Contact & Support
 
 - **Implementation**: See [phase6-summary.md](./phase6-summary.md) for detailed overview
-- **Testing**: See [performance-testing-phase6.md](./performance-testing-phase6.md) and [accessibility-qa-phase6.md](./accessibility-qa-phase6.md)
+- **Testing**: See [performance-testing-phase6.md](../dev/performance-testing-phase6.md) and [accessibility-qa-phase6.md](../dev/accessibility-qa-phase6.md)
 - **User Help**: See [user-guide-dashboards.md](./user-guide-dashboards.md)
 - **PRD Reference**: [docs/product/product-requirements.md](../product/product-requirements.md)
 - **Implementation Plan**: [IMPLEMENTATION-PLAN.md](../IMPLEMENTATION-PLAN.md)
