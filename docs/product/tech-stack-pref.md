@@ -1,8 +1,10 @@
-# Tech Stack (Current + Optional)
+# Tech Stack (Current + Target + Optional)
 
-This repo is a web-first, client-side application (React + Vite). Notes about Expo/mobile frameworks do not apply here.
+This repo is a web-first application (React + Vite). Notes about Expo/mobile frameworks do not apply here.
 
-## Current Stack (Implemented)
+The product direction is **DB-backed**: Supabase (Postgres) is the system of record, accessed via **server-side APIs** (Vercel serverless functions). The UI should not rely on browser storage for authoritative persistence.
+
+## Current Stack (Implemented in Repo)
 
 ### Frontend
 - React
@@ -15,13 +17,20 @@ This repo is a web-first, client-side application (React + Vite). Notes about Ex
 - Zustand (app state)
 - React Hook Form (forms + validation)
 
-### Data and Import/Export
-- Browser `localStorage` for persistence (encrypted at rest in the app)
-- CSV import/export (validated to reduce malformed content and CSV injection risks)
+### Backend / APIs
+- Vercel serverless functions (`/api/*`, Node)
+
+### Database / Storage
+- Supabase (Postgres) for persistence
+- Supabase Auth + Row Level Security (RLS) for authorization boundaries
+
+### Data Import/Export
+- CSV import/export with validation and CSV injection defenses
 
 ### Security
 - Content Security Policy (CSP)
 - Input sanitization via DOMPurify
+- Secret management: service-role keys stay server-side (never in the browser)
 
 ### Testing
 - Vitest (unit/integration)
@@ -29,12 +38,12 @@ This repo is a web-first, client-side application (React + Vite). Notes about Ex
 - Playwright (E2E)
 
 ### Dev/Deploy
+- Vercel (hosting + serverless APIs)
 - Docker (dev and production images)
 - GitHub Actions workflows (CI/security scanning)
-- Static hosting supported (see `vercel.json` for one option)
 
 ## Optional Additions (Future)
 - React Router (if/when the UI grows beyond a single-page dashboard flow)
-- IndexedDB (if larger datasets or more robust offline storage is needed)
-- React Query (if adding async persistence/sync layers later)
-- PocketBase (if adding optional cloud sync / multi-user collaboration later)
+- IndexedDB (optional bounded, read-only cache for degraded offline viewing)
+- React Query (if adding more complex async server-state needs)
+- Client-side end-to-end encryption (Web Crypto) for selected fields (ciphertext stored in DB)

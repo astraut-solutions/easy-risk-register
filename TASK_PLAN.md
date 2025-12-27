@@ -1,11 +1,8 @@
-# Easy Risk Register Task Plan (Open Source, Vercel + Optional Integrations)
+# Easy Risk Register Task Plan (Feature-Based)
 
-This plan is updated based on:
+Goal: ship a privacy-first, Australia-focused risk register where **core data is persisted in Supabase (Postgres)** and accessed via **server-side APIs** (Vercel serverless functions).
 
-- `REPO_AUDIT_TASK_PLAN.md` (repo scan + gaps)
-- `docs/product/product-requirements.md` (allows backend/integrations; core remains client-side-first)
-
-Goal: make the app build/run locally, make integrations deployable as open source on Vercel (frontend + serverless APIs), and align implementation claims with reality (no "VERIFIED IMPLEMENTED" without build/tests/manual checks).
+Each feature below is listed with the **database -> backend -> frontend -> deployment -> verification** work needed so that completing the feature means it is actually shippable.
 
 ## Status legend
 
@@ -16,181 +13,175 @@ Goal: make the app build/run locally, make integrations deployable as open sourc
 
 ## Prefix legend
 
-- `[frontend]` Browser app (Vite/React/TS)
-- `[backend]` Vercel serverless APIs (Node)
-- `[infra]` Docker/services (DBs, Redis, realtime server)
-- `[deploy]` Vercel configuration and environment
+- `[database]` Supabase Postgres schema, migrations, RLS policies
+- `[backend]` Vercel serverless APIs (`/api/*`)
+- `[frontend]` Browser app (`easy-risk-register-frontend/`)
+- `[deploy]` Vercel configuration, env vars, secrets, hosting
 - `[docs]` Documentation updates
 - `[arch]` Architectural decision / policy
-- `[repo]` Repo hygiene/structure
-- `[local]` Developer machine setup / local workflow
+- `[verify]` Tests, checks, and release validation
 
-## P0 - Repo health (must pass build)
+## Cycle 1 (Phase 1): Core DB-Backed Register (MVP)
 
-- [x] [frontend] Fix build errors (currently `npm run build` fails)
-  - `easy-risk-register-frontend/src/services/graphDatabaseService.ts` (incomplete; TS parse error)
-  - `easy-risk-register-frontend/src/services/timeSeriesService.ts` (incomplete; TS parse error)
-  - `easy-risk-register-frontend/src/services/temp_realtime.ts` (incomplete; TS parse error)
-- [x] [repo] Decide policy for experimental/incomplete code
-  - Policy: keep integrations behind feature flags (off by default) and scope TS build to the actual app entry graph.
-- [x] [frontend] Fix type/model mismatches that will break strict TS + runtime correctness
-  - `Risk.financialImpact` is an object but some dashboards treat it as a number
-  - `riskCalculations.ts` references `risk.exposure` (not in `Risk`)
-- [x] [repo] Remove or quarantine temp/placeholder artifacts that confuse scope
-  - `easy-risk-register-frontend/src/services/temp_realtime.ts`
-  - `easy-risk-register-frontend/temp_executive_dashboard.tsx`
-  - `easy-risk-register-frontend/test/temp.test.ts`
-  - `test-security-features.js`
+### Feature: Auth + workspace scoping baseline
+- [ ] [arch] Decide workspace model for MVP (one workspace per user vs multi-workspace + switcher)
+- [ ] [arch] Decide how `workspace_id` is derived (JWT claim vs membership join)
+- [ ] [database] Create `workspaces` + `workspace_members` tables (roles: Owner/Admin, Member, Viewer)
+- [ ] [database] Add required `workspace_id` + audit fields to core tables (at minimum: `risks`, `categories`)
+- [ ] [database] Implement RLS policies for workspace isolation (and role constraints where applicable)
+- [ ] [backend] Implement auth/session verification for `/api/*` (no service keys in the browser)
+- [ ] [backend] Add request-scoped `workspaceId` resolution used consistently across all endpoints
+- [ ] [frontend] Add sign-in/out UX and a clear “current workspace” indicator (even if only one workspace)
+- [ ] [deploy] Document required env vars (Supabase URL, anon key for client, server-side secrets for APIs) and Vercel setup
+- [ ] [verify] Smoke test: cannot read/write outside workspace; no unauthenticated access to protected APIs
 
-## P1 - Run locally (core app)
+### Feature: Risk data model + CRUD as system of record
+- [ ] [database] Define `risks` table fields (description/title, category, probability, impact, mitigation, status, timestamps)
+- [ ] [database] Define `categories` table + seed baseline categories (AU SME-friendly defaults)
+- [ ] [database] Add indexes for list/filter (workspace_id, status, category, severity/score, updated_at)
+- [ ] [backend] Implement `GET/POST /api/risks` and `GET/PATCH/DELETE /api/risks/:id` with validation and consistent errors
+- [ ] [backend] Implement `GET /api/categories` (and admin-only category management if needed)
+- [ ] [frontend] Replace local persistence with API-backed queries/mutations (loading/error/empty states)
+- [ ] [frontend] Create/edit/delete risk flows with confirmation and form validation
+- [ ] [deploy] Ensure API routes are wired in Vercel and CORS guidance is documented (if needed for local dev)
+- [ ] [verify] Manual API checks + UI smoke test: create/edit/delete persists across refresh and devices
 
-### Prerequisites
+### Feature: Risk scoring (5x5) and severity thresholds
+- [ ] [database] Decide whether score is stored or computed (store `score`, `severity`, or compute in queries)
+- [ ] [database] Add workspace-configurable thresholds if required (defaults: Low 1–8, Medium 9–15, High 16–25)
+- [ ] [backend] Enforce score/severity consistency server-side (don’t trust client calculations)
+- [ ] [frontend] Display score and severity labels; update in real-time as probability/impact change
+- [ ] [deploy] Add configuration knobs (if any) to documented env/settings flow
+- [ ] [verify] Check boundary cases (1, 8, 9, 15, 16, 25) render correctly and match API output
 
-- [x] [local] Install Node.js LTS (recommend Node 20+)
-- [x] [local] Install dependencies
-  - From repo root: `npm run install`
+### Feature: Matrix view + filtering + drill-down
+- [ ] [database] Ensure filterable fields exist for MVP (category, status; add threat type later if needed)
+- [ ] [backend] Add list endpoints/params for filtering/sorting/pagination (avoid client-side filtering only)
+- [ ] [frontend] Implement interactive 5x5 matrix with cell counts and drill-down to filtered list
+- [ ] [frontend] Add accessible legends/labels (not color-only) and keyboard navigation for drill-down
+- [ ] [deploy] Verify performance on “up to 1000 risks” target (basic instrumentation notes)
+- [ ] [verify] Cross-browser spot check + accessibility quick pass (matrix + filters)
 
-### Development (frontend)
+### Feature: Export baseline (CSV) + safe import (CSV)
+- [ ] [database] Decide which fields are exported/imported; align columns with schema and docs
+- [ ] [backend] Implement `GET /api/exports/risks.csv` (server-side) and validate workspace scoping
+- [ ] [backend] Implement `POST /api/imports/risks.csv` with validation and CSV injection defenses
+- [ ] [frontend] Add export UI (filters respected) and import UI (preview + error reporting)
+- [ ] [deploy] Ensure export routes work in Vercel (streaming/response headers) and are protected by auth
+- [ ] [verify] Validate CSV injection neutralization (`=`, `+`, `-`, `@`) on export/import and round-trip import
 
-- [x] [frontend] Copy env: `easy-risk-register-frontend/.env.example` → `easy-risk-register-frontend/.env`
-- [x] [frontend] Start dev server
-  - From repo root: `npm run dev`
-  - App: `http://localhost:5173`
+### Feature: Offline/unreachable behavior (MVP rules)
+- [ ] [database] No change (behavioral requirement)
+- [ ] [backend] Ensure APIs return clear error shapes for offline/unreachable cases
+- [ ] [frontend] Block writes while offline; show explicit “not saved” messaging (no silent failures)
+- [ ] [frontend] Optional: implement bounded read-only cache (last 7 days or 100 items) with “last updated” timestamp
+- [ ] [deploy] Document offline expectations and any caching limits (privacy + storage)
+- [ ] [verify] Toggle offline in browser devtools: confirm writes are blocked and cached view (if enabled) is read-only
 
-### Build + production-like local run
+### Feature: Cycle 1 release readiness
+- [ ] [verify] Run frontend unit/integration tests (Vitest) and fix regressions
+- [ ] [verify] Run E2E smoke tests (Playwright) for sign-in, CRUD, matrix, and export flows (where present)
+- [ ] [verify] Run `npm run build` for `easy-risk-register-frontend/`
+- [ ] [deploy] Validate Vercel deploy with required Supabase env vars configured
 
-- [x] [frontend] Build the frontend
-  - From repo root: `npm run build`
-- [x] [frontend] Serve the built frontend locally
-  - `cd easy-risk-register-frontend && npm run preview`
+## Cycle 2 (Phase 2): Cyber Templates & Compliance
 
-### Tests (baseline)
+### Feature: Cyber risk templates (bundled, offline-capable)
+- [ ] [database] Decide whether templates are bundled-only or also user-customizable (table + RLS if customizable)
+- [ ] [backend] If customizable: implement template CRUD APIs (workspace-scoped); otherwise no backend required
+- [ ] [frontend] Add template picker with preview; selecting a template pre-fills the risk form
+- [ ] [frontend] Ensure template-derived risks become independent records when edited
+- [ ] [deploy] Ensure templates are bundled in build artifacts (no runtime dependency)
+- [ ] [verify] Create from template path end-to-end; ensure no network call required for bundled templates
 
-- [x] [frontend] Run unit tests: `cd easy-risk-register-frontend && npm run test:run`
-- [x] [frontend] Run lint: `cd easy-risk-register-frontend && npm run lint`
+### Feature: Compliance checklists (privacy incident assist)
+- [ ] [database] Add checklist data model: checklist templates + per-risk checklist items with timestamps
+- [ ] [database] Add checklist status fields/indexes to support filtering (not started/in progress/done)
+- [ ] [backend] Implement checklist endpoints (attach template, complete item, list status) with workspace scoping
+- [ ] [frontend] Add checklist UI on risk details (progress, timestamps) and checklist-based filtering
+- [ ] [deploy] Ensure checklist endpoints are protected and documented (assistive guidance only)
+- [ ] [verify] Edge case: updating checklist templates does not overwrite existing completion timestamps
 
-## P1 - Local integrations (optional, but supported)
+### Feature: Threat type + checklist status filtering enhancements
+- [ ] [database] Add `threat_type` (or equivalent) fields/enums to risks and indexes for filtering
+- [ ] [backend] Extend risk list endpoints to filter by threat type and checklist state consistently
+- [ ] [frontend] Add filter UI and ensure matrix + list + dashboard share the same filter semantics
+- [ ] [deploy] Update env/docs as needed for new filters (none expected)
+- [ ] [verify] Filter combinations behave consistently across views
 
-### Integration principles (required for OSS + Vercel)
+### Feature: Guided onboarding + educational tooltips
+- [ ] [database] Add user/workspace settings (tooltips on/off, onboarding state)
+- [ ] [backend] Add settings endpoints (workspace-scoped)
+- [ ] [frontend] Add tooltips on key fields + “first 3 steps” onboarding checklist; allow disabling tooltips
+- [ ] [deploy] Ensure external links (if any) are optional and do not block core use
+- [ ] [verify] Accessibility check for tooltip triggers and keyboard-only flow
 
-- [x] [arch] Do not ship secrets to the browser
-  - Anything that requires a token (InfluxDB, threat intel, etc.) must be called from serverless APIs (Vercel functions), not directly from the frontend via `VITE_*` tokens.
-- [x] [arch] Every integration must have:
-  - Feature flag (off by default)
-  - Safe empty-state UI
-  - Clear "data leaves device" messaging
-  - Minimal-permission credentials stored server-side only
+## Cycle 3 (Phase 3): Reporting, Trends, Reminders
 
-### Time-series history (superbase)
+### Feature: Risk score history (bounded) for trends
+- [ ] [database] Add `risk_score_snapshots` (or `risk_trends`) table with bounded retention strategy (20 snapshots per risk or 90 days)
+- [ ] [backend] Record snapshots on create/update; add query endpoints for overall and per-risk trends
+- [ ] [backend] Migrate off Influx-based time-series if present (use Supabase as system of record)
+- [ ] [frontend] Add trend views (overall exposure + per-risk history) with clear “what changed” UX
+- [ ] [deploy] Remove/replace time-series env vars that are no longer needed (if applicable)
+- [ ] [verify] Performance check on 1000 risks; retention bounds enforced
 
-- [x] [backend] Implement backend proxy APIs for time-series (token must not be exposed to the browser)
-  - Create Vercel functions:
-    - `POST /api/timeseries/write` (ingest snapshots)
-    - `GET /api/timeseries/query` (read trends)
-  - Local-first default: Supabase Postgres (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`)
-  - Optional alternative: InfluxDB (`INFLUXDB_URL`, `INFLUXDB_TOKEN`, `INFLUXDB_ORG`, `INFLUXDB_BUCKET`)
-- [ ] [infra] Add local Docker compose for InfluxDB (dev only) and document setup
-  - Provide steps: create org/bucket/token; set server env vars accordingly
-- [x] [infra] Add local Docker compose for Supabase (dev only) and document setup
-  - Minimal stack: Postgres + PostgREST + gateway for `/rest/v1`
-- [ ] [frontend] Replace/rewire `easy-risk-register-frontend/src/services/timeSeriesService.ts` to call the backend proxy instead of using the Influx client in the browser
-- [ ] [docs] Update `easy-risk-register-frontend/.env.example`
-  - Replace `VITE_INFLUXDB_*` with `VITE_API_BASE_URL` (or similar) for client → backend
-  - Add server-only vars for local/Vercel (no `VITE_` prefix): `INFLUXDB_URL`, `INFLUXDB_TOKEN`, `INFLUXDB_ORG`, `INFLUXDB_BUCKET`
+### Feature: Dashboard charts + PNG export
+- [ ] [database] No change (depends on risk + history tables)
+- [ ] [backend] Add aggregated endpoints as needed (or compute client-side with bounded payloads)
+- [ ] [frontend] Implement 2–3 default charts (distribution + trends) with drill-down + accessible table equivalents
+- [ ] [frontend] Implement PNG export (default 1080p) for charts
+- [ ] [deploy] Verify bundle size and chart rendering performance
+- [ ] [verify] Chart drill-down matches filters/matrix semantics; “DB unreachable” state is clear
 
-### Real-time updates (Socket.io / WebSockets)
+### Feature: PDF exports (register + incident/checklist)
+- [ ] [database] No change (uses existing data)
+- [ ] [backend] Implement PDF generation endpoints for risk register (filtered) and incident/checklist template exports
+- [ ] [frontend] Add export UI for PDF (include charts where enabled)
+- [ ] [deploy] Confirm Vercel serverless limits are respected (PDF generation time/size) and document constraints
+- [ ] [verify] Export validation (content correctness, filters, charts inclusion) + regression check on CSV export
 
-- [ ] [arch] Decide architecture for real-time in open source deployments
-  - Option A: Vercel-hosted WebSocket service (not ideal on serverless; needs compatible hosting)
-  - Option B: Separate small Node service (Docker-composeable) that the frontend can point at
-- [ ] [infra] Implement and document local realtime server (if Option B)
-  - Provide `docker-compose` service + `VITE_SOCKET_SERVER_URL`
-- [ ] [frontend] Ensure `easy-risk-register-frontend/src/services/realtimeService.ts` is opt-in and does not break core app when unavailable
+### Feature: Automated reminders (notifications + in-app fallback)
+- [ ] [database] Add reminder settings + risk metadata needed to schedule prompts (workspace-scoped)
+- [ ] [backend] Define reminder computation logic (what is “due”) and expose via API; avoid background jobs in MVP
+- [ ] [frontend] Implement opt-in reminders; Notification API prompt; fallback in-app banners + snooze/disable
+- [ ] [deploy] Document browser permission behavior and supported environments
+- [ ] [verify] Denied permission path shows in-app reminders; cadence respects settings
 
-### Graph relationships (Neo4j/Memgraph/etc.)
+## Cycle 4 (Phase 4): Advanced Privacy Controls (Optional)
 
-- [!] [arch] Choose the graph database to support first (recommended: Neo4j, because `neo4j-driver` is already a dependency)
-- [ ] [backend] Complete `easy-risk-register-frontend/src/services/graphDatabaseService.ts` or move logic to serverless (recommended)
-  - Same rule: credentials must not be exposed to browser; use serverless proxy APIs
-- [ ] [infra] Add docker-compose service for chosen graph DB and document local setup
+### Feature: End-to-end encryption (selected fields)
+- [ ] [arch] Confirm crypto posture (PBKDF2 + AES-GCM, no server-side recovery) and define sensitive fields
+- [ ] [database] Ensure encrypted fields can be stored (ciphertext + metadata) without breaking search/list UX
+- [ ] [backend] Ensure APIs treat encrypted fields as opaque (no plaintext logging); enforce payload limits
+- [ ] [frontend] Implement passphrase flow (enable/disable/rotate) and client-side encrypt/decrypt via Web Crypto
+- [ ] [deploy] Document limitations (no recovery), and ensure logs/telemetry don’t capture plaintext
+- [ ] [verify] Threat model review + recovery-flow validation (passphrase loss, rotation)
 
-### Caching (Redis)
+### Feature: Incident response planner (playbooks per risk)
+- [ ] [database] Add playbook templates + per-risk playbook instances (editable)
+- [ ] [backend] Implement playbook CRUD APIs (workspace-scoped)
+- [ ] [frontend] Add playbook UI on risk details and include in relevant PDF exports
+- [ ] [deploy] Document “assistive, not legal advice” constraints
+- [ ] [verify] Playbooks remain editable and template updates don’t overwrite existing risk playbooks
 
-- [ ] [arch] Decide where caching lives
-  - Server-side: Redis for API responses/integration data (recommended)
-  - Client-side: short-lived in-memory cache for derived views (already exists in `riskService.ts`)
-- [ ] [infra] Add Redis to docker-compose (optional) and document env vars for server functions
+### Feature: Maturity radar (ACSC/NIST self-assessment)
+- [ ] [database] Add maturity assessment tables (framework preset, domain scores, timestamps)
+- [ ] [backend] Implement assessment CRUD APIs + query for latest/series
+- [ ] [frontend] Implement radar chart + table fallback; export as PNG and include in PDFs
+- [ ] [deploy] Ensure presets and copy avoid implying certification/compliance guarantees
+- [ ] [verify] Accessibility check + export correctness
 
-### Threat intelligence + CVE correlation
+### Feature: Audit trail (append-only, role-based access)
+- [ ] [database] Add `audit_events` append-only table + retention baseline (90 days) + RLS by role
+- [ ] [backend] Record risk CRUD and checklist completion events; add per-risk activity log endpoint
+- [ ] [frontend] Add per-risk activity log UI; restrict export to Owner/Admin
+- [ ] [deploy] Document retention and access rules
+- [ ] [verify] Verify role rules: Owner/Admin view+export, Member view-only, Viewer no access
 
-- [ ] [backend] Implement serverless "connector" APIs (no direct API keys in browser)
-  - `GET /api/threat-intel/*`
-  - `GET /api/cve/*`
-- [ ] [docs] Define minimum supported sources (start with unauthenticated feeds, then add optional API-key sources)
-- [ ] [backend] Add input/output schemas, rate limiting/backoff, and caching strategy
+## Cycle 5 (Phase 5): User Validation and Iteration
 
-## P2 - Vercel deployment (open source)
-
-### Why Vercel (and why this architecture)
-
-- [ ] [docs] Document "why" in this file (or README)
-  - Frontend: static build served globally via CDN; simple OSS deployment
-  - Backend: serverless functions scale-to-zero and keep secrets server-side
-  - External OSS services: user/org can self-host (superbase, Neo4j, Redis) and connect via environment variables
-
-### Frontend deployment (Vercel)
-
-- [ ] [deploy] Ensure Vercel project builds from repo root
-  - `vercel.json` uses `buildCommand: npm run build`
-  - `outputDirectory: easy-risk-register-frontend/dist`
-- [ ] [docs] Document required Vercel settings
-  - Node version, build command, output directory, environment variables for feature flags and API base URL
-
-### Backend deployment (Vercel serverless functions)
-
-- [x] [backend] Align function directory with Vercel conventions
-  - Vercel expects serverless functions under `/api/*` at repo root
-  - Implemented: serverless functions live under `api/*`
-- [ ] [backend] Move or mirror `backend/api/*` → `api/*` and fix imports
-- [ ] [backend] Add/verify serverless runtime compatibility (ESM/CJS, node version)
-- [ ] [deploy] Add server-only environment variables in Vercel (no `VITE_` prefix)
-  - superbase, Neo4j, Redis, threat intel keys, etc.
-- [ ] [backend] Add request validation, CORS policy, auth (if needed), and rate limiting
-
-### Open source "deploy yourself" checklist
-
-- [ ] [docs] Add a "Deploy your own" section (README or docs)
-  - 1) Deploy frontend on Vercel
-  - 2) Deploy API routes on Vercel
-  - 3) (Optional) Bring your own OSS services (superbase/Neo4j/Redis) via Docker or hosted
-  - 4) Configure environment variables
-  - 5) Verify the app in "local-only" mode works even if integrations are off
-
-## Feature verification (replace "VERIFIED IMPLEMENTED" with evidence)
-
-For each feature area below, only mark as done after:
-
-- Build passes (`npm run build`)
-- Tests/lint pass (where present)
-- Manual UI path verified
-
-### Core risk management (PRD baseline)
-
-- [ ] [frontend] Risk CRUD + validation
-- [ ] [frontend] Risk scoring (probability × impact), severity labels
-- [ ] [frontend] Interactive 5×5 matrix with drill-down + non-color cues
-- [ ] [frontend] Filters consistent across list/matrix/charts
-- [ ] [frontend] Score history snapshots with bounded retention + trend chart
-- [ ] [frontend] CSV import/export with validation
-- [ ] [frontend] PDF exports (register + checklist)
-- [ ] [frontend] Reminders (in-app + optional desktop notifications)
-- [ ] [frontend] Optional local encryption (passphrase; Web Crypto API)
-- [ ] [frontend] Optional maturity radar
-
-### Advanced/optional (integration-backed where appropriate)
-
-- [ ] [backend] Threat intel + CVE enrichment (serverless APIs + caching)
-- [ ] [backend] Time-series storage for long-term trends (serverless proxy + superbase)
-- [ ] [backend] Graph relationships (serverless proxy + graph DB)
-- [ ] [infra] Real-time collaboration/sync (separate service or compatible hosting)
-- [ ] [arch] Performance: caching + async processing where justified
+### Feature: Usability validation loop
+- [ ] [docs] Prepare interview scripts and success-metric instrumentation plan (time-to-first-risk, export adoption)
+- [ ] [frontend] Add lightweight UX instrumentation (privacy-respecting; can be local-only if needed)
+- [ ] [verify] Run 5–10 SME interviews/tests; triage issues; feed into next task plan revision
