@@ -35,6 +35,7 @@ import { EncryptionSettingsPanel } from './components/privacy/EncryptionSettings
 import { IntegrationSettingsPanel } from './components/integrations/IntegrationSettingsPanel'
 import { EncryptionUnlockGate } from './components/privacy/EncryptionUnlockGate'
 import { AuthControls } from './components/auth/AuthControls'
+import { useAuthStore } from './stores/authStore'
 
 type MatrixSelection = {
   probability: number
@@ -81,14 +82,21 @@ function App() {
     settings,
     riskScoreSnapshots,
     maturityAssessments,
+    dataSyncStatus,
+    dataSyncError,
     actions,
   } = useRiskManagement()
   const toast = useToast()
+  const authStatus = useAuthStore((s) => s.status)
+  const workspaceId = useAuthStore((s) => s.workspaceId)
+  const syncFromApi = actions.syncFromApi
   const [editingRisk, setEditingRisk] = useState<Risk | null>(null)
   const [viewingRisk, setViewingRisk] = useState<Risk | null>(null)
   const [matrixSelection, setMatrixSelection] = useState<MatrixSelection | null>(null)
   const [activeView, setActiveView] = useState<DashboardView>('overview')
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; title: string } | null>(null)
+  const [isDeletingRisk, setIsDeletingRisk] = useState(false)
   const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false)
   const [isRiskFormDirty, setIsRiskFormDirty] = useState(false)
   const [riskDraft, setRiskDraft] = useState<Partial<RiskFormValues> | null>(null)
@@ -120,6 +128,16 @@ function App() {
       return false
     }
   }, [])
+
+  useEffect(() => {
+    void syncFromApi().catch((error: unknown) => {
+      toast.notify({
+        title: 'Failed to load workspace data',
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: 'danger',
+      })
+    })
+  }, [authStatus, syncFromApi, toast, workspaceId])
 
   const loadRiskDraft = () => {
     try {
@@ -316,29 +334,41 @@ function App() {
     setActiveView('new')
   }
 
-  const handleSubmit = (values: RiskFormValues) => {
+  const handleSubmit = async (values: RiskFormValues) => {
     formModalDidSubmitRef.current = true
     const durationMs =
       formModalOpenedAtRef.current === null ? null : Date.now() - formModalOpenedAtRef.current
 
-    if (editingRisk) {
-      actions.updateRisk(editingRisk.id, values)
+    try {
+      if (editingRisk) {
+        const updated = await actions.updateRisk(editingRisk.id, values)
+        if (!updated) {
+          throw new Error('Risk not found (it may have been deleted).')
+        }
+        toast.notify({
+          title: 'Risk updated',
+          description: 'Your changes are saved.',
+          variant: 'success',
+        })
+      } else {
+        await actions.addRisk(values)
+        clearRiskDraft()
+        setRiskDraft(null)
+        setCreateDefaults(null)
+        setCreateTemplateId('')
+        toast.notify({
+          title: 'Risk added',
+          description: 'Your new risk is now visible in the workspace.',
+          variant: 'success',
+        })
+      }
+    } catch (error) {
       toast.notify({
-        title: 'Risk updated',
-        description: 'Your changes are saved.',
-        variant: 'success',
+        title: 'Save failed',
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: 'danger',
       })
-    } else {
-      actions.addRisk(values)
-      clearRiskDraft()
-      setRiskDraft(null)
-      setCreateDefaults(null)
-      setCreateTemplateId('')
-      toast.notify({
-        title: 'Risk added',
-        description: 'Your new risk is now visible in the workspace.',
-        variant: 'success',
-      })
+      return
     }
 
     trackEvent('risk_modal_submit', {
@@ -359,10 +389,35 @@ function App() {
   }
 
   const handleDelete = (id: string) => {
-    actions.deleteRisk(id)
-    if (editingRisk?.id === id) {
-      setEditingRisk(null)
-      setIsRiskFormDirty(false)
+    const risk = allRisks.find((entry) => entry.id === id)
+    setDeleteConfirm({ id, title: risk?.title ?? 'this risk' })
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm || isDeletingRisk) return
+
+    setIsDeletingRisk(true)
+    try {
+      await actions.deleteRisk(deleteConfirm.id)
+      toast.notify({
+        title: 'Risk deleted',
+        description: 'The risk has been removed from the workspace.',
+        variant: 'success',
+      })
+
+      if (editingRisk?.id === deleteConfirm.id) {
+        setEditingRisk(null)
+        setIsRiskFormDirty(false)
+      }
+      setDeleteConfirm(null)
+    } catch (error) {
+      toast.notify({
+        title: 'Delete failed',
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: 'danger',
+      })
+    } finally {
+      setIsDeletingRisk(false)
     }
   }
 
@@ -712,6 +767,26 @@ function App() {
               </div>
             }
           />
+
+          {authStatus !== 'authenticated' ? (
+            <div className="rr-panel p-4 text-sm text-text-low">
+              Sign in to load and save risks in your workspace.
+            </div>
+          ) : dataSyncStatus === 'loading' ? (
+            <div className="rr-panel p-4">
+              <p className="text-sm text-text-low">Loading workspace risks…</p>
+            </div>
+          ) : dataSyncStatus === 'error' ? (
+            <div className="rr-panel flex flex-wrap items-center justify-between gap-3 border border-status-danger/30 bg-status-danger/5 p-4">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-text-high">Failed to load workspace data</p>
+                <p className="text-sm text-text-low">{dataSyncError || 'Please try again.'}</p>
+              </div>
+              <Button size="sm" variant="secondary" onClick={() => syncFromApi()}>
+                Retry
+              </Button>
+            </div>
+          ) : null}
 
           {!settings.onboardingDismissed ? (
             <OnboardingCard
@@ -1308,6 +1383,42 @@ function App() {
               to keep your progress without adding a risk yet.
             </p>
           )}
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(deleteConfirm)}
+        onClose={() => {
+          if (isDeletingRisk) return
+          setDeleteConfirm(null)
+        }}
+        title="Delete risk?"
+        eyebrow="Confirm delete"
+        description="This action cannot be undone."
+        size="sm"
+        footer={
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => setDeleteConfirm(null)}
+              disabled={isDeletingRisk}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              aria-busy={isDeletingRisk}
+            >
+              {isDeletingRisk ? 'Deleting…' : 'Delete'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-2 text-sm text-text-low">
+          <p>
+            You are about to delete <span className="font-semibold text-text-high">{deleteConfirm?.title}</span>.
+          </p>
         </div>
       </Modal>
 

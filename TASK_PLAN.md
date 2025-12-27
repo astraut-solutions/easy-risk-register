@@ -60,10 +60,10 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [database] Define `risks` table fields (description/title, category, probability, impact, mitigation, status, timestamps)
 - [x] [database] Define `categories` table + seed baseline categories (AU SME-friendly defaults)
 - [x] [database] Add indexes for list/filter (workspace_id, status, category, severity/score, updated_at)
-- [ ] [backend] Implement `GET/POST /api/risks` and `GET/PATCH/DELETE /api/risks/:id` with validation and consistent errors
-- [ ] [backend] Implement `GET /api/categories` (and admin-only category management if needed)
-- [ ] [frontend] Replace local persistence with API-backed queries/mutations (loading/error/empty states)
-- [ ] [frontend] Create/edit/delete risk flows with confirmation and form validation
+- [x] [backend] Implement `GET/POST /api/risks` and `GET/PATCH/DELETE /api/risks/:id` with validation and consistent errors
+- [x] [backend] Implement `GET /api/categories` (and admin-only category management if needed)
+- [x] [frontend] Replace local persistence with API-backed queries/mutations (loading/error/empty states)
+- [x] [frontend] Create/edit/delete risk flows with confirmation and form validation
 - [ ] [deploy] Ensure API routes are wired in Vercel and CORS guidance is documented (if needed for local dev)
 - [ ] [verify] Manual API checks + UI smoke test: create/edit/delete persists across refresh and devices
 

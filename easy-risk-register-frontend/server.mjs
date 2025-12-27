@@ -2,12 +2,14 @@ import crypto from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { access, readFile, stat } from 'node:fs/promises'
 import http from 'node:http'
+import https from 'node:https'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const distDir = path.join(__dirname, 'dist')
 const port = Number(process.env.PORT ?? 8080)
+const apiProxyTarget = process.env.API_PROXY_TARGET || null
 
 const indexPath = path.join(distDir, 'index.html')
 await access(indexPath)
@@ -83,7 +85,49 @@ async function tryStat(filePath) {
   }
 }
 
+function proxyApiRequest(req, res, { target }) {
+  const targetUrl = new URL(target)
+  const reqUrl = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`)
+
+  const transport = targetUrl.protocol === 'https:' ? https : http
+
+  const upstreamHeaders = { ...req.headers }
+  delete upstreamHeaders.host
+
+  const upstreamReq = transport.request(
+    {
+      protocol: targetUrl.protocol,
+      hostname: targetUrl.hostname,
+      port: targetUrl.port || (targetUrl.protocol === 'https:' ? 443 : 80),
+      method: req.method,
+      path: `${targetUrl.pathname.replace(/\/$/, '')}${reqUrl.pathname}${reqUrl.search}`,
+      headers: upstreamHeaders,
+    },
+    (upstreamRes) => {
+      res.statusCode = upstreamRes.statusCode ?? 502
+      for (const [key, value] of Object.entries(upstreamRes.headers)) {
+        if (value !== undefined) res.setHeader(key, value)
+      }
+      upstreamRes.pipe(res)
+    },
+  )
+
+  upstreamReq.on('error', () => {
+    res.statusCode = 502
+    res.setHeader('content-type', 'application/json; charset=utf-8')
+    res.end(JSON.stringify({ error: 'Bad Gateway' }))
+  })
+
+  req.pipe(upstreamReq)
+}
+
 const server = http.createServer(async (req, res) => {
+  const pathname = toSafePathname(req.url, req.headers.host)
+  if (apiProxyTarget && (pathname === '/api' || pathname.startsWith('/api/'))) {
+    proxyApiRequest(req, res, { target: apiProxyTarget })
+    return
+  }
+
   const nonce = crypto.randomBytes(16).toString('base64')
   const csp = contentSecurityPolicy(nonce)
 
@@ -98,7 +142,6 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
-  const pathname = toSafePathname(req.url, req.headers.host)
   const requestedPath = pathname === '/' ? '/index.html' : pathname
   const resolvedPath = path.normalize(path.join(distDir, requestedPath))
 

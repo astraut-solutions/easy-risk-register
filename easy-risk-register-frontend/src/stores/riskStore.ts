@@ -64,6 +64,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   },
 }
 
+export type RiskDataSyncStatus = 'idle' | 'loading' | 'ready' | 'error'
+
 const clampScore = (value: number) => Math.min(Math.max(Math.round(value), 1), 5)
 
 const normalizeText = (value: string) => value.trim()
@@ -895,6 +897,9 @@ const fromCSV = (csv: string): { risks: Risk[]; reason?: CSVImportFailureReason 
 
 export interface RiskStoreState {
   initialized: boolean
+  dataSyncStatus: RiskDataSyncStatus
+  dataSyncError: string | null
+  dataLastSyncedAt: string | null
   risks: Risk[]
   filteredRisks: Risk[]
   categories: string[]
@@ -931,6 +936,16 @@ export interface RiskStoreState {
     snapshotsPerRisk?: number
     withHistory?: boolean
   }) => { risksSeeded: number; snapshotsSeeded: number }
+
+  replaceFromApi: (payload: { risks: Risk[]; categories: string[] }) => void
+  upsertFromApi: (risk: Risk) => void
+  removeFromApi: (id: string) => void
+  resetApiData: () => void
+  setDataSyncState: (payload: {
+    status: RiskDataSyncStatus
+    error?: string | null
+    lastSyncedAt?: string | null
+  }) => void
 }
 
 const recalc = (risks: Risk[], filters: RiskFilters) => ({
@@ -1079,6 +1094,9 @@ export const useRiskStore = create<RiskStoreState>()(
   persist(
     (set, get) => ({
       initialized: false,
+      dataSyncStatus: 'idle',
+      dataSyncError: null,
+      dataLastSyncedAt: null,
       risks: [],
       filteredRisks: [],
       categories: [...DEFAULT_CATEGORIES],
@@ -1087,6 +1105,53 @@ export const useRiskStore = create<RiskStoreState>()(
       settings: { ...DEFAULT_SETTINGS },
       riskScoreSnapshots: [],
       maturityAssessments: [],
+      setDataSyncState: ({ status, error, lastSyncedAt }) =>
+        set(() => ({
+          dataSyncStatus: status,
+          dataSyncError: error ?? null,
+          dataLastSyncedAt: lastSyncedAt ?? null,
+        })),
+      resetApiData: () =>
+        set((state) => ({
+          ...recalc([], state.filters),
+          categories: [...DEFAULT_CATEGORIES],
+          dataSyncStatus: 'idle',
+          dataSyncError: null,
+          dataLastSyncedAt: null,
+        })),
+      replaceFromApi: ({ risks, categories }) =>
+        set((state) => {
+          const mergedCategories = Array.from(
+            new Set([
+              ...categories.filter(Boolean),
+              ...risks.map((risk) => risk.category).filter(Boolean),
+            ]),
+          )
+          return {
+            ...recalc(risks, state.filters),
+            categories: mergedCategories.length ? mergedCategories : [...DEFAULT_CATEGORIES],
+          }
+        }),
+      upsertFromApi: (risk) =>
+        set((state) => {
+          const nextRisks = state.risks.some((existing) => existing.id === risk.id)
+            ? state.risks.map((existing) => (existing.id === risk.id ? risk : existing))
+            : [risk, ...state.risks]
+
+          const categories = state.categories.includes(risk.category)
+            ? state.categories
+            : [...state.categories, risk.category].filter(Boolean)
+
+          return {
+            ...recalc(nextRisks, state.filters),
+            categories,
+          }
+        }),
+      removeFromApi: (id) =>
+        set((state) => {
+          const nextRisks = state.risks.filter((risk) => risk.id !== id)
+          return recalc(nextRisks, state.filters)
+        }),
       updateSettings: (updates) =>
         set((state) => {
           const nextSettings = normalizeSettings({ ...state.settings, ...updates })
@@ -1516,33 +1581,19 @@ export const useRiskStore = create<RiskStoreState>()(
     {
       name: LOCAL_STORAGE_KEY,
       storage: createJSONStorage(safeStorage),
-      version: 5,
-      migrate: (persistedState, version) => {
+      version: 6,
+      partialize: (state) => ({
+        filters: state.filters,
+        settings: state.settings,
+        riskScoreSnapshots: state.riskScoreSnapshots,
+        maturityAssessments: state.maturityAssessments,
+      }),
+      migrate: (persistedState, _version) => {
         if (!persistedState || typeof persistedState !== 'object') {
           return persistedState
         }
 
-        if (version >= 5) {
-          return persistedState
-        }
-
         const state = persistedState as any
-        const risks: Risk[] = Array.isArray(state.risks)
-          ? state.risks.map((risk: any) => normalizeStoredRisk(risk))
-          : []
-
-        const categories: string[] = Array.isArray(state.categories)
-          ? Array.from(
-              new Set(
-                [...DEFAULT_CATEGORIES, ...state.categories]
-                  .map((category) =>
-                    typeof category === 'string' ? sanitizeTextInput(category).trim() : '',
-                  )
-                  .filter(Boolean),
-              ),
-            )
-          : [...DEFAULT_CATEGORIES]
-
         const filters = { ...DEFAULT_FILTERS, ...(state.filters ?? {}) }
         const settings = normalizeSettings(state.settings)
         const riskScoreSnapshots: RiskScoreSnapshot[] = Array.isArray(state.riskScoreSnapshots)
@@ -1556,8 +1607,6 @@ export const useRiskStore = create<RiskStoreState>()(
 
         return {
           ...state,
-          risks,
-          categories,
           filters,
           settings,
           riskScoreSnapshots: applySnapshotRetention(
@@ -1572,8 +1621,13 @@ export const useRiskStore = create<RiskStoreState>()(
                     Boolean(assessment),
                 )
             : [],
-          filteredRisks: filterRisks(risks, filters),
-          stats: computeRiskStats(risks),
+          risks: [],
+          categories: [...DEFAULT_CATEGORIES],
+          filteredRisks: [],
+          stats: computeRiskStats([]),
+          dataSyncStatus: 'idle',
+          dataSyncError: null,
+          dataLastSyncedAt: null,
         }
       },
       onRehydrateStorage: () => (state) => {

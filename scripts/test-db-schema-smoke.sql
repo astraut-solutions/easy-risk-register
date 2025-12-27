@@ -44,6 +44,34 @@ begin
   if not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname='public' and p.proname='create_workspace') then
     raise exception 'Missing function: public.create_workspace(text)';
   end if;
+
+  if not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname='public' and p.proname='ensure_personal_workspace_for_user') then
+    raise exception 'Missing function: public.ensure_personal_workspace_for_user(uuid, text)';
+  end if;
+end $$;
+
+do $$
+begin
+  -- GoTrue-only check: if `auth.users` exists, ensure the auto-provision trigger is present.
+  if exists (
+    select 1
+    from information_schema.tables
+    where table_schema = 'auth'
+      and table_name = 'users'
+  ) then
+    if not exists (
+      select 1
+      from pg_trigger t
+      join pg_class c on c.oid = t.tgrelid
+      join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'auth'
+        and c.relname = 'users'
+        and t.tgname = 'auth_users_create_personal_workspace'
+        and not t.tgisinternal
+    ) then
+      raise exception 'Missing trigger: auth.auth_users_create_personal_workspace on auth.users';
+    end if;
+  end if;
 end $$;
 
 do $$

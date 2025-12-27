@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken')
 
-const { getSupabaseAuthClient, getSupabaseUserClient } = require('./supabase')
+const { getSupabaseAuthClient, getSupabaseUserClient, requireEnv } = require('./supabase')
 const { logSecurityEvent } = require('./logger')
 
 function getBearerToken(req) {
@@ -10,8 +10,54 @@ function getBearerToken(req) {
   return null
 }
 
+function getOptionalJwtSecret() {
+  try {
+    return requireEnv('SUPABASE_JWT_SECRET')
+  } catch {
+    return null
+  }
+}
+
+function hasNonEmptyString(value) {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+function extractClaims(accessToken) {
+  try {
+    return jwt.decode(accessToken) || null
+  } catch {
+    return null
+  }
+}
+
+function ensurePostgrestCompatibleToken({ accessToken, userId, jwtSecret }) {
+  const claims = extractClaims(accessToken)
+
+  const role = hasNonEmptyString(claims?.role) ? claims.role : null
+  const aud = hasNonEmptyString(claims?.aud) ? claims.aud : null
+
+  if (role && aud) return { token: accessToken, minted: false }
+  if (!jwtSecret) return { token: accessToken, minted: false }
+
+  const nowSeconds = Math.floor(Date.now() / 1000)
+  const safeExp = Number.isFinite(claims?.exp) ? claims.exp : null
+
+  const payload = {
+    sub: userId,
+    role: role || 'authenticated',
+    aud: aud || 'authenticated',
+    iat: nowSeconds,
+    exp: safeExp && safeExp > nowSeconds ? safeExp : nowSeconds + 60 * 60,
+  }
+
+  return {
+    token: jwt.sign(payload, jwtSecret, { algorithm: 'HS256' }),
+    minted: true,
+  }
+}
+
 async function verifySupabaseJwt(accessToken) {
-  const jwtSecret = process.env.SUPABASE_JWT_SECRET
+  const jwtSecret = getOptionalJwtSecret()
   if (jwtSecret) {
     try {
       const claims = jwt.verify(accessToken, jwtSecret, { algorithms: ['HS256'] })
@@ -45,7 +91,18 @@ async function requireSupabaseAuth(req, res) {
       return null
     }
 
-    const supabase = getSupabaseUserClient(accessToken)
+    const jwtSecret = getOptionalJwtSecret()
+    const { token: postgrestToken, minted } = ensurePostgrestCompatibleToken({
+      accessToken,
+      userId: verified.user.id,
+      jwtSecret,
+    })
+
+    if (minted) {
+      logSecurityEvent('minted_postgrest_jwt', { path: req.url, requestId: req.requestId })
+    }
+
+    const supabase = getSupabaseUserClient(postgrestToken)
     return { user: verified.user, accessToken, supabase }
   } catch {
     logSecurityEvent('supabase_auth_error', { path: req.url, requestId: req.requestId })

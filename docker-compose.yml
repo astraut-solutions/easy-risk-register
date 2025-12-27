@@ -7,6 +7,9 @@ services:
       - "3001:8080"
     environment:
       - NODE_ENV=production
+      # Local dev convenience: proxy `/api/*` (handled by `easy-risk-register-frontend/server.mjs`) to the dev API server.
+      # In production deployments, `/api/*` is served by the platform (e.g., Vercel), so this is not used.
+      - API_PROXY_TARGET=http://api-dev:3000
     restart: unless-stopped
     # Health check to ensure the application is running properly
     healthcheck:
@@ -29,8 +32,38 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
+      # Vercel-style serverless APIs are not served by Vite; point the browser at the local dev API server.
+      - VITE_API_BASE_URL=http://localhost:3000
+      # Used by the Vite proxy when VITE_API_BASE_URL is blank (and also useful for local debugging).
+      - API_PROXY_TARGET=http://api-dev:3000
     restart: unless-stopped
     command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+    profiles:
+      - development
+
+  api-dev:
+    image: node:20-alpine
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/app
+      # Keep Linux-built deps in a named volume (host node_modules may be Windows-native).
+      - api_dev_node_modules:/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      # Use the internal Docker network hostname when running inside compose.
+      - SUPABASE_URL_INTERNAL=http://supabase-gateway
+      # Fallbacks are for local dev only; prefer setting these in `.env`.
+      - SUPABASE_URL=${SUPABASE_URL:-http://localhost:54321}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET:-dev-supabase-jwt-secret}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_KEY:-}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+    depends_on:
+      - supabase-gateway
+    command: ["sh", "-lc", "npm ci --silent && node scripts/dev-api-server.js"]
     profiles:
       - development
 
@@ -84,13 +117,15 @@ services:
       # Use a dedicated superuser role with a search_path that includes `auth` so GoTrue migrations
       # that create types without schema qualification land in the correct namespace.
       - GOTRUE_DB_DATABASE_URL=postgres://supabase_admin:postgres@supabase-db:5432/postgres?options=-c%20search_path%3Dauth%2Cpublic
-      # In this minimal local stack, using the `public` namespace avoids migration issues
-      # where some auth types are created without schema qualification.
-      - GOTRUE_DB_NAMESPACE=public
-      - DB_NAMESPACE=public
+      # Keep all auth objects in the `auth` schema so newer GoTrue migrations don't error.
+      - GOTRUE_DB_NAMESPACE=auth
+      - DB_NAMESPACE=auth
       - GOTRUE_SITE_URL=http://localhost:3000
       - GOTRUE_URI_ALLOW_LIST=*
       - GOTRUE_DISABLE_SIGNUP=false
+      # Ensure access tokens include `aud` + `role` claims that PostgREST can map to DB roles.
+      - GOTRUE_JWT_AUD=authenticated
+      - GOTRUE_JWT_DEFAULT_GROUP_NAME=authenticated
       - GOTRUE_JWT_SECRET=${SUPABASE_JWT_SECRET:-dev-supabase-jwt-secret}
       - GOTRUE_JWT_EXP=3600
       # Required for email/password signups.
@@ -201,3 +236,4 @@ services:
 volumes:
   supabase_db_data:
   supabase_storage_data:
+  api_dev_node_modules:

@@ -178,6 +178,10 @@ Then set `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_KEY` in `.env` (do not commit
 
 Then open [http://localhost:5173](http://localhost:5173).
 
+Troubleshooting:
+- `502 Bad Gateway` from `/api/*` with `Supabase query failed: JWSError JWSInvalidSignature` or `role "" does not exist`: restart the dev stack and clear site data for `http://localhost:5173` (old tokens won't validate after JWT secret changes).
+- `Port 5173 is already in use`: stop the existing Vite process/container, or change the port mapping for `frontend-dev` in `docker-compose.yml`.
+
 To stop/remove containers:
 
 ```bash

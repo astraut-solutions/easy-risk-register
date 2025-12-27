@@ -37,7 +37,23 @@ export async function apiGetJson<T>(path: string): Promise<T> {
     const error: ApiError = { status: res.status, message: message || res.statusText }
     throw error
   }
-  return (await res.json()) as T
+  const text = await res.text().catch(() => '')
+  if (!text) {
+    const error: ApiError = { status: res.status, message: 'Expected JSON response but got empty body' }
+    throw error
+  }
+
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    const snippet = text.slice(0, 200)
+    const contentType = res.headers.get('content-type') || 'unknown'
+    const error: ApiError = {
+      status: res.status,
+      message: `Expected JSON response but got ${contentType}: ${snippet}`,
+    }
+    throw error
+  }
 }
 
 export async function apiPostJson<T>(path: string, body: unknown): Promise<T> {
@@ -51,6 +67,55 @@ export async function apiPostJson<T>(path: string, body: unknown): Promise<T> {
     const error: ApiError = { status: res.status, message: message || res.statusText }
     throw error
   }
-  return (await res.json()) as T
+  const text = await res.text().catch(() => '')
+  if (!text) return undefined as unknown as T
+
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    const snippet = text.slice(0, 200)
+    const contentType = res.headers.get('content-type') || 'unknown'
+    const error: ApiError = {
+      status: res.status,
+      message: `Expected JSON response but got ${contentType}: ${snippet}`,
+    }
+    throw error
+  }
+}
+
+export async function apiPatchJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await apiFetch(path, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body ?? {}),
+  })
+  if (!res.ok) {
+    const message = await res.text().catch(() => '')
+    const error: ApiError = { status: res.status, message: message || res.statusText }
+    throw error
+  }
+  const text = await res.text().catch(() => '')
+  if (!text) return undefined as unknown as T
+
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    const snippet = text.slice(0, 200)
+    const contentType = res.headers.get('content-type') || 'unknown'
+    const error: ApiError = {
+      status: res.status,
+      message: `Expected JSON response but got ${contentType}: ${snippet}`,
+    }
+    throw error
+  }
+}
+
+export async function apiDelete(path: string): Promise<void> {
+  const res = await apiFetch(path, { method: 'DELETE' })
+  if (!res.ok) {
+    const message = await res.text().catch(() => '')
+    const error: ApiError = { status: res.status, message: message || res.statusText }
+    throw error
+  }
 }
 

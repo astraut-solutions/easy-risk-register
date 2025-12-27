@@ -22,7 +22,7 @@ interface RiskFormProps {
   categories: string[]
   defaultValues?: Partial<RiskFormValues>
   mode?: 'create' | 'edit'
-  onSubmit: (values: RiskFormValues) => void
+  onSubmit: (values: RiskFormValues) => void | Promise<void>
   onAddCategory?: (category: string) => void
   onCancel?: () => void
   onSaveDraft?: (values: RiskFormValues) => void
@@ -259,7 +259,7 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
     })
   }
 
-  const onFormSubmit = (values: RiskFormValues) => {
+  const onFormSubmit = async (values: RiskFormValues) => {
     const nowIso = new Date().toISOString()
     const playbook = playbookEnabled
       ? {
@@ -269,7 +269,7 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
         }
       : undefined
 
-    onSubmit({
+    await onSubmit({
       ...values,
       probability: Number(values.probability),
       impact: Number(values.impact),
