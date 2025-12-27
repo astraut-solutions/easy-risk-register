@@ -19,5 +19,27 @@ function getSupabaseAdmin() {
   })
 }
 
-module.exports = { getSupabaseAdmin, requireEnv }
+function getSupabaseAuthClient() {
+  const url = requireEnv('SUPABASE_URL')
+  const anonKey = requireEnv('SUPABASE_ANON_KEY')
 
+  return createClient(url, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  })
+}
+
+function getSupabaseUserClient(accessToken) {
+  const url = requireEnv('SUPABASE_URL')
+  const anonKey = requireEnv('SUPABASE_ANON_KEY')
+
+  return createClient(url, anonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  })
+}
+
+module.exports = { getSupabaseAdmin, getSupabaseAuthClient, getSupabaseUserClient, requireEnv }

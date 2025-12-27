@@ -25,15 +25,18 @@ When an integration is enabled, the app must show clear "data leaves device" mes
 
 ## Auth-protected APIs (serverless)
 
-Some serverless routes require a JWT Bearer token:
+All `/api/*` routes require an **end-user Supabase JWT** (Bearer token):
 
-- `GET/POST /api/users` (admin only; currently mock/in-memory)
-- `GET/POST /api/audit`
+- `GET /api/users` (returns current user + resolved `workspaceId`)
+- `POST /api/audit`
 - `POST /api/data-protection` (encrypt/decrypt)
+- `GET/POST /api/timeseries/*`
 
 Server-side environment variables:
 
-- `JWT_SECRET` (required in production)
+- `SUPABASE_URL` (required)
+- `SUPABASE_ANON_KEY` (required; server uses this with the user's JWT so RLS enforces access)
+- `SUPABASE_JWT_SECRET` (optional; enables local JWT verification, otherwise the API verifies via Supabase Auth)
 - `ENCRYPTION_KEY` (required in production; used by `/api/data-protection`)
 
 ## Time-series (InfluxDB)
@@ -50,10 +53,10 @@ Server-side environment variables:
 - `INFLUXDB_ORG`
 - `INFLUXDB_BUCKET`
 
-## Time-series (Supabase Postgres) — local-first
+## Time-series (Supabase Postgres) - local-first
 
 Create a `risk_trends` table (recommended types):
-- `risk_id` (text), `probability` (int), `impact` (int), `risk_score` (int), `timestamp` (bigint), `category` (text), `status` (text)
+- `workspace_id` (uuid), `risk_id` (text), `probability` (int), `impact` (int), `risk_score` (int), `timestamp` (bigint), `category` (text), `status` (text)
 
 ### Docker Compose (dev only)
 
@@ -66,7 +69,8 @@ Start it:
 Set server-side env vars for your local serverless runtime (`vercel dev`):
 
 - `SUPABASE_URL=http://127.0.0.1:54321`
-- `SUPABASE_SERVICE_ROLE_KEY=<dev key>`
+- `SUPABASE_ANON_KEY=<dev key>`
+- `SUPABASE_JWT_SECRET=<dev jwt secret>` (optional but recommended for local verification)
 
 Dev-only key (already wired into the compose stack):
 
@@ -81,7 +85,8 @@ Notes:
 Server-side environment variables:
 
 - `SUPABASE_URL` (local CLI default: `http://127.0.0.1:54321`)
-- `SUPABASE_SERVICE_ROLE_KEY` (local CLI prints this as "Secret"; keep it server-side only)
+- `SUPABASE_ANON_KEY` (local CLI prints this as "anon key")
+- `SUPABASE_JWT_SECRET` (optional; local JWT verification)
 
 ## Local development options
 
@@ -94,32 +99,19 @@ Server-side environment variables:
 - From the repo root: `supabase start`
 - Open Studio: `http://127.0.0.1:54323`
 
-2) Create the `risk_trends` table (SQL editor):
+2) Apply the Supabase init SQLs (SQL editor):
 
-```sql
-create table if not exists public.risk_trends (
-  id uuid primary key default gen_random_uuid(),
-  risk_id text not null,
-  probability int not null,
-  impact int not null,
-  risk_score int not null,
-  timestamp bigint not null,
-  category text,
-  status text
-);
-
-alter table public.risk_trends enable row level security;
-alter table public.risk_trends force row level security;
-```
-
-No policies is intentional if you only access the table via server APIs (service role bypasses RLS).
+- `supabase/init/001_roles_and_schema.sql`
+- `supabase/init/002_workspaces_core_tables_rls.sql`
+- `supabase/init/003_risk_trends_workspace_rls.sql`
 
 3) Set server env vars for local `vercel dev`:
 - `SUPABASE_URL=http://127.0.0.1:54321`
-- `SUPABASE_SERVICE_ROLE_KEY=sb_secret_...` (from `supabase start` output)
+- `SUPABASE_ANON_KEY=sb_anon_...` (from `supabase start` output)
+- `SUPABASE_JWT_SECRET=...` (optional; enables local JWT verification)
 
 4) Run local serverless + frontend:
 - From repo root: `vercel dev`
 
 5) Sanity check in browser:
-- `http://localhost:3000/api/timeseries/query?limit=1`
+- Use a client that can set headers (Bearer token required), e.g. `curl -H "Authorization: Bearer <jwt>" "http://localhost:3000/api/timeseries/query?limit=1"`

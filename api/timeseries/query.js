@@ -1,4 +1,5 @@
-const { getSupabaseAdmin } = require('../_lib/supabase')
+const { handleOptions, setCors } = require('../_lib/http')
+const { requireApiContext } = require('../_lib/context')
 
 function clampInt(value, { min, max, fallback }) {
   const num = Number.parseInt(String(value), 10)
@@ -14,23 +15,30 @@ function parseTimestampMs(isoString) {
 }
 
 module.exports = async function handler(req, res) {
+  setCors(req, res)
+  if (handleOptions(req, res)) return
+
   if (req.method !== 'GET') {
-    res.setHeader('allow', 'GET')
+    res.setHeader('allow', 'GET,OPTIONS')
     return res.status(405).json({ error: 'Method Not Allowed' })
   }
 
   try {
+    const ctx = await requireApiContext(req, res)
+    if (!ctx) return
+
     const { riskId, category, start, end, limit } = req.query || {}
     const limitN = clampInt(limit, { min: 1, max: 5000, fallback: 500 })
 
     const startMs = typeof start === 'string' && start ? parseTimestampMs(start) : null
     const endMs = typeof end === 'string' && end ? parseTimestampMs(end) : null
 
-    const supabase = getSupabaseAdmin()
+    const { supabase, workspaceId } = ctx
 
     let query = supabase
       .from('risk_trends')
       .select('risk_id, probability, impact, risk_score, timestamp, category, status')
+      .eq('workspace_id', workspaceId)
       .order('timestamp', { ascending: true })
       .limit(limitN)
 
@@ -56,7 +64,6 @@ module.exports = async function handler(req, res) {
 
     return res.status(200).json(points)
   } catch (error) {
-    const message = error?.code === 'MISSING_ENV' ? error.message : 'Failed to query time-series data'
-    return res.status(500).json({ error: message })
+    return res.status(500).json({ error: 'Failed to query time-series data' })
   }
 }

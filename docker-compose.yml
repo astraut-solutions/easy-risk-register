@@ -83,13 +83,20 @@ services:
       - API_EXTERNAL_URL=http://localhost:54321/auth/v1
       - GOTRUE_API_EXTERNAL_URL=http://localhost:54321/auth/v1
       - GOTRUE_DB_DRIVER=postgres
-      - GOTRUE_DB_DATABASE_URL=postgres://postgres:postgres@supabase-db:5432/postgres
+      # Use a dedicated superuser role with a search_path that includes `auth` so GoTrue migrations
+      # that create types without schema qualification land in the correct namespace.
+      - GOTRUE_DB_DATABASE_URL=postgres://supabase_admin:postgres@supabase-db:5432/postgres?options=-c%20search_path%3Dauth%2Cpublic
+      # In this minimal local stack, using the `public` namespace avoids migration issues
+      # where some auth types are created without schema qualification.
+      - GOTRUE_DB_NAMESPACE=public
+      - DB_NAMESPACE=public
       - GOTRUE_SITE_URL=http://localhost:54323
       - GOTRUE_URI_ALLOW_LIST=*
       - GOTRUE_DISABLE_SIGNUP=false
       - GOTRUE_JWT_SECRET=dev-supabase-jwt-secret
       - GOTRUE_JWT_EXP=3600
-      - GOTRUE_EXTERNAL_EMAIL_ENABLED=false
+      # Required for email/password signups.
+      - GOTRUE_EXTERNAL_EMAIL_ENABLED=true
       - GOTRUE_EXTERNAL_PHONE_ENABLED=false
       - GOTRUE_MAILER_AUTOCONFIRM=true
     profiles:

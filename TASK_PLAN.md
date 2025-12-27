@@ -24,12 +24,12 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 ## Cycle 1 (Phase 1): Core DB-Backed Register (MVP)
 
 ### Feature: Auth + workspace scoping baseline
-- [ ] [arch] Workspace model decision (MVP): ship single-workspace UX, keep multi-workspace-ready schema
-  - [ ] Define MVP behavior: auto-create a "Personal" workspace on first login; user is Owner/Admin; UI shows current workspace (no switcher)
-  - [ ] Define post-MVP: add multi-workspace switcher + invites (P2) without schema changes
-- [ ] [arch] Workspace scoping decision: derive `workspace_id` via `workspace_members` (no custom JWT claim in MVP)
-  - [ ] Define request resolution: accept `x-workspace-id` (or query param) -> verify membership -> else fallback to user's personal workspace
-  - [ ] Document backend convention and rationale (revocation correctness; supports multi-workspace later)
+- [x] [arch] Workspace model decision (MVP): ship single-workspace UX, keep multi-workspace-ready schema
+  - [x] Define MVP behavior: auto-create a "Personal" workspace on first login; user is Owner/Admin; UI shows current workspace (no switcher)
+  - [x] Define post-MVP: add multi-workspace switcher + invites (P2) without schema changes
+- [x] [arch] Workspace scoping decision: derive `workspace_id` via `workspace_members` (no custom JWT claim in MVP)
+  - [x] Define request resolution: accept `x-workspace-id` (or query param) -> verify membership -> else fallback to user's personal workspace
+  - [x] Document backend convention and rationale (revocation correctness; supports multi-workspace later)
 - [x] [database] Create `workspaces` + `workspace_members` tables (roles: owner/admin/member/viewer)
   - [x] `workspaces` fields (id, name, created_at, created_by)
   - [x] `workspace_members` fields (workspace_id, user_id, role, created_at) + unique(workspace_id, user_id)
@@ -43,16 +43,16 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
   - [x] Write policy: allow only for roles with write access (owner/admin/member)
   - [x] Admin policy: restrict admin-only actions (workspace + member management) to owner/admin
   - [x] Implemented in `supabase/init/002_workspaces_core_tables_rls.sql` (`public.current_uid()` helper; avoids clashing with GoTrue `auth` schema)
-- [ ] [backend] Implement auth/session verification for `/api/*` (no service keys in the browser)
-  - [ ] Require an end-user Supabase JWT; return 401 when missing/invalid
-  - [ ] Prefer passing the user JWT through to Supabase so RLS remains the primary enforcement
-- [ ] [backend] Add request-scoped `workspaceId` resolution used consistently across all endpoints
-  - [ ] If `x-workspace-id` provided: validate format and verify membership; else fallback to the user's personal workspace
-  - [ ] Ensure every query/mutation filters by resolved `workspaceId` (defense-in-depth on top of RLS)
-  - [ ] Standardize errors: 401 unauthenticated, 403 not a member, 404 not found-in-workspace
-- [ ] [frontend] Add sign-in/out UX and a clear "current workspace" indicator (even if only one workspace)
-  - [ ] MVP: show current workspace name (read-only), no switcher UI
-  - [ ] Centralize API client to optionally attach `x-workspace-id` later (when switcher ships)
+- [x] [backend] Implement auth/session verification for `/api/*` (no service keys in the browser)
+  - [x] Require an end-user Supabase JWT; return 401 when missing/invalid
+  - [x] Prefer passing the user JWT through to Supabase so RLS remains the primary enforcement
+- [x] [backend] Add request-scoped `workspaceId` resolution used consistently across all endpoints
+  - [x] If `x-workspace-id` provided: validate format and verify membership; else fallback to the user's personal workspace
+  - [x] Ensure every query/mutation filters by resolved `workspaceId` (defense-in-depth on top of RLS)
+  - [x] Standardize errors: 401 unauthenticated, 403 not a member, 404 not found-in-workspace
+- [x] [frontend] Add sign-in/out UX and a clear "current workspace" indicator (even if only one workspace)
+  - [x] MVP: show current workspace name (read-only), no switcher UI
+  - [x] Centralize API client to optionally attach `x-workspace-id` later (when switcher ships)
 - [ ] [deploy] Document required env vars (Supabase URL, anon key for client, server-side secrets for APIs) and Vercel setup
 - [ ] [verify] Smoke test: cannot read/write outside workspace; no unauthenticated access to protected APIs
 

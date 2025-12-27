@@ -1,30 +1,17 @@
 const { handleOptions, setCors } = require('./_lib/http')
-const { requireAdmin, requireAuth } = require('./_lib/auth')
+const { requireApiContext } = require('./_lib/context')
 const { logAuditEvent } = require('./_lib/logger')
 
 module.exports = async function handler(req, res) {
   setCors(req, res)
   if (handleOptions(req, res)) return
 
-  const user = requireAuth(req, res)
-  if (!user) return
+  const ctx = await requireApiContext(req, res)
+  if (!ctx) return
 
   switch (req.method) {
     case 'GET': {
-      if (!requireAdmin(req, res)) return
-      return res.status(200).json({
-        logs: [
-          {
-            id: 1,
-            userId: user.userId,
-            username: user.username,
-            action: 'login',
-            resource: 'auth',
-            timestamp: new Date().toISOString(),
-            details: { ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress },
-          },
-        ],
-      })
+      return res.status(501).json({ error: 'Not implemented' })
     }
 
     case 'POST': {
@@ -32,7 +19,7 @@ module.exports = async function handler(req, res) {
       if (!action || !resource) {
         return res.status(400).json({ error: 'Action and resource are required' })
       }
-      logAuditEvent(user, action, resource, details)
+      logAuditEvent(ctx.user, action, resource, details)
       return res.status(200).json({ message: 'Audit event logged successfully' })
     }
 

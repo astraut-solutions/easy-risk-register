@@ -1,8 +1,6 @@
 function logAuditEvent(user, action, resource, details = {}) {
   console.info('AUDIT_EVENT', {
-    userId: user?.userId,
-    username: user?.username,
-    role: user?.role,
+    userId: user?.id,
     action,
     resource,
     details,
@@ -19,4 +17,3 @@ function logSecurityEvent(type, details = {}) {
 }
 
 module.exports = { logAuditEvent, logSecurityEvent }
-

@@ -1,34 +1,36 @@
 const { handleOptions, setCors } = require('./_lib/http')
-const { requireAdmin, requireAuth } = require('./_lib/auth')
+const { requireApiContext } = require('./_lib/context')
 
 module.exports = async function handler(req, res) {
   setCors(req, res)
   if (handleOptions(req, res)) return
 
-  const user = requireAuth(req, res)
-  if (!user) return
+  const ctx = await requireApiContext(req, res)
+  if (!ctx) return
 
   switch (req.method) {
     case 'GET': {
-      if (!requireAdmin(req, res)) return
+      let workspaceName = null
+      try {
+        const { data } = await ctx.supabase
+          .from('workspaces')
+          .select('name')
+          .eq('id', ctx.workspaceId)
+          .maybeSingle()
+        if (data?.name) workspaceName = data.name
+      } catch {
+        // ignore
+      }
+
       return res.status(200).json({
-        users: [
-          { id: 1, username: 'admin', role: 'admin' },
-          { id: 2, username: 'user', role: 'user' },
-        ],
+        user: { id: ctx.user.id, email: ctx.user.email ?? null },
+        workspaceId: ctx.workspaceId,
+        workspaceName,
       })
     }
 
     case 'POST': {
-      if (!requireAdmin(req, res)) return
-      const { username, password, role } = req.body || {}
-      if (!username || !password || !role) {
-        return res.status(400).json({ error: 'Username, password, and role are required' })
-      }
-      return res.status(201).json({
-        message: 'User created successfully',
-        user: { id: 3, username, role },
-      })
+      return res.status(501).json({ error: 'Not implemented' })
     }
 
     default:

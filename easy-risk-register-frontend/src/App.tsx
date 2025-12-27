@@ -34,6 +34,7 @@ import { getEncryptionStatus } from './utils/encryptionManager'
 import { EncryptionSettingsPanel } from './components/privacy/EncryptionSettingsPanel'
 import { IntegrationSettingsPanel } from './components/integrations/IntegrationSettingsPanel'
 import { EncryptionUnlockGate } from './components/privacy/EncryptionUnlockGate'
+import { AuthControls } from './components/auth/AuthControls'
 
 type MatrixSelection = {
   probability: number
@@ -707,6 +708,7 @@ function App() {
                     Metrics
                   </Button>
                 ) : null}
+                <AuthControls />
               </div>
             }
           />

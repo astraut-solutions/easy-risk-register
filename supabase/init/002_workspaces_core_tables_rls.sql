@@ -46,6 +46,9 @@ create or replace function public.is_workspace_member(p_workspace_id uuid)
 returns boolean
 language sql
 stable
+security definer
+set search_path = public
+set row_security = off
 as $$
   select exists (
     select 1
@@ -59,6 +62,9 @@ create or replace function public.is_workspace_writer(p_workspace_id uuid)
 returns boolean
 language sql
 stable
+security definer
+set search_path = public
+set row_security = off
 as $$
   select exists (
     select 1
@@ -73,6 +79,9 @@ create or replace function public.is_workspace_admin(p_workspace_id uuid)
 returns boolean
 language sql
 stable
+security definer
+set search_path = public
+set row_security = off
 as $$
   select exists (
     select 1
@@ -82,6 +91,10 @@ as $$
       and wm.role in ('owner', 'admin')
   )
 $$;
+
+alter function public.is_workspace_member(uuid) owner to service_role;
+alter function public.is_workspace_writer(uuid) owner to service_role;
+alter function public.is_workspace_admin(uuid) owner to service_role;
 
 grant execute on function public.is_workspace_member(uuid) to anon, authenticated, service_role;
 grant execute on function public.is_workspace_writer(uuid) to anon, authenticated, service_role;

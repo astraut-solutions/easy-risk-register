@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
 import { ToastProvider } from './components/feedback/ToastProvider'
+import { AuthProvider } from './auth/AuthProvider'
 
 // Only run accessibility tests in development
 if (process.env.NODE_ENV === 'development') {
@@ -14,7 +15,9 @@ if (process.env.NODE_ENV === 'development') {
     root.render(
       <StrictMode>
         <ToastProvider>
-          <App />
+          <AuthProvider>
+            <App />
+          </AuthProvider>
           <AccessibilityTester />
         </ToastProvider>
       </StrictMode>,
@@ -27,7 +30,9 @@ if (process.env.NODE_ENV === 'development') {
     root.render(
       <StrictMode>
         <ToastProvider>
-          <App />
+          <AuthProvider>
+            <App />
+          </AuthProvider>
         </ToastProvider>
       </StrictMode>,
     )
@@ -39,7 +44,9 @@ if (process.env.NODE_ENV === 'development') {
   root.render(
     <StrictMode>
       <ToastProvider>
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </ToastProvider>
     </StrictMode>,
   )

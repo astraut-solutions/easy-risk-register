@@ -35,6 +35,15 @@ end $$;
 
 grant usage on schema public to anon, authenticated, service_role;
 
+-- GoTrue expects an `auth` schema for its migrations.
+-- In hosted Supabase this already exists, but in this minimal local stack we create it.
+create schema if not exists auth;
+grant usage on schema auth to anon, authenticated, service_role;
+
+-- GoTrue migrations create some types without schema qualification, relying on the connection search_path.
+-- Ensure they land in `auth` by default for the dedicated superuser used by GoTrue.
+alter role supabase_admin set search_path = auth, public;
+
 create extension if not exists pgcrypto;
 
 create table if not exists public.risk_trends (

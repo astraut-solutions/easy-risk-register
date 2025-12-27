@@ -1,0 +1,16 @@
+services:
+  # Dedicated Postgres container for workspace schema smoke tests.
+  # Uses a separate compose project name (see `scripts/test-db.ps1`) to keep volumes isolated.
+  supabase-db:
+    image: supabase/postgres:15.1.0.117
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - supabase_db_data:/var/lib/postgresql/data
+      - ./supabase/init:/docker-entrypoint-initdb.d:ro
+
+volumes:
+  supabase_db_data: {}
+

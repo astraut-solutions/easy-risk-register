@@ -1,13 +1,13 @@
 const { handleOptions, setCors } = require('./_lib/http')
-const { requireAuth } = require('./_lib/auth')
+const { requireApiContext } = require('./_lib/context')
 const { decrypt, encrypt } = require('./_lib/encryption')
 
 module.exports = async function handler(req, res) {
   setCors(req, res)
   if (handleOptions(req, res)) return
 
-  const user = requireAuth(req, res)
-  if (!user) return
+  const ctx = await requireApiContext(req, res)
+  if (!ctx) return
 
   if (req.method !== 'POST') {
     res.setHeader('allow', 'POST,OPTIONS')
@@ -28,7 +28,6 @@ module.exports = async function handler(req, res) {
     }
     return res.status(400).json({ error: 'Invalid action. Use "encrypt" or "decrypt"' })
   } catch (error) {
-    const message = error?.code === 'MISSING_ENV' ? error.message : 'Encryption/Decryption failed'
-    return res.status(500).json({ error: message })
+    return res.status(500).json({ error: 'Encryption/Decryption failed' })
   }
 }

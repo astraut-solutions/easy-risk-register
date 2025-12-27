@@ -1,4 +1,6 @@
 import type { Risk } from '../types/risk';
+import { useAuthStore } from '../stores/authStore';
+import { apiFetch } from './apiClient';
 
 export interface SiemConfig {
   siemType: 'wazuh' | 'elk' | 'securityonion';
@@ -40,12 +42,10 @@ export interface SiemQuery {
 
 type SiemFeatureFlags = {
   enabled: boolean;
-  apiBaseUrl: string;
 };
 
 const getSiemFlags = (): SiemFeatureFlags => ({
   enabled: import.meta.env.VITE_ENABLE_SIEM === 'true',
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || '',
 });
 
 /**
@@ -66,9 +66,10 @@ export class SiemIntegrationService {
   private async postJson<T>(path: string, body: unknown): Promise<T | null> {
     const flags = getSiemFlags();
     if (!flags.enabled) return null;
+    if (!useAuthStore.getState().accessToken) return null;
 
     try {
-      const res = await fetch(`${flags.apiBaseUrl}${path}`, {
+      const res = await apiFetch(path, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(body ?? {}),
@@ -233,4 +234,3 @@ export class SiemIntegrationService {
 }
 
 export const createSiemIntegrationService = (config: SiemConfig) => new SiemIntegrationService(config);
-

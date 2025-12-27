@@ -1,4 +1,5 @@
-const { getSupabaseAdmin } = require('../_lib/supabase')
+const { handleOptions, setCors } = require('../_lib/http')
+const { requireApiContext } = require('../_lib/context')
 
 async function readJsonBody(req) {
   if (req.body && typeof req.body === 'object') return req.body
@@ -13,12 +14,18 @@ async function readJsonBody(req) {
 }
 
 module.exports = async function handler(req, res) {
+  setCors(req, res)
+  if (handleOptions(req, res)) return
+
   if (req.method !== 'POST') {
-    res.setHeader('allow', 'POST')
+    res.setHeader('allow', 'POST,OPTIONS')
     return res.status(405).json({ error: 'Method Not Allowed' })
   }
 
   try {
+    const ctx = await requireApiContext(req, res)
+    if (!ctx) return
+
     const body = await readJsonBody(req)
     if (!body || typeof body !== 'object') {
       return res.status(400).json({ error: 'Expected JSON body' })
@@ -37,9 +44,10 @@ module.exports = async function handler(req, res) {
     if (!Number.isFinite(impact)) return res.status(400).json({ error: '`impact` must be a number' })
     if (!Number.isFinite(riskScore)) return res.status(400).json({ error: '`riskScore` must be a number' })
 
-    const supabase = getSupabaseAdmin()
+    const { supabase, workspaceId } = ctx
 
     const row = {
+      workspace_id: workspaceId,
       risk_id: riskId,
       probability: Math.trunc(probability),
       impact: Math.trunc(impact),
@@ -56,7 +64,6 @@ module.exports = async function handler(req, res) {
 
     return res.status(204).end()
   } catch (error) {
-    const message = error?.code === 'MISSING_ENV' ? error.message : 'Failed to write time-series data'
-    return res.status(500).json({ error: message })
+    return res.status(500).json({ error: 'Failed to write time-series data' })
   }
 }
