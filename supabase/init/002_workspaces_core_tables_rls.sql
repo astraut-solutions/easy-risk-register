@@ -187,11 +187,34 @@ create unique index if not exists categories_workspace_id_name_uq
 create index if not exists categories_workspace_id_idx
   on public.categories (workspace_id);
 
+-- Baseline categories (AU SME-friendly defaults).
+-- Idempotent: safe to re-run.
+insert into public.categories (workspace_id, name)
+select w.id, v.name
+from public.workspaces w
+cross join (
+  values
+    ('Operational'),
+    ('Financial'),
+    ('Compliance'),
+    ('Security'),
+    ('Privacy'),
+    ('Third-party'),
+    ('Strategic')
+) as v(name)
+where not exists (
+  select 1
+  from public.categories c
+  where c.workspace_id = w.id
+    and lower(c.name) = lower(v.name)
+);
+
 create table if not exists public.risks (
   id uuid primary key default gen_random_uuid(),
   workspace_id uuid not null references public.workspaces (id) on delete cascade,
   title text not null,
   description text not null default '',
+  mitigation_plan text not null default '',
   probability int not null check (probability between 1 and 5),
   impact int not null check (impact between 1 and 5),
   risk_score int generated always as (probability * impact) stored,
@@ -217,11 +240,14 @@ create table if not exists public.risks (
   updated_by uuid
 );
 
+alter table public.risks add column if not exists mitigation_plan text not null default '';
+
 create index if not exists risks_workspace_id_idx on public.risks (workspace_id);
 create index if not exists risks_workspace_id_status_idx on public.risks (workspace_id, status);
 create index if not exists risks_workspace_id_category_idx on public.risks (workspace_id, category);
 create index if not exists risks_workspace_id_threat_type_idx on public.risks (workspace_id, threat_type);
 create index if not exists risks_workspace_id_score_idx on public.risks (workspace_id, risk_score desc);
+create index if not exists risks_workspace_id_updated_at_idx on public.risks (workspace_id, updated_at desc);
 
 create or replace function public.tg_set_audit_fields()
 returns trigger
@@ -342,6 +368,27 @@ begin
 
   insert into public.workspace_members (workspace_id, user_id, role)
   values (v_workspace_id, v_user_id, 'owner');
+
+  -- Seed baseline categories for the workspace (AU SME-friendly defaults).
+  -- Idempotent: safe even if called multiple times for a workspace.
+  insert into public.categories (workspace_id, name)
+  select v_workspace_id, v.name
+  from (
+    values
+      ('Operational'),
+      ('Financial'),
+      ('Compliance'),
+      ('Security'),
+      ('Privacy'),
+      ('Third-party'),
+      ('Strategic')
+  ) as v(name)
+  where not exists (
+    select 1
+    from public.categories c
+    where c.workspace_id = v_workspace_id
+      and lower(c.name) = lower(v.name)
+  );
 
   return v_workspace_id;
 end $$;

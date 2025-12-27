@@ -57,9 +57,9 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [verify] Smoke test: cannot read/write outside workspace; no unauthenticated access to protected APIs
 
 ### Feature: Risk data model + CRUD as system of record
-- [ ] [database] Define `risks` table fields (description/title, category, probability, impact, mitigation, status, timestamps)
-- [ ] [database] Define `categories` table + seed baseline categories (AU SME-friendly defaults)
-- [ ] [database] Add indexes for list/filter (workspace_id, status, category, severity/score, updated_at)
+- [x] [database] Define `risks` table fields (description/title, category, probability, impact, mitigation, status, timestamps)
+- [x] [database] Define `categories` table + seed baseline categories (AU SME-friendly defaults)
+- [x] [database] Add indexes for list/filter (workspace_id, status, category, severity/score, updated_at)
 - [ ] [backend] Implement `GET/POST /api/risks` and `GET/PATCH/DELETE /api/risks/:id` with validation and consistent errors
 - [ ] [backend] Implement `GET /api/categories` (and admin-only category management if needed)
 - [ ] [frontend] Replace local persistence with API-backed queries/mutations (loading/error/empty states)
