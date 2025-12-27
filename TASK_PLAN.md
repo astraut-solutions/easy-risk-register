@@ -25,17 +25,34 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 
 ### Feature: Auth + workspace scoping baseline
 - [ ] [arch] Workspace model decision (MVP): ship single-workspace UX, keep multi-workspace-ready schema
-  - [ ] Define MVP behavior: auto-create a “Personal” workspace on first login; user is Owner/Admin; UI shows current workspace (no switcher)
+  - [ ] Define MVP behavior: auto-create a "Personal" workspace on first login; user is Owner/Admin; UI shows current workspace (no switcher)
   - [ ] Define post-MVP: add multi-workspace switcher + invites (P2) without schema changes
 - [ ] [arch] Workspace scoping decision: derive `workspace_id` via `workspace_members` (no custom JWT claim in MVP)
-  - [ ] Define request resolution: accept `x-workspace-id` (or query param) -> verify membership -> else fallback to user’s personal workspace
+  - [ ] Define request resolution: accept `x-workspace-id` (or query param) -> verify membership -> else fallback to user's personal workspace
   - [ ] Document backend convention and rationale (revocation correctness; supports multi-workspace later)
-- [ ] [database] Create `workspaces` + `workspace_members` tables (roles: Owner/Admin, Member, Viewer)
-- [ ] [database] Add required `workspace_id` + audit fields to core tables (at minimum: `risks`, `categories`)
-- [ ] [database] Implement RLS policies for workspace isolation (and role constraints where applicable)
+- [x] [database] Create `workspaces` + `workspace_members` tables (roles: owner/admin/member/viewer)
+  - [x] `workspaces` fields (id, name, created_at, created_by)
+  - [x] `workspace_members` fields (workspace_id, user_id, role, created_at) + unique(workspace_id, user_id)
+  - [x] Implemented in `supabase/init/002_workspaces_core_tables_rls.sql`
+- [x] [database] Add required `workspace_id` + audit fields to core tables (at minimum: `risks`, `categories`)
+  - [x] Enforced NOT NULL `workspace_id` (FK to `workspaces`)
+  - [x] Added `created_by`, `updated_by`, `created_at`, `updated_at` + triggers to maintain audit fields
+  - [x] Implemented in `supabase/init/002_workspaces_core_tables_rls.sql`
+- [x] [database] Implement RLS policies for workspace isolation (and role constraints where applicable)
+  - [x] Read policy: allow if `exists` membership row for current user in `workspace_members` for the row `workspace_id`
+  - [x] Write policy: allow only for roles with write access (owner/admin/member)
+  - [x] Admin policy: restrict admin-only actions (workspace + member management) to owner/admin
+  - [x] Implemented in `supabase/init/002_workspaces_core_tables_rls.sql` (`public.current_uid()` helper; avoids clashing with GoTrue `auth` schema)
 - [ ] [backend] Implement auth/session verification for `/api/*` (no service keys in the browser)
+  - [ ] Require an end-user Supabase JWT; return 401 when missing/invalid
+  - [ ] Prefer passing the user JWT through to Supabase so RLS remains the primary enforcement
 - [ ] [backend] Add request-scoped `workspaceId` resolution used consistently across all endpoints
-- [ ] [frontend] Add sign-in/out UX and a clear “current workspace” indicator (even if only one workspace)
+  - [ ] If `x-workspace-id` provided: validate format and verify membership; else fallback to the user's personal workspace
+  - [ ] Ensure every query/mutation filters by resolved `workspaceId` (defense-in-depth on top of RLS)
+  - [ ] Standardize errors: 401 unauthenticated, 403 not a member, 404 not found-in-workspace
+- [ ] [frontend] Add sign-in/out UX and a clear "current workspace" indicator (even if only one workspace)
+  - [ ] MVP: show current workspace name (read-only), no switcher UI
+  - [ ] Centralize API client to optionally attach `x-workspace-id` later (when switcher ships)
 - [ ] [deploy] Document required env vars (Supabase URL, anon key for client, server-side secrets for APIs) and Vercel setup
 - [ ] [verify] Smoke test: cannot read/write outside workspace; no unauthenticated access to protected APIs
 
@@ -52,8 +69,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 
 ### Feature: Risk scoring (5x5) and severity thresholds
 - [ ] [database] Decide whether score is stored or computed (store `score`, `severity`, or compute in queries)
-- [ ] [database] Add workspace-configurable thresholds if required (defaults: Low 1–8, Medium 9–15, High 16–25)
-- [ ] [backend] Enforce score/severity consistency server-side (don’t trust client calculations)
+- [ ] [database] Add workspace-configurable thresholds if required (defaults: Low 1-8, Medium 9-15, High 16-25)
+- [ ] [backend] Enforce score/severity consistency server-side (don't trust client calculations)
 - [ ] [frontend] Display score and severity labels; update in real-time as probability/impact change
 - [ ] [deploy] Add configuration knobs (if any) to documented env/settings flow
 - [ ] [verify] Check boundary cases (1, 8, 9, 15, 16, 25) render correctly and match API output
@@ -63,7 +80,7 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [ ] [backend] Add list endpoints/params for filtering/sorting/pagination (avoid client-side filtering only)
 - [ ] [frontend] Implement interactive 5x5 matrix with cell counts and drill-down to filtered list
 - [ ] [frontend] Add accessible legends/labels (not color-only) and keyboard navigation for drill-down
-- [ ] [deploy] Verify performance on “up to 1000 risks” target (basic instrumentation notes)
+- [ ] [deploy] Verify performance on "up to 1000 risks" target (basic instrumentation notes)
 - [ ] [verify] Cross-browser spot check + accessibility quick pass (matrix + filters)
 
 ### Feature: Export baseline (CSV) + safe import (CSV)
@@ -77,8 +94,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 ### Feature: Offline/unreachable behavior (MVP rules)
 - [ ] [database] No change (behavioral requirement)
 - [ ] [backend] Ensure APIs return clear error shapes for offline/unreachable cases
-- [ ] [frontend] Block writes while offline; show explicit “not saved” messaging (no silent failures)
-- [ ] [frontend] Optional: implement bounded read-only cache (last 7 days or 100 items) with “last updated” timestamp
+- [ ] [frontend] Block writes while offline; show explicit "not saved" messaging (no silent failures)
+- [ ] [frontend] Optional: implement bounded read-only cache (last 7 days or 100 items) with "last updated" timestamp
 - [ ] [deploy] Document offline expectations and any caching limits (privacy + storage)
 - [ ] [verify] Toggle offline in browser devtools: confirm writes are blocked and cached view (if enabled) is read-only
 
@@ -116,7 +133,7 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 ### Feature: Guided onboarding + educational tooltips
 - [ ] [database] Add user/workspace settings (tooltips on/off, onboarding state)
 - [ ] [backend] Add settings endpoints (workspace-scoped)
-- [ ] [frontend] Add tooltips on key fields + “first 3 steps” onboarding checklist; allow disabling tooltips
+- [ ] [frontend] Add tooltips on key fields + "first 3 steps" onboarding checklist; allow disabling tooltips
 - [ ] [deploy] Ensure external links (if any) are optional and do not block core use
 - [ ] [verify] Accessibility check for tooltip triggers and keyboard-only flow
 
@@ -126,17 +143,17 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [ ] [database] Add `risk_score_snapshots` (or `risk_trends`) table with bounded retention strategy (20 snapshots per risk or 90 days)
 - [ ] [backend] Record snapshots on create/update; add query endpoints for overall and per-risk trends
 - [ ] [backend] Migrate off Influx-based time-series if present (use Supabase as system of record)
-- [ ] [frontend] Add trend views (overall exposure + per-risk history) with clear “what changed” UX
+- [ ] [frontend] Add trend views (overall exposure + per-risk history) with clear "what changed" UX
 - [ ] [deploy] Remove/replace time-series env vars that are no longer needed (if applicable)
 - [ ] [verify] Performance check on 1000 risks; retention bounds enforced
 
 ### Feature: Dashboard charts + PNG export
 - [ ] [database] No change (depends on risk + history tables)
 - [ ] [backend] Add aggregated endpoints as needed (or compute client-side with bounded payloads)
-- [ ] [frontend] Implement 2–3 default charts (distribution + trends) with drill-down + accessible table equivalents
+- [ ] [frontend] Implement 2-3 default charts (distribution + trends) with drill-down + accessible table equivalents
 - [ ] [frontend] Implement PNG export (default 1080p) for charts
 - [ ] [deploy] Verify bundle size and chart rendering performance
-- [ ] [verify] Chart drill-down matches filters/matrix semantics; “DB unreachable” state is clear
+- [ ] [verify] Chart drill-down matches filters/matrix semantics; "DB unreachable" state is clear
 
 ### Feature: PDF exports (register + incident/checklist)
 - [ ] [database] No change (uses existing data)
@@ -147,7 +164,7 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 
 ### Feature: Automated reminders (notifications + in-app fallback)
 - [ ] [database] Add reminder settings + risk metadata needed to schedule prompts (workspace-scoped)
-- [ ] [backend] Define reminder computation logic (what is “due”) and expose via API; avoid background jobs in MVP
+- [ ] [backend] Define reminder computation logic (what is "due") and expose via API; avoid background jobs in MVP
 - [ ] [frontend] Implement opt-in reminders; Notification API prompt; fallback in-app banners + snooze/disable
 - [ ] [deploy] Document browser permission behavior and supported environments
 - [ ] [verify] Denied permission path shows in-app reminders; cadence respects settings
@@ -159,15 +176,15 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [ ] [database] Ensure encrypted fields can be stored (ciphertext + metadata) without breaking search/list UX
 - [ ] [backend] Ensure APIs treat encrypted fields as opaque (no plaintext logging); enforce payload limits
 - [ ] [frontend] Implement passphrase flow (enable/disable/rotate) and client-side encrypt/decrypt via Web Crypto
-- [ ] [deploy] Document limitations (no recovery), and ensure logs/telemetry don’t capture plaintext
+- [ ] [deploy] Document limitations (no recovery), and ensure logs/telemetry don't capture plaintext
 - [ ] [verify] Threat model review + recovery-flow validation (passphrase loss, rotation)
 
 ### Feature: Incident response planner (playbooks per risk)
 - [ ] [database] Add playbook templates + per-risk playbook instances (editable)
 - [ ] [backend] Implement playbook CRUD APIs (workspace-scoped)
 - [ ] [frontend] Add playbook UI on risk details and include in relevant PDF exports
-- [ ] [deploy] Document “assistive, not legal advice” constraints
-- [ ] [verify] Playbooks remain editable and template updates don’t overwrite existing risk playbooks
+- [ ] [deploy] Document "assistive, not legal advice" constraints
+- [ ] [verify] Playbooks remain editable and template updates don't overwrite existing risk playbooks
 
 ### Feature: Maturity radar (ACSC/NIST self-assessment)
 - [ ] [database] Add maturity assessment tables (framework preset, domain scores, timestamps)
@@ -188,4 +205,10 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 ### Feature: Usability validation loop
 - [ ] [docs] Prepare interview scripts and success-metric instrumentation plan (time-to-first-risk, export adoption)
 - [ ] [frontend] Add lightweight UX instrumentation (privacy-respecting; can be local-only if needed)
-- [ ] [verify] Run 5–10 SME interviews/tests; triage issues; feed into next task plan revision
+- [ ] [verify] Run 5-10 SME interviews/tests; triage issues; feed into next task plan revision
+
+
+
+
+
+

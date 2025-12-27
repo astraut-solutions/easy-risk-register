@@ -1,9 +1,37 @@
 -- Dev-only bootstrap for a minimal Supabase-compatible PostgREST setup.
 -- This stack is intentionally minimal: DB + PostgREST + gateway that exposes `/rest/v1`.
 
-create role anon nologin;
-create role authenticated nologin;
-create role service_role nologin bypassrls;
+do $$
+begin
+  create role supabase_admin login superuser password 'postgres';
+exception
+  when duplicate_object then
+    alter role supabase_admin with login superuser password 'postgres';
+end $$;
+
+-- Needed by some Supabase Postgres image extension hooks.
+grant pg_read_server_files to supabase_admin;
+
+do $$
+begin
+  create role anon nologin;
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create role authenticated nologin;
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create role service_role nologin bypassrls;
+exception
+  when duplicate_object then null;
+end $$;
 
 grant usage on schema public to anon, authenticated, service_role;
 
@@ -25,4 +53,3 @@ alter table public.risk_trends force row level security;
 
 -- Allow server-side access (service_role key). Keep anon/authenticated locked down by default.
 grant select, insert on public.risk_trends to service_role;
-
