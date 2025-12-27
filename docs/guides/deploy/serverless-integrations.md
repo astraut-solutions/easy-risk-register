@@ -74,8 +74,21 @@ Set server-side env vars for your local serverless runtime (`vercel dev`):
 
 Dev-only defaults used by the minimal compose stack:
 
-- JWT secret: `dev-supabase-jwt-secret`
-- Service role key: `<set SUPABASE_SERVICE_KEY in your root .env>`
+- JWT secret: `dev-supabase-jwt-secret` (override by setting `SUPABASE_JWT_SECRET`)
+- Keys: generated JWTs for `anon` and `service_role` (set `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_KEY`)
+
+### Rotating local Supabase keys (recommended after any exposure)
+
+1) Generate fresh local keys:
+
+- `node scripts/generate-local-supabase-keys.mjs`
+
+2) Put the output into your root `/.env.local` (gitignored) or export them in your shell.
+
+3) Restart the local stack (dev profile):
+
+- `docker-compose --profile development down`
+- `docker-compose --profile development up -d supabase-db supabase-rest supabase-auth supabase-storage supabase-realtime supabase-gateway`
 
 Notes:
 

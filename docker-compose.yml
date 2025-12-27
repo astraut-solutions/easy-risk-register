@@ -66,7 +66,7 @@ services:
       - PGRST_DB_URI=postgres://postgres:postgres@supabase-db:5432/postgres
       - PGRST_DB_SCHEMAS=public
       - PGRST_DB_ANON_ROLE=anon
-      - PGRST_JWT_SECRET=dev-supabase-jwt-secret
+      - PGRST_JWT_SECRET=${SUPABASE_JWT_SECRET:-dev-supabase-jwt-secret}
       - PGRST_SERVER_PORT=3000
     profiles:
       - development
@@ -93,7 +93,7 @@ services:
       - GOTRUE_SITE_URL=http://localhost:54323
       - GOTRUE_URI_ALLOW_LIST=*
       - GOTRUE_DISABLE_SIGNUP=false
-      - GOTRUE_JWT_SECRET=dev-supabase-jwt-secret
+      - GOTRUE_JWT_SECRET=${SUPABASE_JWT_SECRET:-dev-supabase-jwt-secret}
       - GOTRUE_JWT_EXP=3600
       # Required for email/password signups.
       - GOTRUE_EXTERNAL_EMAIL_ENABLED=true
@@ -112,7 +112,7 @@ services:
       - ANON_KEY=${SUPABASE_ANON_KEY:-__MISSING_SUPABASE_ANON_KEY__}
       - SERVICE_KEY=${SUPABASE_SERVICE_KEY:-__MISSING_SUPABASE_SERVICE_KEY__}
       - POSTGREST_URL=http://supabase-rest:3000
-      - PGRST_JWT_SECRET=dev-supabase-jwt-secret
+      - PGRST_JWT_SECRET=${SUPABASE_JWT_SECRET:-dev-supabase-jwt-secret}
       - DATABASE_URL=postgres://postgres:postgres@supabase-db:5432/postgres
       - FILE_SIZE_LIMIT=52428800
       - STORAGE_BACKEND=file
@@ -141,7 +141,7 @@ services:
       - DB_PASSWORD=postgres
       - DB_NAME=postgres
       - DB_SSL=false
-      - JWT_SECRET=dev-supabase-jwt-secret
+      - JWT_SECRET=${SUPABASE_JWT_SECRET:-dev-supabase-jwt-secret}
       - SECRET_KEY_BASE=dev-secret-key-base-change-me
       - ERL_AFLAGS=-proto_dist inet_tcp
     profiles:
@@ -191,7 +191,7 @@ services:
     environment:
       - STUDIO_PG_META_URL=http://supabase-meta:8080
       - POSTGRES_PASSWORD=postgres
-      - JWT_SECRET=dev-supabase-jwt-secret
+      - JWT_SECRET=${SUPABASE_JWT_SECRET:-dev-supabase-jwt-secret}
       - SUPABASE_URL=http://supabase-gateway
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-__MISSING_SUPABASE_ANON_KEY__}
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY:-__MISSING_SUPABASE_SERVICE_KEY__}
