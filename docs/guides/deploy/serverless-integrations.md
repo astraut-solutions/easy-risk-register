@@ -11,6 +11,12 @@ In Vite, any environment variable prefixed with `VITE_` is bundled into the fron
 - Frontend calls `/api/...` (same-origin on Vercel) or `VITE_API_BASE_URL + /api/...` (when pointing at a separate API host).
 - Serverless functions live in `api/` and read **server-only** environment variables (no `VITE_` prefix).
 
+## CORS guidance (local dev vs. production)
+
+- **Same-origin on Vercel**: recommended. The frontend calls `/api/*` on the same origin, so CORS is not involved.
+- **Local dev (cross-origin)**: common when running Vite on `http://localhost:5173` and the dev API on `http://localhost:3000`. The API sets CORS headers so browser requests are allowed.
+- **Separate hosts in production**: avoid if possible. If you must split frontend and API across origins, restrict allowed origins and do not rely on permissive defaults.
+
 ## Feature flags (frontend)
 
 Integrations are feature-flagged and **off by default**. See `easy-risk-register-frontend/.env.example` for the current list, including:

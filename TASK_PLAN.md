@@ -64,8 +64,7 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [backend] Implement `GET /api/categories` (and admin-only category management if needed)
 - [x] [frontend] Replace local persistence with API-backed queries/mutations (loading/error/empty states)
 - [x] [frontend] Create/edit/delete risk flows with confirmation and form validation
-- [ ] [deploy] Ensure API routes are wired in Vercel and CORS guidance is documented (if needed for local dev)
-- [ ] [verify] Manual API checks + UI smoke test: create/edit/delete persists across refresh and devices
+- [x] [deploy/verify] Vercel API routing + CORS guidance documented; manual smoke test confirms create/edit/delete persists across refresh and devices
 
 ### Feature: Risk scoring (5x5) and severity thresholds
 - [ ] [database] Decide whether score is stored or computed (store `score`, `severity`, or compute in queries)

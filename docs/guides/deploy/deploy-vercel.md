@@ -76,6 +76,33 @@ From your Supabase project:
 
 4) Deploy.
 
+## API routing (Vercel)
+
+Vercel automatically deploys any files under the repo root `api/` directory as Serverless Functions. That means:
+
+- `api/users.js` becomes `GET /api/users`
+- `api/risks/index.js` becomes `/api/risks`
+- `api/risks/[id].js` becomes `/api/risks/:id`
+
+If the frontend and API are deployed in the same Vercel project (recommended), the frontend calls `/api/*` as **same-origin** requests.
+
+## CORS notes
+
+- **On Vercel (recommended)**: no CORS configuration is needed because the frontend calls same-origin `/api/*`.
+- **Local dev**: when the frontend runs on `http://localhost:5173` and the API runs on `http://localhost:3000`, the API sends CORS headers so the browser can call it cross-origin.
+
+If you deploy the frontend and API on different hosts, treat CORS as a production security control: restrict allowed origins and avoid `*` with credentials.
+
+## Smoke test (manual)
+
+After deploying (or when running locally), validate the end-to-end persistence path:
+
+1) Sign up/sign in.
+2) Create a risk, refresh the page, confirm it still exists.
+3) Edit the risk, refresh, confirm changes persist.
+4) Delete the risk, refresh, confirm it is gone.
+5) Sign in on another device/profile and confirm the same risks are visible (same user/workspace).
+
 ## Local parity (optional)
 
 - Frontend env: `easy-risk-register-frontend/.env` (copy from `easy-risk-register-frontend/.env.example`)
