@@ -67,8 +67,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [deploy/verify] Vercel API routing + CORS guidance documented; manual smoke test confirms create/edit/delete persists across refresh and devices
 
 ### Feature: Risk scoring (5x5) and severity thresholds
-- [ ] [database] Decide whether score is stored or computed (store `score`, `severity`, or compute in queries)
-- [ ] [database] Add workspace-configurable thresholds if required (defaults: Low 1-8, Medium 9-15, High 16-25)
+- [x] [database] Decide whether score is stored or computed (store `score`, `severity`, or compute in queries)
+- [x] [database] Add workspace-configurable thresholds if required (defaults: Low 1-8, Medium 9-15, High 16-25)
 - [ ] [backend] Enforce score/severity consistency server-side (don't trust client calculations)
 - [ ] [frontend] Display score and severity labels; update in real-time as probability/impact change
 - [ ] [deploy] Add configuration knobs (if any) to documented env/settings flow
