@@ -97,10 +97,10 @@ This document maps the design system components and specifications to the specif
 - Security considerations in accessibility and implementation docs
 
 **Acceptance Criteria Mapping**:
-- All risk data is stored in browser local storage → Storage management implementation
-- Data persists across browser sessions → Local storage implementation
-- Users can view and manage their stored data → UI for data management
-- Clear warnings are provided about local storage limitations → UI messaging and warnings
+- Core risk data is stored in Supabase (Postgres) → Supabase-backed persistence with RLS
+- Data persists across sessions/devices → Supabase-backed persistence
+- Users can view and manage their stored data → Risk list/table + filters
+- Clear warnings are provided about auth/offline limitations → UI messaging and errors
 
 ## Functional Requirements Mapping
 
@@ -115,8 +115,8 @@ This document maps the design system components and specifications to the specif
 - **REQ-010**: Export risk data in CSV format → Export functionality in implementation docs
 
 ### 3.4 Data Management Functions
-- **REQ-014**: Store all user data in browser local storage → Local storage implementation
-- **REQ-016**: Allow users to clear all stored data with confirmation → Clear data functionality
+- **REQ-014**: Persist core data server-side (Supabase/Postgres) → Supabase-backed persistence with RLS
+- **REQ-016**: Allow users to clear local state (sign out/reset preferences) → Local state reset + sign out
 
 ## Non-Functional Requirements Mapping
 
@@ -132,7 +132,7 @@ This document maps the design system components and specifications to the specif
 - **NFR-008**: Learning curve not exceeding 10 minutes → Intuitive interface design
 
 ### 4.3 Security Requirements
-- **NFR-009**: All data remains local to user's device → Client-side only architecture
+- **NFR-009**: Data remains private by default → Stored in workspace-scoped Supabase (RLS) with no third-party sharing by default
 - **NFR-010**: Implement security measures for XSS prevention → Security considerations in implementation docs
 - **NFR-012**: Secure methods for data backup and transfer → Export/import functionality
 
@@ -145,8 +145,8 @@ This document maps the design system components and specifications to the specif
 ## Technical Architecture Alignment
 
 ### 5.1 System Architecture
-- Client-side only approach implemented with local storage → Design system supports client-side architecture
-- Privacy-focused operation maintained → No external dependencies in design system
+- Supabase-backed architecture (serverless APIs + RLS) → Design system remains compatible with online-first flows
+- Privacy-focused operation maintained → No third-party analytics required by default
 
 ### 5.2 Technology Stack Considerations
 - Design system compatible with React.js/Vue.js → Component specifications are framework-agnostic

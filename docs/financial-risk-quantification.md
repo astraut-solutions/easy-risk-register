@@ -109,7 +109,6 @@ All financial risk quantification components follow the existing UI/UX patterns 
 
 ## Security Considerations
 
-- All financial calculations happen client-side with no data transmission
-- Financial data is stored locally in the browser following the same security practices as other risk data
+- Calculations happen client-side; results are stored with the risk record (currently via the risk `data` JSON in Supabase)
 - No external services or APIs are used for financial calculations
 - Input validation prevents injection attacks in financial data fields

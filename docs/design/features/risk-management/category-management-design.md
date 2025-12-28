@@ -30,7 +30,7 @@ Default categories rarely match how teams actually talk about risk. Users need t
 - Newly added categories appear immediately in:
   - the Category select in the form
   - the dashboard filters (category filter dropdown)
-- Categories persist via LocalStorage (no server).
+- Categories persist in Supabase (`public.categories`) scoped to the current workspace.
 
 ## Accessibility
 - The inline “Add category” panel must be keyboard reachable.

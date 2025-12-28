@@ -82,28 +82,31 @@ CSV export also includes spreadsheet injection protection:
 
 - Exported cells are generated via PapaParse with `escapeFormulae` enabled, which escapes values that begin with `=`, `+`, `-`, or `@`
 
-## Client-Side Security Architecture
+## Server-backed security architecture
 
-As a client-side only application:
+Easy Risk Register is an online-first app:
 
-- All data is stored locally in browser storage with no server transmission by default
-- No external API calls are required for core functionality
-- Sanitization is applied before persistence to reduce the risk of storing malicious content
+- Core risk data is stored in Supabase Postgres and accessed via `/api/*` serverless functions.
+- The browser authenticates with Supabase Auth and sends an end-user Bearer token to `/api/*`.
+- Serverless APIs verify the end-user token and call Supabase using the **anon key + the user's JWT**, so **RLS policies** remain the primary enforcement mechanism.
+
+See `docs/guides/security/auth-workspace-scoping-baseline.md` for the end-to-end flow.
 
 ### Search/filter safety (no dynamic regex)
 
 Search and filtering are implemented using simple string comparisons (`.includes()` on lowercased text) rather than dynamically-constructed regular expressions. This avoids regex-injection risks and reduces the likelihood of catastrophic backtracking from user-provided input.
 
-### Why SQL injection is not applicable (but CSV/XSS still are)
+### SQL injection vs. practical risks in this repo
 
-SQL injection is not applicable because Easy Risk Register does not execute SQL queries and does not include a backend database layer. However:
+This repo does use a database (Supabase Postgres), but the API layer does not construct raw SQL strings. The more relevant risks to manage are:
 
-- **XSS** remains relevant in any web UI, so user text is sanitized and CSP is enforced.
-- **CSV/spreadsheet injection** remains relevant when exporting/importing to spreadsheets, so CSV validation and export escaping are implemented.
+- **Authorization/RLS mistakes** (incorrect workspace scoping or bypassing RLS).
+- **XSS** in any web UI (mitigated via sanitization + CSP).
+- **CSV/spreadsheet injection** during export/import (mitigated via validation + export escaping).
 
 ## Client-Side Encryption Limitations
 
-The optional encrypted storage feature is a defense-in-depth measure for data at rest in browser storage, not a protection against active script execution:
+The optional encrypted storage feature is a defense-in-depth measure for data at rest in browser storage (currently: locally persisted UI state), not a protection against active script execution:
 
 - Client-side encryption does not protect against attackers who can execute code in the same origin (for example via XSS).
 - The encryption key is derived from a user passphrase and kept in memory for the session; it primarily protects against casual/local inspection of storage at rest.

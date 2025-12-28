@@ -354,13 +354,13 @@ Easy Risk Register is designed to be accessible to all users:
 A: No. Deletions are permanent. Be careful when deleting. Consider marking as "Closed" instead if you may need the record later.
 
 **Q: Does my data leave my device?**
-A: No. All data stays in your browser's local storage. Nothing is sent to external servers.
+A: Yes. Core risk register data is stored in Supabase (Postgres) and accessed via `/api/*`. Your data stays within your Supabase project and is workspace-scoped (enforced by RLS).
 
 **Q: How long is my data kept?**
-A: As long as your browser is not cleared. If you clear browser storage, your data is deleted. Regularly export to backup.
+A: Your risks are kept in Supabase until deleted. Clearing browser storage usually signs you out and resets local preferences, but it does not delete server data.
 
 **Q: Can I share my risk register with a team member?**
-A: Not directly. Export to CSV or PDF and share the file. Both users maintain separate local copies.
+A: Yes, if both users are members of the same workspace in Supabase. The UI currently ships as single-workspace-first (no invite/switcher UX yet), so workspace membership is typically managed via Supabase admin tooling.
 
 **Q: How do I back up my data?**
 A: Export to CSV or PDF regularly. Store files securely (email, cloud drive, or local backup).

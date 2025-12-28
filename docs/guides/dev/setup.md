@@ -109,14 +109,16 @@ From the project root:
 
 ## Architecture Overview
 
-The Easy Risk Register follows a client-side architecture:
+Easy Risk Register is an online-first app backed by Supabase:
 
 - **Frontend**: React + TypeScript + Vite
-- **State Management**: Zustand
+- **State Management**: Zustand (filters/settings; core risks are fetched from APIs)
 - **Styling**: Tailwind CSS
 - **Forms**: React Hook Form
 - **Animations**: Framer Motion
-- **Data Storage**: Browser LocalStorage (no server dependencies)
+- **Backend**: Vercel serverless functions under `api/` (`/api/*`)
+- **Persistence**: Supabase Postgres (workspace-scoped with RLS)
+- **Auth**: Supabase Auth
 - **Build Tool**: Vite
 
 For detailed architecture information, see [Architecture Diagrams](../architecture/architecture-diagrams.md).
@@ -130,6 +132,8 @@ npm run build
 ```
 
 This creates an optimized build in `easy-risk-register-frontend/dist` that can be deployed to any static hosting service.
+
+Note: the app expects `/api/*` endpoints for authenticated persistence, so production deployments typically use Vercel (or another host that can serve the frontend and serverless functions together).
 
 ## Troubleshooting
 

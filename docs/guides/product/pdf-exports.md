@@ -1,6 +1,6 @@
 # PDF exports (Print to PDF)
 
-Easy Risk Register generates PDF exports by opening a **print-friendly report view** and relying on your browser's built-in **Print / Save as PDF** flow. This keeps exports fully client-side (no backend, no server-side PDF generation).
+Easy Risk Register generates PDF exports by opening a **print-friendly report view** and relying on your browser's built-in **Print / Save as PDF** flow. The PDF rendering itself is client-side (no server-side PDF generation), but the report content is sourced from the current dataset (fetched via `/api/*`).
 
 ## Available PDF reports
 

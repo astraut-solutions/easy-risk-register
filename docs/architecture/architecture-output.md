@@ -4,9 +4,9 @@ This document is a short, implementation-aligned overview. For the full set of d
 
 ## Summary
 
-- **Runtime**: client-side only (no backend server required)
-- **Data**: stored in the browser (LocalStorage via the Zustand store persistence layer)
-- **Security**: input/output sanitization + optional client-side encryption utilities
+- **Runtime**: browser frontend + serverless APIs (`/api/*`)
+- **Data**: stored in Supabase Postgres (workspace-scoped with RLS); the browser stores only non-authoritative UI state and auth tokens
+- **Security**: CSP + input sanitization + RLS-driven authorization; optional local encryption for persisted UI state
 
 ## Current Technology Stack
 

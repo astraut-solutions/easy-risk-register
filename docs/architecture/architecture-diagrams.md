@@ -4,7 +4,9 @@ Based on the product requirements and tech stack preferences, I've developed a c
 
 ## Executive Summary
 
-The Easy Risk Register is designed as a privacy-focused, client-side risk management application that operates entirely in the browser. The architecture emphasizes data privacy, performance, and usability while maintaining a clean separation of concerns for maintainability and future extensibility.
+Easy Risk Register is an online-first, privacy-focused risk management application. Core risk register data is stored in Supabase (Postgres) and accessed via serverless APIs (`/api/*`), with workspace isolation enforced by Supabase RLS.
+
+Note: this document contains a mix of implementation-aligned diagrams and earlier “local-first” design diagrams. Where diagrams mention LocalStorage as the system of record, treat them as legacy and prefer `docs/technical-architecture.md` + `docs/guides/security/auth-workspace-scoping-baseline.md` for the current architecture.
 
 ### High-Level Architecture Diagram
 
@@ -546,9 +548,9 @@ graph LR
 
 #### Data Privacy
 - Clear data isolation between user sessions
-- Client-side only processing of risk data
+- Client-side processing for calculations and rendering (core persistence is server-side)
 - Export data is sanitized before CSV generation
-- No external data transmission by default
+- Data is transmitted to your Supabase project via `/api/*` (no third-party analytics by default)
 
 #### Security Architecture Diagram
 

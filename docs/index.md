@@ -1,6 +1,8 @@
 # Easy Risk Register Documentation
 
-Easy Risk Register is a client-side, privacy-focused risk management app that supports **audit evidence preparation for ISO 27001 / SOC 2** (it does not provide certification).
+Easy Risk Register is a privacy-first risk management app backed by **Supabase (Postgres)** and accessed via **serverless APIs** (`/api/*` on Vercel). It supports **audit evidence preparation for ISO 27001 / SOC 2** (it does not provide certification).
+
+Core risk register data is stored server-side (workspace-scoped with Supabase RLS). The browser stores only non-authoritative UI state (for example filters/settings) plus the Supabase session token.
 
 ## Start here
 

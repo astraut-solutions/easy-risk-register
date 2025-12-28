@@ -1,6 +1,6 @@
 # Easy Risk Register
 
-A lightweight, privacy-focused risk management application for small and medium-sized businesses (SMBs). Easy Risk Register helps teams capture, prioritize, and report operational, cyber security, and compliance risks through an intuitive web interface that operates entirely in the browser.
+A lightweight, privacy-first risk management application for small and medium-sized businesses (SMBs). Easy Risk Register helps teams capture, prioritize, and report operational, cyber security, and compliance risks through an intuitive web interface backed by **Supabase (Postgres)** and **serverless APIs** (`/api/*`).
 
 ## Table of Contents
 - [Overview](#overview)
@@ -21,9 +21,9 @@ A lightweight, privacy-focused risk management application for small and medium-
 
 Easy Risk Register addresses a critical market gap where SMBs currently rely on outdated methods like Excel spreadsheets or informal processes for risk management, while enterprise-grade tools remain too complex and costly for their needs. The application offers:
 
-- **Privacy-first approach**: All data stored locally in browser storage, no server required
+- **Privacy-first approach**: Data is stored in your Supabase project (workspace-scoped with RLS); the browser stores only non-authoritative UI state plus the Supabase session token
 - **Cross-industry applicability**: Universal solution suitable for various business types
-- **Cost-effective**: Free to use with no infrastructure costs
+- **Cost-effective**: Simple architecture (Vercel + Supabase) with minimal operational overhead
 - **User-friendly**: Intuitive interface accessible to non-risk experts
 
 ## Real-World Use Cases
@@ -39,65 +39,14 @@ A regional financial advisor firm manages risks including market volatility, cyb
 
 ## Features
 
-- Create, edit, and delete risk records with comprehensive details
-- Automatic risk scoring using probability x impact calculations
-- Interactive probability-impact matrix visualization
-- Dashboard view with charts and analytics
-- Spreadsheet-style risk table for detailed management
-- Maturity self-assessment radar for capability tracking
-- Settings page for customization and preferences
-- Responsive design that works across devices
-- Cyber risk templates (phishing, ransomware, BEC) with one-click prefill for fast onboarding
-- Cyber threat type classification + filtering
-- Ownership + accountability fields (owner/team, due/review dates, review cadence, risk response)
-- Evidence tracking (URLs + descriptions) and structured mitigation steps
-- Compliance checklists (privacy incident / NDB assist) with timestamps and status filtering
-- Incident response playbooks per risk (template-based, editable)
-- Risk acceptance status support (`accepted`)
-- CSV import/export functionality for reporting and backups (backward-compatible across versions)
-- "Audit pack" CSV export variant for audit evidence preparation (includes evidence URL columns + review/acceptance metadata)
-- CSV/Excel formula injection protection on export (cells starting with `=`, `+`, `-`, `@` are escaped)
-- PDF exports (risk register + privacy checklist) via print-to-PDF (opens a `report.html` tab; popups must be allowed)
-- Real-time updates for risk scores and visualizations
-- Optional local encryption for stored data (passphrase-based, using browser crypto APIs)
-- Maturity self-assessment with numbered domain badges and 2-column layout for efficient space usage
-- Settings panel (full-page view, not modal) for account and visualization preferences
-- WCAG 2.1 AA compliant accessibility features
-- Content Security Policy (CSP) implementation for enhanced security
-- 100% compliance with product requirements
-- **Financial Risk Quantification features:**
-  - Estimated Financial Impact (EFI) calculator with range-based estimates
-  - Financial Risk Trend visualization showing potential impact over time
-  - Return on Security Investment (ROSI) calculator for security control ROI analysis
-  - Interactive Cost Modeling for tracking mitigation investments
-  - Range-based impact visualization with upper/lower bounds and expected mean
-- **Advanced Risk Scoring features:**
-  - Dynamic Risk Score system (like SAFE Score) with multiple risk factors and time-based adjustments
-  - Breach Likelihood probability calculations considering threat level, vulnerability, and controls effectiveness
-  - Scenario-based scoring for specific threats (ransomware, data compromise, insider threats, supply chain)
-  - Real-time risk posture measurement with trend analysis and risk capacity monitoring
-- **UI/UX Improvements:**
-  - Executive-focused dashboard with key metrics and visualizations
-  - Clear information hierarchy with progressive disclosure using React hooks
-  - Color-coded risk levels with consistent visual design using Tailwind CSS
-  - Mobile-responsive design optimized for all screen sizes
-  - Enhanced accessibility features with ARIA compliance
-  - Intuitive navigation system for improved user experience
-- **Technical Architecture features:**
-  - Real-time processing engine for continuous risk updates (using Socket.io)
-  - Time-series database integration for historical trend analysis (InfluxDB)
-  - Graph database for modeling risk relationships and dependencies
-  - Integration capabilities with vulnerability scanners (OpenVAS, ZAP, Nikto)
-  - SIEM system integration (Wazuh, ELK Stack, Security Onion)
-  - Asset management/CMDB system integration (DataGerry, CMDBuild, Snipe-IT)
-  - API framework for third-party integrations (REST/GraphQL support)
-  - Microservices architecture design for scalability (NestJS/Express on Vercel)
-- **Differentiating Features:**
-  - Financial risk translation for business stakeholders with natural language generation
-  - Scenario modeling and what-if analysis capabilities using Monte Carlo simulation
-  - Board-ready PDF reporting tools with professional formatting and visualizations
-  - Executive communication tools with pre-built email templates and sharing capabilities
-  - ROI measurement for security investments with cost-benefit analysis and prioritization
+- Supabase Auth sign-in/out and workspace-scoped access (default “Personal” workspace; no multi-workspace switcher UX yet)
+- Risk CRUD via APIs (`/api/risks`, `/api/categories`) with validation and consistent error handling
+- Automatic risk scoring (probability × impact) and probability-impact matrix + table views
+- Filters and search (status/category/threat type/score)
+- CSV export (standard + audit pack) with CSV/Excel formula injection protection
+- PDF export via print-to-PDF (`report.html` viewer; popups must be allowed)
+- Per-risk optional fields stored in `public.risks.data` (jsonb): templates, checklists, evidence, playbooks, structured mitigation steps
+- Sanitization and a strict Content Security Policy (CSP)
 
 UX notes:
 - Clicking a risk title takes you directly to the **Edit risk** view (no intermediate "view-only" modal).
@@ -108,18 +57,19 @@ Wording note: Easy Risk Register **supports audit evidence preparation for ISO 2
 
 ## Architecture
 
-The application follows a client-side-only architecture with no server dependencies:
-- All data is stored in browser local storage with robust input sanitization to prevent XSS attacks
-- Content Security Policy (CSP) implementation to prevent code injection attacks
-- Built with React, TypeScript, Vite, and Tailwind CSS
-- Zustand for state management
-- Framer Motion for animations
+The application uses a Supabase-backed architecture:
+
+- **Frontend**: Vite + React + TypeScript (`easy-risk-register-frontend/`)
+- **Serverless APIs**: Vercel functions under `api/` (same-origin `/api/*`)
+- **Auth**: Supabase Auth in the browser; APIs require an end-user Bearer token
+- **Persistence**: Supabase Postgres with workspace scoping enforced via RLS
+- **Local persistence**: non-authoritative UI state (filters/settings) plus the Supabase session token
 
 Optional integrations (time-series, threat intel, etc.) are designed to keep secrets off the client:
 - Never put API keys/tokens in `VITE_*` variables (anything prefixed with `VITE_` is bundled into the browser build).
 - Use serverless APIs (Vercel functions under `api/`) for any calls that require credentials.
 
-Server-side APIs live in the repo root `api/` folder (Vercel Serverless Functions). There is no separate backend server to run when deploying on Vercel.
+Server-side APIs live in the repo root `api/` folder (Vercel Serverless Functions). In local development, run the dev API server (Docker profile `development`) or point `VITE_API_BASE_URL` at a deployed environment.
 
 Diagrams and a deeper breakdown are in [Architecture Documentation](docs/architecture/architecture-diagrams.md).
 
@@ -139,7 +89,11 @@ Diagrams and a deeper breakdown are in [Architecture Documentation](docs/archite
    ```bash
    cd easy-risk-register-frontend
    ```
-3. Install dependencies:
+3. Create `easy-risk-register-frontend/.env` (see `easy-risk-register-frontend/.env.example`) and set:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_API_BASE_URL` (optional; set when pointing at a separate API host)
+4. Install dependencies:
    ```bash
    npm install
    ```
@@ -154,11 +108,13 @@ npm run install:hooks
 
 This requires `gitleaks` installed locally: https://github.com/gitleaks/gitleaks#installation
 
-4. Start the development server:
+5. Start the development server:
    ```bash
    npm run dev
    ```
-5. Open [http://localhost:5173](http://localhost:5173) in your browser
+6. Open [http://localhost:5173](http://localhost:5173) in your browser
+
+Note: `npm run dev` runs the frontend only. For a full local stack (Supabase-compatible services + `/api/*`), use the Docker Compose `development` profile below.
 
 #### Docker Compose (no local Node/npm)
 
@@ -275,6 +231,8 @@ For more details on testing, see [Testing Guide](docs/guides/dev/testing.md).
 - **State Management**: Zustand
 - **Forms**: React Hook Form
 - **Animations**: Framer Motion
+- **Backend**: Vercel Serverless Functions (`api/`)
+- **Database/Auth**: Supabase (Postgres + Auth)
 
 ## Documentation
 
@@ -286,8 +244,8 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 |----------|-----------|-------------|
 | **Architecture** | [Architecture Documentation](docs/architecture/architecture-diagrams.md) | System architecture with integrated diagrams |
 | | [System Architecture (Overview)](docs/architecture/architecture-output.md) | Implementation-aligned architecture summary |
-| | [Secure Data Storage](docs/architecture/secure-data-storage.md) | Client-side encryption for persisted LocalStorage data |
-| | [Technical Architecture](docs/technical-architecture.md) | Detailed documentation on real-time processing, time-series DB, graph DB, vulnerability scanner integration, SIEM integration, and microservices architecture |
+| | [Secure Data Storage](docs/architecture/secure-data-storage.md) | What is stored locally vs. in Supabase; optional local encryption for persisted UI state |
+| | [Technical Architecture](docs/technical-architecture.md) | Current implementation architecture (Supabase + serverless APIs) |
 | **Guides** | [Setup Guide](docs/guides/dev/setup.md) | Complete setup instructions from quick start to advanced development |
 | | [Testing Guide](docs/guides/dev/testing.md) | How to run and write tests |
 | | [Development Workflow](docs/guides/dev/development-workflow.md) | Standard development process and commands |
@@ -295,7 +253,7 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | | [Audit-ready workflow](docs/guides/product/audit-ready-workflow.md) | Owners, reviews, evidence, and audit pack exports |
 | | [PDF exports](docs/guides/product/pdf-exports.md) | Print-to-PDF reports + troubleshooting |
 | | [Evidence guidance](docs/guides/product/evidence-guidance.md) | What counts as evidence and how to capture it |
-| | [Privacy controls](docs/guides/security/privacy-controls.md) | Local encryption + incident playbooks |
+| | [Privacy controls](docs/guides/security/privacy-controls.md) | Current privacy controls + encryption roadmap |
 | | [Deploying to Vercel](docs/guides/deploy/deploy-vercel.md) | Required env vars + Vercel setup |
 | | [Auth + workspace scoping baseline](docs/guides/security/auth-workspace-scoping-baseline.md) | How auth and workspace tenancy work |
 | **Reference** | [System Diagrams](docs/reference/diagrams.md) | Visual representations of system architecture and data flows |
@@ -332,12 +290,10 @@ This project is licensed under the MIT License - see the [LICENSE](docs/LICENSE)
 
 ## Security & Compliance Features
 
-- **Role-Based Access Control (RBAC)**: Implemented using JWT with jsonwebtoken for secure user authentication and authorization
-- **Audit Logging**: Comprehensive audit logging for risk modifications using Winston logger with file transports
-- **Data Encryption**: Client-side and server-side encryption for sensitive information using Crypto.js and Node crypto
-- **Compliance Reporting**: NIST framework-aligned compliance reporting with template-based PDF generation using jsPDF
-- **API Security**: Secure API endpoints with authentication middleware and role-based access control
-- **Frontend Security**: React context-based security management with protected routes and role checking
+- **Authentication**: Supabase Auth (end-user JWTs)
+- **Authorization**: Supabase RLS + workspace scoping (defense-in-depth in `/api/*`)
+- **App hardening**: CSP via headers + input sanitization to reduce XSS risk
+- **Export safety**: CSV/Excel formula injection protection on export/import
 
 ## Security Policy
 

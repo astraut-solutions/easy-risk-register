@@ -2,7 +2,7 @@
 
 ## Overview
 
-Easy Risk Register is a privacy-focused risk management application that prioritizes security and data protection. As a client-side application, all data is stored locally in the user's browser with no server transmission by default, providing inherent security benefits.
+Easy Risk Register is a privacy-focused risk management application that prioritizes security and data protection. Core risk register data is stored in **Supabase (Postgres)** and accessed via **serverless APIs** (`/api/*`). Workspace scoping is enforced by Supabase **Row Level Security (RLS)**.
 
 ## Security Measures
 
@@ -43,7 +43,7 @@ Search/filter logic uses simple string matching (not dynamically-constructed reg
 
 ### Data Encryption
 
-Persisted risk data can be encrypted in browser local storage (optional, user-enabled):
+The app includes optional passphrase-based encryption for the **local persisted UI state** (optional, user-enabled):
 - Uses browser crypto APIs (no custom crypto): PBKDF2 (SHA-256) to derive an AES-GCM key from a user passphrase
 - AES-GCM uses a randomly generated 12-byte initialization vector (IV) per encryption
 - Encrypted values are stored as a JSON payload (`{ v: 1, ivB64, ctB64 }`) under the persisted store key
@@ -69,7 +69,7 @@ The CSV export functionality also includes security measures:
 
 ### Why SQL injection is not applicable
 
-Easy Risk Register is a client-side app with no database and no SQL query execution, so SQL injection is not applicable. CSV and XSS risks still apply (spreadsheets can evaluate exported cells as formulas, and web UIs can be exposed to injection if content is not sanitized).
+This repo does use a database (Supabase Postgres), but the API layer does not construct raw SQL strings. The more relevant risks in practice are authorization/RLS mistakes, XSS, and CSV/spreadsheet injection.
 
 ## Supported Versions
 

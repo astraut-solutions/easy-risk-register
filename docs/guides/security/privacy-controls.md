@@ -1,54 +1,26 @@
-# Privacy Controls (Encryption + Response Planning)
+# Privacy Controls (Current + Roadmap)
 
-This guide covers Phase 4 features:
+This guide covers privacy-related features and how they map to the current Supabase-backed architecture.
 
-- Optional **local encryption** for stored data (passphrase-based)
-- **Incident response playbooks** per risk (template-based, editable)
-- Playbook inclusion in **PDF exports**
+## Data location (default)
 
-## Local encryption (optional)
+- Risk register data is stored in Supabase Postgres (workspace-scoped with RLS).
+- The browser stores only non-authoritative UI state (filters/settings) plus the Supabase Auth session token.
 
-Easy Risk Register is client-side only and stores data in your browser. If you enable encryption, the app encrypts the persisted store **at rest** using browser crypto APIs.
+## Local encryption (current)
 
-### Enable encryption
+The app includes optional passphrase-based encryption for the **local persisted UI state** (`easy-risk-register-data`). This protects local preferences at rest on a shared/lost device, but it does **not** encrypt data stored in Supabase.
 
-1. Open **Settings**
-2. In **Local encryption (optional)**, choose **Enable**
-3. Enter a passphrase and confirm it
+For details, see `docs/architecture/secure-data-storage.md`.
 
-Notes:
-- You will be asked for your passphrase on page load to unlock your data.
-- If you forget the passphrase, there is **no recovery**. You must delete local data on that device.
-- Keep backups using CSV/PDF exports if the data matters.
+## End-to-end encryption (planned)
 
-### Unlock encryption (on load)
+End-to-end encryption for selected sensitive fields (client-side encrypt before sending to Supabase; no server-side recovery) is tracked in `TASK_PLAN.md` under Phase 4.
 
-If encryption is enabled and the app is locked, you will see an **Unlock encrypted data** modal. Enter the passphrase to rehydrate your stored risks.
+## Incident response playbooks (current UI)
 
-### Rotate / disable / lock
-
-In Settings:
-- **Rotate passphrase** re-encrypts the stored data with a new passphrase.
-- **Disable** decrypts and stores the data unencrypted on the device.
-- **Lock** removes the key from memory for the current session (you’ll need to unlock again).
-
-### Forgot passphrase
-
-If you can’t unlock, use **Delete data** (wipe) in the unlock screen or Settings. This permanently clears the stored risk register on that device.
-
-## Incident response playbooks (per risk)
-
-Playbooks are editable response checklists you can attach to a risk. They’re designed for quick, practical response planning (for example privacy incidents, ransomware, BEC).
-
-### Add a playbook
-
-1. Create or edit a risk
-2. Open **Incident response playbook (optional)**
-3. Pick a template and click **Add playbook**
-4. Edit steps as needed; mark steps done during an incident
+Playbooks are editable response checklists you can attach to a risk. In the current implementation these are stored in the risk row's `data` JSON payload (see `docs/reference/risk-record-schema.md`).
 
 ## PDF export integration
 
-- **Risk register PDF** includes playbooks for risks that have them.
-- **Privacy incident / checklist PDF** includes the playbook for that specific risk (when present).
-
+PDF exports are generated via a print-friendly report view in the browser (no server-side PDF generation). Reports are built from the currently loaded dataset (fetched from `/api/*`) and may include playbook/checklist information when present.

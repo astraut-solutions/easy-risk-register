@@ -129,15 +129,14 @@ The Advanced Risk Scoring module integrates seamlessly with the existing risk re
 - Advanced scores complement the standard risk score
 - Historical tracking maintains consistency with existing data
 - CSV export includes advanced scoring data when available
-- All calculations are performed client-side with no server dependencies
+- Calculations are performed client-side; resulting metadata can be stored alongside the risk record (currently via the risk `data` JSON)
 
 ## Security and Privacy
 
 All advanced risk scoring calculations are performed client-side:
-- No data is sent to external servers
-- Calculations use only locally stored risk data
-- Advanced scoring data is stored in browser local storage
-- Encryption settings apply to advanced scoring data as well
+- Risk data is retrieved from Supabase via `/api/*` (no third-party analytics endpoints required)
+- Advanced scoring metadata is stored with the risk record in Supabase (currently via the risk `data` JSON)
+- Local encryption (if enabled) applies only to locally persisted UI state, not to Supabase-stored fields
 
 ## Performance Considerations
 

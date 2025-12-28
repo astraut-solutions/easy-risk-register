@@ -1,97 +1,71 @@
-# Risk Record Schema (Draft)
+# Risk Record Schema (Implementation)
 
-This document describes the **risk record fields** used by Easy Risk Register, including newer fields intended to support ownership/accountability and audit evidence.
+This document describes the **current risk schema** as implemented in Supabase and exposed via the serverless API.
 
-## Risk object
+## Where data lives
 
-All fields are stored locally in browser storage (`REQ-014`) and sanitized before persistence.
+- **System of record**: Supabase Postgres (`public.risks`) with workspace scoping enforced by RLS.
+- **Client storage**: non-authoritative UI state only (filters/settings). Core risks are fetched from `/api/risks`.
 
-**Core scoring**
-- `probability` (number, 1-5)
-- `impact` (number, 1-5)
-- `riskScore` (number, computed as probability × impact)
+## Core tables
 
-**Classification**
-- `category` (string)
-- `status` (enum: `open` | `accepted` | `mitigated` | `closed`)
-- `threatType` (enum: `phishing` | `ransomware` | `business_email_compromise` | `malware` | `vulnerability` | `data_breach` | `supply_chain` | `insider` | `other`)
-- `templateId` (string, optional; set when created from a bundled template)
+Defined in `supabase/init/002_workspaces_core_tables_rls.sql`:
 
-Categories support both predefined and user-defined values. Custom categories are persisted locally.
+- `public.workspaces`
+- `public.workspace_members`
+- `public.categories`
+- `public.risks`
 
-**Accountability & review**
-- `owner` (string, required; can be empty)
-- `ownerTeam` (string, optional)
-- `dueDate` (ISO timestamp string, optional)
-- `reviewDate` (ISO timestamp string, optional)
-- `reviewCadence` (enum, optional: `weekly` | `monthly` | `quarterly` | `semiannual` | `annual` | `ad-hoc`)
-- `riskResponse` (enum: `treat` | `transfer` | `tolerate` | `terminate`)
+## `public.risks` columns
 
-**Responses / commentary**
-- `ownerResponse` (string)
-- `securityAdvisorComment` (string)
-- `vendorResponse` (string)
+- `id` (uuid, PK)
+- `workspace_id` (uuid, FK)
+- `title` (text)
+- `description` (text)
+- `mitigation_plan` (text)
+- `probability` (int, 1-5)
+- `impact` (int, 1-5)
+- `risk_score` (int, generated: `probability * impact`)
+- `category` (text)
+- `status` (text: `open` | `mitigated` | `closed` | `accepted`)
+- `threat_type` (text: `phishing` | `ransomware` | `business_email_compromise` | `malware` | `vulnerability` | `data_breach` | `supply_chain` | `insider` | `other`)
+- `data` (jsonb, default `{}`) — extension payload used by the UI for optional/advanced fields
+- `created_at`, `updated_at` (timestamptz)
+- `created_by`, `updated_by` (uuid)
 
-**Mitigation**
-- `mitigationPlan` (string, legacy/summary field)
-- `mitigationSteps` (array of structured steps)
+## API representation
 
-`mitigationPlan` remains supported as a single free-text summary for backward compatibility and quick notes. `mitigationSteps` is the preferred structure for tracking actionable work over time.
+`/api/risks` maps Supabase rows into a stable JSON shape used by the frontend:
 
-Each mitigation step:
-- `id` (string)
-- `description` (string)
-- `owner` (string, optional)
-- `dueDate` (ISO timestamp string, optional)
-- `status` (enum: `open` | `done`)
-- `createdAt` (ISO timestamp string)
-- `completedAt` (ISO timestamp string, optional)
+- `id`
+- `title`
+- `description`
+- `probability`
+- `impact`
+- `riskScore`
+- `category`
+- `status`
+- `threatType`
+- `mitigationPlan`
+- `data` (object; passthrough from `public.risks.data`)
+- `creationDate` (from `created_at`)
+- `lastModified` (from `updated_at`)
 
-**Compliance checklists**
-- `checklists` (array of attached checklist instances)
-- `checklistStatus` (enum: `not_started` | `in_progress` | `done`)
+See `api/risks/index.js` and `api/risks/[id].js`.
 
-Each checklist instance:
-- `id` (string)
+## `data` extension payload (current usage)
+
+The frontend currently stores several “Phase 2+” fields inside the `data` JSON (not normalized into separate tables yet). This allows incremental rollout while keeping the core schema stable.
+
+Common keys include:
+
 - `templateId` (string)
-- `title` (string)
-- `attachedAt` (ISO timestamp string)
-- `items` (array of checklist items)
+- `owner` (string), `ownerTeam` (string)
+- `dueDate` (ISO string), `reviewDate` (ISO string), `reviewCadence` (enum string)
+- `riskResponse` (enum string)
+- `mitigationSteps` (array)
+- `evidence` (array)
+- `checklists` (array), `checklistStatus` (enum string)
+- `playbook` (object)
 
-Each checklist item:
-- `id` (string)
-- `description` (string)
-- `createdAt` (ISO timestamp string)
-- `completedAt` (ISO timestamp string, optional)
-
-**Evidence**
-- `evidence` (array of evidence entries)
-
-Each evidence entry:
-- `type` (enum: `link` | `ticket` | `doc` | `other`)
-- `url` (string; http/https)
-- `description` (string, optional)
-- `addedAt` (ISO timestamp string)
-
-**Incident response playbook (optional)**
-- `playbook` (object, optional)
-
-Playbook object:
-- `title` (string)
-- `lastModified` (ISO timestamp string)
-- `steps` (array of playbook steps)
-
-Each playbook step:
-- `id` (string)
-- `description` (string)
-- `createdAt` (ISO timestamp string)
-- `completedAt` (ISO timestamp string, optional)
-
-**Metadata**
-- `creationDate` (ISO timestamp string)
-- `lastModified` (ISO timestamp string)
-
-## Migration / backwards compatibility
-
-When the persisted LocalStorage schema version changes, existing stored risks are migrated by backfilling default values for new fields.
-
+If you plan to query/filter these fields server-side, consider promoting them to first-class columns or tables (see `TASK_PLAN.md` Cycle 2+).
