@@ -1,6 +1,7 @@
 import type { Risk } from '../../types/risk'
 import { Button, Badge } from '../../design-system'
 import { cn } from '../../utils/cn'
+import { getRiskSeverity } from '../../utils/riskCalculations'
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -21,14 +22,9 @@ interface RiskCardProps {
 }
 
 export const RiskCard = ({ risk, onEdit, onDelete, onView }: RiskCardProps) => {
-  // Risk score color coding implementation based on risk score value
-  const getRiskSeverityTone = (score: number) => {
-    if (score <= 3) return 'success' // Low
-    if (score <= 6) return 'warning' // Medium
-    return 'danger' // High
-  }
-
-  const severityTone = getRiskSeverityTone(risk.riskScore)
+  const severity = risk.severity ?? getRiskSeverity(risk.riskScore)
+  const severityLabel = severity === 'high' ? 'High' : severity === 'medium' ? 'Medium' : 'Low'
+  const severityTone = severity === 'high' ? 'danger' : severity === 'medium' ? 'warning' : 'success'
 
   return (
     <div
@@ -59,10 +55,10 @@ export const RiskCard = ({ risk, onEdit, onDelete, onView }: RiskCardProps) => {
             tone={severityTone}
             subtle={false}
             className="text-sm font-semibold px-3 py-1 rounded-full border"
-            aria-label={`Risk score: ${risk.riskScore}, ${getRiskSeverityTone(risk.riskScore)} severity`}
+            aria-label={`Risk score: ${risk.riskScore}, ${severityLabel.toLowerCase()} severity`}
             data-testid="risk-score-badge"
           >
-            {risk.riskScore}
+            {risk.riskScore} {severityLabel}
           </Badge>
         </div>
         <p className="mt-2 text-sm text-text-low line-clamp-2">{risk.description}</p>

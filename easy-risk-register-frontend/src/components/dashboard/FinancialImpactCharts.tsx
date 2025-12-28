@@ -3,6 +3,7 @@ import { Bar, Line } from 'react-chartjs-2';
 import { Card, CardContent, CardHeader, CardTitle } from '../../design-system/components/Card';
 import type { Risk } from '../../types/risk';
 import { ensureChartJsRegistered } from '../charts/chartjs';
+import { getRiskSeverity } from '../../utils/riskCalculations';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -56,14 +57,8 @@ const FinancialImpactCharts: React.FC<FinancialImpactChartsProps> = ({ risks }) 
 
   // Prepare data for financial impact by risk level
   const financialImpactByRiskLevel = risks.reduce((acc: Array<{level: string, impact: number}>, risk) => {
-    let level = '';
-    if (risk.riskScore > 6) {
-      level = 'High';
-    } else if (risk.riskScore >= 4) {
-      level = 'Medium';
-    } else {
-      level = 'Low';
-    }
+    const severity = risk.severity ?? getRiskSeverity(risk.riskScore)
+    const level = severity === 'high' ? 'High' : severity === 'medium' ? 'Medium' : 'Low'
     
     const existing = acc.find(item => item.level === level);
     const impact = risk.financialImpact?.expectedMean ?? 0;

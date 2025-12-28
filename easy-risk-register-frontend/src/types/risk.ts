@@ -88,6 +88,7 @@ export interface Risk {
   probability: number // 1-5
   impact: number // 1-5
   riskScore: number
+  severity?: RiskSeverity
   category: string
   threatType: ThreatType
   templateId?: string

@@ -56,13 +56,13 @@ export const calculateRiskScoreAsync = async (probability: number, impact: numbe
  * Determines the severity level based on a risk score
  * @param score - The calculated risk score
  * @returns Risk severity level ('low', 'medium', or 'high')
- *          - 'low' for scores <= 3
- *          - 'medium' for scores 4-6
- *          - 'high' for scores > 6
+ *          - 'low' for scores 1-8
+ *          - 'medium' for scores 9-15
+ *          - 'high' for scores 16-25
  */
 export const getRiskSeverity = (score: number): RiskSeverity => {
-  if (score <= 3) return 'low'
-  if (score <= 6) return 'medium'
+  if (score <= 8) return 'low'
+  if (score <= 15) return 'medium'
   return 'high'
 }
 

@@ -10,6 +10,7 @@ import {
   TableRow,
 } from '../../design-system'
 import type { BadgeTone } from '../../design-system'
+import { getRiskSeverity } from '../../utils/riskCalculations'
 
 interface RiskTableProps {
   risks: Risk[]
@@ -35,10 +36,9 @@ const formatMaybeDate = (value?: string) => {
   return dateFormatter.format(new Date(parsed))
 }
 
-const getSeverityTone = (score: number): BadgeTone => {
-  if (score <= 3) return 'success'
-  if (score <= 6) return 'warning'
-  return 'danger'
+const getSeverityTone = (risk: Risk): BadgeTone => {
+  const severity = risk.severity ?? getRiskSeverity(risk.riskScore)
+  return severity === 'high' ? 'danger' : severity === 'medium' ? 'warning' : 'success'
 }
 
 export const RiskTable = ({
@@ -107,15 +107,15 @@ export const RiskTable = ({
               </TableCell>
               <TableCell className="text-center" role="cell">
                 <Badge
-                  tone={getSeverityTone(risk.riskScore)}
+                  tone={getSeverityTone(risk)}
                   subtle={false}
                   className="rounded-full px-3 py-1 text-xs font-semibold"
-                  aria-label={`Risk score: ${risk.riskScore}, ${getSeverityTone(risk.riskScore)} severity`}
+                  aria-label={`Risk score: ${risk.riskScore}, ${(risk.severity ?? getRiskSeverity(risk.riskScore))} severity`}
                 >
                   {risk.riskScore}
                 </Badge>
                 <p className="mt-1 text-[11px] font-semibold text-text-muted" aria-hidden="true">
-                  {risk.probability}×{risk.impact}
+                  {risk.probability}×{risk.impact} · {(risk.severity ?? getRiskSeverity(risk.riskScore)).toUpperCase()}
                 </p>
               </TableCell>
               <TableCell role="cell">

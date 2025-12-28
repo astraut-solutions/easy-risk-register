@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Card, CardContent, CardHeader, CardTitle } from '../../design-system/components/Card';
 import type { Risk } from '../../types/risk';
 import type { RiskScoreSnapshot } from '../../types/visualization';
+import { getRiskSeverity } from '../../utils/riskCalculations';
 
 interface ExecutiveDashboardProps {
   risks: Risk[];
@@ -13,9 +14,9 @@ interface ExecutiveDashboardProps {
 const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ risks, snapshots: _snapshots, onDrillDown }) => {
   // Calculate risk distribution by severity
   const riskDistribution = [
-    { name: 'High', value: risks.filter(risk => risk.riskScore > 6).length },
-    { name: 'Medium', value: risks.filter(risk => risk.riskScore >= 4 && risk.riskScore <= 6).length },
-    { name: 'Low', value: risks.filter(risk => risk.riskScore < 4).length },
+    { name: 'High', value: risks.filter((risk) => (risk.severity ?? getRiskSeverity(risk.riskScore)) === 'high').length },
+    { name: 'Medium', value: risks.filter((risk) => (risk.severity ?? getRiskSeverity(risk.riskScore)) === 'medium').length },
+    { name: 'Low', value: risks.filter((risk) => (risk.severity ?? getRiskSeverity(risk.riskScore)) === 'low').length },
   ];
 
   // Calculate risk distribution by category
@@ -138,7 +139,7 @@ const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ risks, snapshot
             <CardTitle className="text-sm font-medium text-gray-500">High Risks</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-500">{risks.filter(r => r.riskScore > 6).length}</div>
+            <div className="text-2xl font-bold text-red-500">{risks.filter((r) => (r.severity ?? getRiskSeverity(r.riskScore)) === 'high').length}</div>
             <p className="text-xs text-gray-500 mt-1">Critical attention required</p>
           </CardContent>
         </Card>
@@ -149,7 +150,7 @@ const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ risks, snapshot
             <CardTitle className="text-sm font-medium text-gray-500">Medium Risks</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-500">{risks.filter(r => r.riskScore >= 4 && r.riskScore <= 6).length}</div>
+            <div className="text-2xl font-bold text-yellow-500">{risks.filter((r) => (r.severity ?? getRiskSeverity(r.riskScore)) === 'medium').length}</div>
             <p className="text-xs text-gray-500 mt-1">Monitor and mitigate</p>
           </CardContent>
         </Card>
@@ -160,7 +161,7 @@ const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ risks, snapshot
             <CardTitle className="text-sm font-medium text-gray-500">Low Risks</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-500">{risks.filter(r => r.riskScore < 4).length}</div>
+            <div className="text-2xl font-bold text-green-500">{risks.filter((r) => (r.severity ?? getRiskSeverity(r.riskScore)) === 'low').length}</div>
             <p className="text-xs text-gray-500 mt-1">Acceptable levels</p>
           </CardContent>
         </Card>

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { Card, CardContent, CardHeader, CardTitle } from '../../design-system/components/Card';
 import type { Risk } from '../../types/risk';
+import { getRiskSeverity } from '../../utils/riskCalculations';
 
 interface RiskScenarioViewProps {
   risks: Risk[];
@@ -92,9 +93,10 @@ const createScenarioVisualization = (
     .join("circle")
     .attr("r", (d: any) => Math.max(5, d.riskScore * 3))
     .attr("fill", (d: any) => {
-      if (d.riskScore > 6) return "#ef4444"; // High risk - red
-      if (d.riskScore >= 4) return "#f59e0b"; // Medium risk - yellow
-      return "#10b981"; // Low risk - green
+      const severity = getRiskSeverity(d.riskScore)
+      if (severity === 'high') return "#ef4444"; // High - red
+      if (severity === 'medium') return "#f59e0b"; // Medium - yellow
+      return "#10b981"; // Low - green
     });
 
   // Add labels to nodes

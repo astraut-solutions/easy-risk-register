@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 
-import type { Risk, RiskFilters, RiskInput } from '../types/risk'
+import type { Risk, RiskFilters, RiskInput, RiskSeverity } from '../types/risk'
 import { useRiskStore } from '../stores/riskStore'
 import type { CSVExportVariant } from '../stores/riskStore'
 import type { AppSettings, ReminderSettings } from '../stores/riskStore'
@@ -8,6 +8,7 @@ import type { ApiError } from './apiClient'
 import { apiDelete, apiGetJson, apiPatchJson, apiPostJson } from './apiClient'
 import { timeSeriesService } from './timeSeriesService'
 import { useAuthStore } from '../stores/authStore'
+import { getRiskSeverity } from '../utils/riskCalculations'
 
 /**
  * Cache Utility for frequently accessed data
@@ -129,6 +130,7 @@ type ApiRisk = {
   probability: number
   impact: number
   riskScore: number
+  severity?: RiskSeverity
   category: string
   status: Risk['status']
   threatType: Risk['threatType']
@@ -158,6 +160,10 @@ function normalizeObject(value: unknown): Record<string, unknown> {
 
 function inflateRisk(apiRisk: ApiRisk): Risk {
   const data = normalizeObject(apiRisk.data)
+  const severity =
+    apiRisk.severity === 'low' || apiRisk.severity === 'medium' || apiRisk.severity === 'high'
+      ? apiRisk.severity
+      : getRiskSeverity(Number(apiRisk.riskScore))
 
   return {
     id: apiRisk.id,
@@ -166,6 +172,7 @@ function inflateRisk(apiRisk: ApiRisk): Risk {
     probability: Number(apiRisk.probability),
     impact: Number(apiRisk.impact),
     riskScore: Number(apiRisk.riskScore),
+    severity,
     category: apiRisk.category,
     threatType: apiRisk.threatType,
     templateId: typeof data.templateId === 'string' ? data.templateId : undefined,

@@ -6,6 +6,7 @@ import type { RiskScoreSnapshot, TrendDefaultMode } from '../../types/visualizat
 import { Button, Select } from '../../design-system'
 import { ensureChartJsRegistered } from '../charts/chartjs'
 import { buildDashboardChartsReportHtml, openReportWindow } from '../../utils/reports'
+import { getRiskSeverity } from '../../utils/riskCalculations'
 
 type DrillDownTarget = { filters: Partial<RiskFilters>; label: string }
 
@@ -26,11 +27,7 @@ const severityColor: Record<RiskSeverity, { bg: string; border: string }> = {
   low: { bg: 'rgba(34, 197, 94, 0.35)', border: 'rgba(34, 197, 94, 0.9)' },
 }
 
-const getRiskSeverityLocal = (riskScore: number): RiskSeverity => {
-  if (riskScore <= 3) return 'low'
-  if (riskScore <= 6) return 'medium'
-  return 'high'
-}
+const getRiskSeverityLocal = (riskScore: number): RiskSeverity => getRiskSeverity(riskScore)
 
 const buildExposureSeries = (snapshots: RiskScoreSnapshot[], days: number) => {
   const now = new Date()

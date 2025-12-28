@@ -15,7 +15,7 @@ import { MaturityAssessmentPanel } from './components/maturity/MaturityAssessmen
 import { useRiskManagement } from './services/riskService'
 import type { Risk, RiskSeverity } from './types/risk'
 import type { CSVExportVariant, ReminderFrequency } from './stores/riskStore'
-import { DEFAULT_FILTERS } from './utils/riskCalculations'
+import { DEFAULT_FILTERS, getRiskSeverity } from './utils/riskCalculations'
 import { Button, Input, Modal, SectionHeader, Select } from './design-system'
 import { cn } from './utils/cn'
 import { useToast } from './components/feedback/ToastProvider'
@@ -1254,7 +1254,8 @@ function App() {
                                 {risk.title}
                               </button>
                               <span className="text-xs text-text-low">
-                                Score {risk.riskScore} ({risk.probability}×{risk.impact})
+                                Score {risk.riskScore} ({risk.probability}×{risk.impact}) ·{' '}
+                                {(risk.severity ?? getRiskSeverity(risk.riskScore)).toUpperCase()}
                               </span>
                             </li>
                           ))}

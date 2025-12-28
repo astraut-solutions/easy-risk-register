@@ -117,7 +117,7 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
           label: 'Low',
           cardTone: 'border-status-success/30 bg-status-success/10',
           pillTone: 'border-status-success/40 bg-status-success/15 text-status-success',
-          why: 'Score ≤ 3 is low severity.',
+          why: 'Scores 1-8 are low severity.',
           nudge: 'Next: Confirm an owner and review cadence.',
         }
       case 'medium':
@@ -125,7 +125,7 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
           label: 'Medium',
           cardTone: 'border-status-warning/30 bg-status-warning/10',
           pillTone: 'border-status-warning/40 bg-status-warning/15 text-status-warning',
-          why: 'Score 4–6 is medium severity.',
+          why: 'Scores 9-15 are medium severity.',
           nudge: 'Next: Add mitigation steps and a target due date.',
         }
       case 'high':
@@ -134,7 +134,7 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
           label: 'High',
           cardTone: 'border-status-danger/30 bg-status-danger/10',
           pillTone: 'border-status-danger/40 bg-status-danger/15 text-status-danger',
-          why: 'Score > 6 is high severity.',
+          why: 'Scores 16-25 are high severity.',
           nudge: 'Next: Assign an owner and set a due date.',
         }
     }

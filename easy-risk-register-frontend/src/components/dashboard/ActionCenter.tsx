@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../design-system/components/Card';
 import type { Risk } from '../../types/risk';
+import { getRiskSeverity } from '../../utils/riskCalculations';
 import { Table, Tag, Button, Space, Progress } from 'antd';
 import { ArrowDownOutlined, CaretRightOutlined, CheckCircleOutlined, ClockCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
@@ -28,8 +29,10 @@ const ActionCenter: React.FC<ActionCenterProps> = ({ risks }) => {
     const actions: ActionType[] = [];
     
     risks.forEach(risk => {
+      const severity = risk.severity ?? getRiskSeverity(risk.riskScore);
+
       // Generate actions for high priority risks
-      if (risk.riskScore > 6) {
+      if (severity === 'high') {
         actions.push({
           key: `${risk.id}-mitigate`,
           title: `Mitigate ${risk.title}`,
@@ -45,7 +48,7 @@ const ActionCenter: React.FC<ActionCenterProps> = ({ risks }) => {
       }
       
       // Generate actions for medium risks that need attention
-      if (risk.riskScore >= 4 && risk.riskScore <= 6) {
+      if (severity === 'medium') {
         actions.push({
           key: `${risk.id}-monitor`,
           title: `Monitor ${risk.title}`,
@@ -66,7 +69,7 @@ const ActionCenter: React.FC<ActionCenterProps> = ({ risks }) => {
           key: `${risk.id}-review`,
           title: `Review ${risk.title}`,
           riskId: risk.id,
-          priority: risk.riskScore > 6 ? 'high' : risk.riskScore >= 4 ? 'medium' : 'low',
+          priority: severity === 'high' ? 'high' : severity === 'medium' ? 'medium' : 'low',
           status: 'pending',
           dueDate: risk.dueDate,
           impact: risk.financialImpact?.expectedMean ?? 0,
@@ -118,9 +121,8 @@ const ActionCenter: React.FC<ActionCenterProps> = ({ risks }) => {
         const risk = risks.find(r => r.id === record.riskId);
         if (!risk) return null;
         
-        let color = 'green';
-        if (risk.riskScore > 6) color = 'red';
-        else if (risk.riskScore >= 4) color = 'orange';
+        const severity = risk.severity ?? getRiskSeverity(risk.riskScore);
+        const color = severity === 'high' ? 'red' : severity === 'medium' ? 'orange' : 'green';
         
         return (
           <Tag color={color}>

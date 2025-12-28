@@ -19,6 +19,7 @@ import { StatCard, Badge, Card } from '../../design-system';
 import type { Risk } from '../../types/risk';
 import type { RiskScoreSnapshot } from '../../types/visualization';
 import { timeSeriesService } from '../../services/timeSeriesService';
+import { getRiskSeverity } from '../../utils/riskCalculations';
 
 interface ExecutiveOverviewDashboardProps {
   risks: Risk[];
@@ -34,11 +35,11 @@ const ExecutiveOverviewDashboard: React.FC<ExecutiveOverviewDashboardProps> = ({
   const [serverAvgScoreByDate, setServerAvgScoreByDate] = useState<Record<string, number> | null>(null);
 
   // Calculate key executive metrics
-  const executiveMetrics = useMemo(() => {
+    const executiveMetrics = useMemo(() => {
     const totalRisks = risks.length;
-    const highRisks = risks.filter(risk => risk.riskScore > 6).length;
-    const mediumRisks = risks.filter(risk => risk.riskScore >= 4 && risk.riskScore <= 6).length;
-    const lowRisks = risks.filter(risk => risk.riskScore < 4).length;
+    const highRisks = risks.filter((risk) => (risk.severity ?? getRiskSeverity(risk.riskScore)) === 'high').length;
+    const mediumRisks = risks.filter((risk) => (risk.severity ?? getRiskSeverity(risk.riskScore)) === 'medium').length;
+    const lowRisks = risks.filter((risk) => (risk.severity ?? getRiskSeverity(risk.riskScore)) === 'low').length;
     const openRisks = risks.filter(risk => risk.status !== 'mitigated').length;
     const totalFinancialImpact = risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0);
     const avgRiskScore = totalRisks > 0

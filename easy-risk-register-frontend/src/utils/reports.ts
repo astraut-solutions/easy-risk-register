@@ -386,15 +386,15 @@ export const buildRiskRegisterReportHtml = ({
         <div class="grid">
           <div class="card">
             <h3 class="severity-low">Low</h3>
-            <p>Score ≤ 3</p>
+            <p>Score 1-8</p>
           </div>
           <div class="card">
             <h3 class="severity-medium">Medium</h3>
-            <p>Score 4–6</p>
+            <p>Score 9-15</p>
           </div>
           <div class="card">
             <h3 class="severity-high">High</h3>
-            <p>Score &gt; 6</p>
+            <p>Score 16-25</p>
           </div>
         </div>
 

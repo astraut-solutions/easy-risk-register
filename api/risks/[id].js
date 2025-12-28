@@ -1,6 +1,13 @@
 const { ensureRequestId, handleOptions, setCors } = require('../_lib/http')
 const { requireApiContext } = require('../_lib/context')
 const { logApiError, logApiRequest, logApiResponse, logApiWarn } = require('../_lib/logger')
+const {
+  getWorkspaceRiskThresholds,
+  scoreFromProbabilityImpact,
+  severityFromScore,
+  validateClientRiskScore,
+  validateClientSeverity,
+} = require('../_lib/riskScoring')
 
 const UUID_V4ish_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -64,14 +71,16 @@ async function readJsonBody(req) {
   return JSON.parse(raw)
 }
 
-function mapRiskRow(row) {
+function mapRiskRow(row, { thresholds }) {
+  const score = Number(row.risk_score)
   return {
     id: row.id,
     title: row.title,
     description: row.description,
     probability: Number(row.probability),
     impact: Number(row.impact),
-    riskScore: Number(row.risk_score),
+    riskScore: score,
+    severity: severityFromScore(score, thresholds),
     category: row.category,
     status: row.status,
     threatType: row.threat_type,
@@ -99,6 +108,12 @@ module.exports = async function handler(req, res) {
     if (!riskId) return res.status(400).json({ error: 'Invalid risk id' })
 
     const { supabase, workspaceId } = ctx
+    const thresholdsResult = await getWorkspaceRiskThresholds({ supabase, workspaceId })
+    if (thresholdsResult.error) {
+      logApiWarn('supabase_query_failed', { requestId, workspaceId, message: thresholdsResult.error })
+      return res.status(502).json({ error: thresholdsResult.error })
+    }
+    const thresholds = thresholdsResult.thresholds
 
     switch (req.method) {
       case 'GET': {
@@ -117,13 +132,35 @@ module.exports = async function handler(req, res) {
         }
         if (!data) return res.status(404).json({ error: 'Not found' })
 
-        return res.status(200).json(mapRiskRow(data))
+        return res.status(200).json(mapRiskRow(data, { thresholds }))
       }
 
       case 'PATCH': {
         const body = await readJsonBody(req)
         if (!body || typeof body !== 'object') {
           return res.status(400).json({ error: 'Expected JSON body' })
+        }
+
+        const requiresScoreValidation = body.riskScore !== undefined || body.severity !== undefined
+        let baseProbability = null
+        let baseImpact = null
+
+        if (requiresScoreValidation) {
+          const { data: existingRisk, error: existingError } = await supabase
+            .from('risks')
+            .select('probability, impact')
+            .eq('id', riskId)
+            .eq('workspace_id', workspaceId)
+            .maybeSingle()
+
+          if (existingError) {
+            logApiWarn('supabase_query_failed', { requestId, workspaceId, riskId, message: existingError.message })
+            return res.status(502).json({ error: `Supabase query failed: ${existingError.message}` })
+          }
+          if (!existingRisk) return res.status(404).json({ error: 'Not found' })
+
+          baseProbability = Number(existingRisk.probability)
+          baseImpact = Number(existingRisk.impact)
         }
 
         const updates = {}
@@ -180,6 +217,20 @@ module.exports = async function handler(req, res) {
           updates.impact = impact
         }
 
+        if (requiresScoreValidation) {
+          const expectedProbability = updates.probability !== undefined ? updates.probability : baseProbability
+          const expectedImpact = updates.impact !== undefined ? updates.impact : baseImpact
+
+          const expectedScore = scoreFromProbabilityImpact(expectedProbability, expectedImpact)
+          const expectedSeverity = severityFromScore(expectedScore, thresholds)
+
+          const riskScoreError = validateClientRiskScore({ clientRiskScore: body.riskScore, expectedScore })
+          if (riskScoreError) return res.status(400).json({ error: riskScoreError })
+
+          const severityError = validateClientSeverity({ clientSeverity: body.severity, expectedSeverity })
+          if (severityError) return res.status(400).json({ error: severityError })
+        }
+
         if (body.data !== undefined) {
           if (!body.data || typeof body.data !== 'object' || Array.isArray(body.data)) {
             return res.status(400).json({ error: 'Invalid data (expected object)' })
@@ -207,7 +258,7 @@ module.exports = async function handler(req, res) {
         }
         if (!data) return res.status(404).json({ error: 'Not found' })
 
-        return res.status(200).json(mapRiskRow(data))
+        return res.status(200).json(mapRiskRow(data, { thresholds }))
       }
 
       case 'DELETE': {

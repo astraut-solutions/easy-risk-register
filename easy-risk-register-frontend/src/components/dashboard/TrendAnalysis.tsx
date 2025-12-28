@@ -3,6 +3,7 @@ import * as echarts from 'echarts';
 import { Card, CardContent, CardHeader, CardTitle } from '../../design-system/components/Card';
 import type { Risk } from '../../types/risk';
 import type { RiskScoreSnapshot } from '../../types/visualization';
+import { getRiskSeverity } from '../../utils/riskCalculations';
 
 interface TrendAnalysisProps {
   risks: Risk[];
@@ -367,7 +368,7 @@ const TrendAnalysis: React.FC<TrendAnalysisProps> = ({ risks }) => {
     ? (risks.reduce((sum, risk) => sum + risk.riskScore, 0) / risks.length).toFixed(2) 
     : '0.00';
   const totalFinancialImpact = risks.reduce((sum, risk) => sum + (risk.financialImpact?.expectedMean ?? 0), 0);
-  const highRiskCount = risks.filter(risk => risk.riskScore > 6).length;
+  const highRiskCount = risks.filter((risk) => (risk.severity ?? getRiskSeverity(risk.riskScore)) === 'high').length;
 
   return (
     <div className="space-y-6">
@@ -466,35 +467,35 @@ const TrendAnalysis: React.FC<TrendAnalysisProps> = ({ risks }) => {
               <h4 className="font-medium mb-3">Risk Severity Distribution</h4>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span>High Risk (7-10)</span>
-                  <span>{risks.filter(r => r.riskScore > 6).length} ({((risks.filter(r => r.riskScore > 6).length / risks.length) * 100).toFixed(1)}%)</span>
+                  <span>High Risk (16-25)</span>
+                  <span>{risks.filter((r) => (r.severity ?? getRiskSeverity(r.riskScore)) === 'high').length} ({((risks.filter((r) => (r.severity ?? getRiskSeverity(r.riskScore)) === 'high').length / risks.length) * 100).toFixed(1)}%)</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5">
                   <div 
                     className="bg-red-600 h-2.5 rounded-full" 
-                    style={{ width: `${(risks.filter(r => r.riskScore > 6).length / risks.length) * 100}%` }}
+                    style={{ width: `${(risks.filter((r) => (r.severity ?? getRiskSeverity(r.riskScore)) === 'high').length / risks.length) * 100}%` }}
                   ></div>
                 </div>
                 
                 <div className="flex justify-between">
-                  <span>Medium Risk (4-6)</span>
-                  <span>{risks.filter(r => r.riskScore >= 4 && r.riskScore <= 6).length} ({((risks.filter(r => r.riskScore >= 4 && r.riskScore <= 6).length / risks.length) * 100).toFixed(1)}%)</span>
+                  <span>Medium Risk (9-15)</span>
+                  <span>{risks.filter((r) => (r.severity ?? getRiskSeverity(r.riskScore)) === 'medium').length} ({((risks.filter((r) => (r.severity ?? getRiskSeverity(r.riskScore)) === 'medium').length / risks.length) * 100).toFixed(1)}%)</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5">
                   <div 
                     className="bg-yellow-500 h-2.5 rounded-full" 
-                    style={{ width: `${(risks.filter(r => r.riskScore >= 4 && r.riskScore <= 6).length / risks.length) * 100}%` }}
+                    style={{ width: `${(risks.filter((r) => (r.severity ?? getRiskSeverity(r.riskScore)) === 'medium').length / risks.length) * 100}%` }}
                   ></div>
                 </div>
                 
                 <div className="flex justify-between">
-                  <span>Low Risk (1-3)</span>
-                  <span>{risks.filter(r => r.riskScore < 4).length} ({((risks.filter(r => r.riskScore < 4).length / risks.length) * 100).toFixed(1)}%)</span>
+                  <span>Low Risk (1-8)</span>
+                  <span>{risks.filter((r) => (r.severity ?? getRiskSeverity(r.riskScore)) === 'low').length} ({((risks.filter((r) => (r.severity ?? getRiskSeverity(r.riskScore)) === 'low').length / risks.length) * 100).toFixed(1)}%)</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5">
                   <div 
                     className="bg-green-500 h-2.5 rounded-full" 
-                    style={{ width: `${(risks.filter(r => r.riskScore < 4).length / risks.length) * 100}%` }}
+                    style={{ width: `${(risks.filter((r) => (r.severity ?? getRiskSeverity(r.riskScore)) === 'low').length / risks.length) * 100}%` }}
                   ></div>
                 </div>
               </div>

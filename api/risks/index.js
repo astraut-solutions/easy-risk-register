@@ -1,6 +1,13 @@
 const { ensureRequestId, handleOptions, setCors } = require('../_lib/http')
 const { requireApiContext } = require('../_lib/context')
 const { logApiError, logApiRequest, logApiResponse, logApiWarn } = require('../_lib/logger')
+const {
+  getWorkspaceRiskThresholds,
+  scoreFromProbabilityImpact,
+  severityFromScore,
+  validateClientRiskScore,
+  validateClientSeverity,
+} = require('../_lib/riskScoring')
 
 function clampInt(value, { min, max, fallback }) {
   const num = Number.parseInt(String(value), 10)
@@ -54,14 +61,16 @@ async function readJsonBody(req) {
   return JSON.parse(raw)
 }
 
-function mapRiskRow(row) {
+function mapRiskRow(row, { thresholds }) {
+  const score = Number(row.risk_score)
   return {
     id: row.id,
     title: row.title,
     description: row.description,
     probability: Number(row.probability),
     impact: Number(row.impact),
-    riskScore: Number(row.risk_score),
+    riskScore: score,
+    severity: severityFromScore(score, thresholds),
     category: row.category,
     status: row.status,
     threatType: row.threat_type,
@@ -85,6 +94,12 @@ module.exports = async function handler(req, res) {
     if (!ctx) return
 
     const { supabase, workspaceId } = ctx
+    const thresholdsResult = await getWorkspaceRiskThresholds({ supabase, workspaceId })
+    if (thresholdsResult.error) {
+      logApiWarn('supabase_query_failed', { requestId, workspaceId, message: thresholdsResult.error })
+      return res.status(502).json({ error: thresholdsResult.error })
+    }
+    const thresholds = thresholdsResult.thresholds
 
     switch (req.method) {
       case 'GET': {
@@ -142,7 +157,7 @@ module.exports = async function handler(req, res) {
           return res.status(502).json({ error: `Supabase query failed: ${error.message}` })
         }
 
-        const items = (data || []).map(mapRiskRow)
+        const items = (data || []).map((row) => mapRiskRow(row, { thresholds }))
         return res.status(200).json({ items, count: Number.isFinite(count) ? count : null })
       }
 
@@ -170,6 +185,15 @@ module.exports = async function handler(req, res) {
         if (!Number.isFinite(impact)) {
           return res.status(400).json({ error: '`impact` must be an integer between 1 and 5' })
         }
+
+        const expectedScore = scoreFromProbabilityImpact(probability, impact)
+        const expectedSeverity = severityFromScore(expectedScore, thresholds)
+
+        const riskScoreError = validateClientRiskScore({ clientRiskScore: body.riskScore, expectedScore })
+        if (riskScoreError) return res.status(400).json({ error: riskScoreError })
+
+        const severityError = validateClientSeverity({ clientSeverity: body.severity, expectedSeverity })
+        if (severityError) return res.status(400).json({ error: severityError })
 
         const status = body.status === undefined ? 'open' : parseRiskStatus(body.status)
         if (!status) return res.status(400).json({ error: 'Invalid status' })
@@ -204,7 +228,7 @@ module.exports = async function handler(req, res) {
           return res.status(502).json({ error: `Supabase insert failed: ${error.message}` })
         }
 
-        return res.status(201).json(mapRiskRow(createdRow))
+        return res.status(201).json(mapRiskRow(createdRow, { thresholds }))
       }
 
       default:
