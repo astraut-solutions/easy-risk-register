@@ -1581,12 +1581,10 @@ export const useRiskStore = create<RiskStoreState>()(
     {
       name: LOCAL_STORAGE_KEY,
       storage: createJSONStorage(safeStorage),
-      version: 6,
+      version: 7,
       partialize: (state) => ({
         filters: state.filters,
         settings: state.settings,
-        riskScoreSnapshots: state.riskScoreSnapshots,
-        maturityAssessments: state.maturityAssessments,
       }),
       migrate: (persistedState, _version) => {
         if (!persistedState || typeof persistedState !== 'object') {
@@ -1596,39 +1594,7 @@ export const useRiskStore = create<RiskStoreState>()(
         const state = persistedState as any
         const filters = { ...DEFAULT_FILTERS, ...(state.filters ?? {}) }
         const settings = normalizeSettings(state.settings)
-        const riskScoreSnapshots: RiskScoreSnapshot[] = Array.isArray(state.riskScoreSnapshots)
-          ? state.riskScoreSnapshots
-              .map((snapshot: unknown) => normalizeRiskScoreSnapshot(snapshot))
-              .filter(
-                (snapshot: RiskScoreSnapshot | null): snapshot is RiskScoreSnapshot =>
-                  Boolean(snapshot),
-              )
-          : []
-
-        return {
-          ...state,
-          filters,
-          settings,
-          riskScoreSnapshots: applySnapshotRetention(
-            riskScoreSnapshots,
-            settings.visualizations.scoreHistoryRetention,
-          ),
-          maturityAssessments: Array.isArray(state.maturityAssessments)
-            ? state.maturityAssessments
-                .map((assessment: unknown) => normalizeMaturityAssessment(assessment))
-                .filter(
-                  (assessment: MaturityAssessment | null): assessment is MaturityAssessment =>
-                    Boolean(assessment),
-                )
-            : [],
-          risks: [],
-          categories: [...DEFAULT_CATEGORIES],
-          filteredRisks: [],
-          stats: computeRiskStats([]),
-          dataSyncStatus: 'idle',
-          dataSyncError: null,
-          dataLastSyncedAt: null,
-        }
+        return { filters, settings }
       },
       onRehydrateStorage: () => (state) => {
         if (!state) return
@@ -1656,6 +1622,30 @@ export const useRiskStore = create<RiskStoreState>()(
               .map((assessment) => normalizeMaturityAssessment(assessment))
               .filter((assessment): assessment is MaturityAssessment => Boolean(assessment))
           : []
+
+        // Best-effort privacy cleanup: if a previous version persisted risk data in plaintext
+        // localStorage, overwrite it with the minimal non-sensitive preferences payload.
+        try {
+          if (typeof window !== 'undefined' && typeof window.localStorage !== 'undefined') {
+            const raw = window.localStorage.getItem(LOCAL_STORAGE_KEY)
+            if (raw) {
+              const parsed = JSON.parse(raw) as any
+              if (
+                parsed &&
+                typeof parsed === 'object' &&
+                parsed.state &&
+                typeof parsed.state === 'object'
+              ) {
+                window.localStorage.setItem(
+                  LOCAL_STORAGE_KEY,
+                  JSON.stringify({ version: 7, state: { filters: state.filters, settings: state.settings } }),
+                )
+              }
+            }
+          }
+        } catch {
+          // ignore (e.g. encrypted payloads or blocked storage)
+        }
       },
     },
   ),

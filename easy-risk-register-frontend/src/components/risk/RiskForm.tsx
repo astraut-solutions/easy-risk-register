@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useId, useImperativeHandle, useMemo, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useMemo, useState } from 'react'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { nanoid } from 'nanoid'
 
@@ -140,7 +140,8 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
     }
   }, [severity])
 
-  const resolvedFormId = formId ?? useId()
+  const generatedFormId = useId()
+  const resolvedFormId = formId ?? generatedFormId
 
   useEffect(() => {
     onDirtyChange?.(isDirty)
@@ -259,7 +260,7 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
     })
   }
 
-  const onFormSubmit = async (values: RiskFormValues) => {
+  const onFormSubmit = useCallback(async (values: RiskFormValues) => {
     const nowIso = new Date().toISOString()
     const playbook = playbookEnabled
       ? {
@@ -276,34 +277,34 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
       ...(playbook ? { playbook } : { playbook: undefined }),
     })
 
-      if (mode === 'create') {
-        reset({
-          title: '',
-          description: '',
-          probability: 3,
-          impact: 3,
-          category: categories[0] ?? 'Operational',
-          threatType: 'other',
-          templateId: undefined,
-          mitigationPlan: '',
-          status: 'open',
-          owner: '',
-          ownerTeam: '',
-          dueDate: '',
+    if (mode === 'create') {
+      reset({
+        title: '',
+        description: '',
+        probability: 3,
+        impact: 3,
+        category: categories[0] ?? 'Operational',
+        threatType: 'other',
+        templateId: undefined,
+        mitigationPlan: '',
+        status: 'open',
+        owner: '',
+        ownerTeam: '',
+        dueDate: '',
         reviewDate: '',
         reviewCadence: undefined,
         riskResponse: 'treat',
         ownerResponse: '',
         securityAdvisorComment: '',
         vendorResponse: '',
-          notes: '',
-          evidence: [],
-          mitigationSteps: [],
-          playbook: { title: '', steps: [], lastModified: '' },
-        })
-        setPlaybookEnabled(false)
-      }
-  }
+        notes: '',
+        evidence: [],
+        mitigationSteps: [],
+        playbook: { title: '', steps: [], lastModified: '' },
+      })
+      setPlaybookEnabled(false)
+    }
+  }, [categories, mode, onSubmit, playbookEnabled, reset])
 
   const handleSaveDraft = () => {
     if (!onSaveDraft) return
@@ -894,6 +895,7 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                             type="checkbox"
                             className="h-4 w-4 rounded accent-brand-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20"
                             aria-label="Mark step done"
+                            // eslint-disable-next-line react-hooks/incompatible-library
                             checked={(watch(`${base}.status`) as any) === 'done'}
                             onChange={(event) => {
                               const nextStatus = event.target.checked ? 'done' : 'open'

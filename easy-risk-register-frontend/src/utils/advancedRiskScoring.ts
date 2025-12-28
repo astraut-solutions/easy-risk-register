@@ -135,7 +135,7 @@ export const calculateBreachLikelihood = (
   const normalizedControls = Math.min(Math.max(controlsEffectiveness, 1), 5) / 5;
   
   // Calculate base likelihood
-  let baseLikelihood = normalizedThreat * normalizedVulnerability;
+  const baseLikelihood = normalizedThreat * normalizedVulnerability;
   
   // Apply controls mitigation (inverse relationship)
   const controlsFactor = 1 - (normalizedControls * 0.7); // Controls can reduce likelihood by up to 70%
@@ -154,7 +154,7 @@ export const calculateBreachLikelihood = (
  */
 export const calculateScenarioScores = (
   risk: Risk,
-  scenarioWeights?: Partial<Record<string, RiskFactorWeights>>
+  _scenarioWeights?: Partial<Record<string, RiskFactorWeights>>
 ): ScenarioRiskScore[] => {
   const scenarios: ScenarioRiskScore[] = [
     {

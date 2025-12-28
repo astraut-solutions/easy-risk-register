@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { riskService, useRiskManagement } from '../../src/services/riskService';
 import type { Risk, RiskFilters, RiskInput } from '../../src/types/risk';
 import type { RiskStoreState } from '../../src/stores/riskStore';
+import { useAuthStore } from '../../src/stores/authStore'
 
 type MockedRiskStore = RiskStoreState &
   ReturnType<typeof vi.fn> & {
@@ -105,6 +106,13 @@ describe('riskService', () => {
 
   beforeEach(() => {
     resetMockRiskStore();
+    useAuthStore.setState({
+      status: 'unauthenticated',
+      user: null,
+      accessToken: null,
+      workspaceId: null,
+      workspaceName: null,
+    })
 
     // Set default return values
     mockUseRiskStore.addRisk.mockImplementation((input) => ({
@@ -167,8 +175,8 @@ describe('riskService', () => {
   });
 
   describe('create', () => {
-    it('should call addRisk with the provided input', () => {
-      const result = riskService.create(mockRiskInput);
+    it('should call addRisk with the provided input', async () => {
+      const result = await riskService.create(mockRiskInput);
 
       expect(mockUseRiskStore.addRisk).toHaveBeenCalledWith(mockRiskInput);
       expect(result).toEqual(
@@ -184,9 +192,9 @@ describe('riskService', () => {
   });
 
   describe('update', () => {
-    it('should call updateRisk with ID and updates', () => {
+    it('should call updateRisk with ID and updates', async () => {
       const updates = { title: 'Updated Title', category: 'Compliance' };
-      const result = riskService.update('test-id', updates);
+      const result = await riskService.update('test-id', updates);
 
       expect(mockUseRiskStore.updateRisk).toHaveBeenCalledWith('test-id', updates);
       expect(result).toEqual(
@@ -199,8 +207,8 @@ describe('riskService', () => {
   });
 
   describe('remove', () => {
-    it('should call deleteRisk with the provided ID', () => {
-      riskService.remove('test-id');
+    it('should call deleteRisk with the provided ID', async () => {
+      await riskService.remove('test-id');
 
       expect(mockUseRiskStore.deleteRisk).toHaveBeenCalledWith('test-id');
     });

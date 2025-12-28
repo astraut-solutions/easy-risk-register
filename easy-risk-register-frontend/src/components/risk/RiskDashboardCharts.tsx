@@ -348,9 +348,8 @@ export const RiskDashboardCharts = ({
   }, [historyEnabled, recentChangeCounts, trendMode, trendSeries])
 
   const drillDownButtons = useMemo(() => {
-    const buttons: DrillDownTarget[] = []
-    return buttons
-  }, [categorySeverityCounts.labels])
+    return [] as DrillDownTarget[]
+  }, [])
 
   const renderDataTable = (rows: ChartTableRow[], valueLabel: string) => (
     <div className="mt-4 overflow-x-auto rounded-lg border border-border-faint bg-surface-secondary/10 p-4">

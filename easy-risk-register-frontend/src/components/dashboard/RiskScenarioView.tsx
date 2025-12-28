@@ -7,132 +7,135 @@ interface RiskScenarioViewProps {
   risks: Risk[];
 }
 
+const createScenarioVisualization = (
+  containerRef: React.RefObject<SVGSVGElement | null>,
+  scenarioType: string,
+  risks: Risk[],
+) => {
+  if (!containerRef.current) return;
+
+  // Clear previous content
+  d3.select(containerRef.current).selectAll("*").remove();
+
+  const width = 600;
+  const height = 400;
+
+  const svg = d3.select(containerRef.current)
+    .attr("width", width)
+    .attr("height", height);
+
+  // Get risks for this scenario
+  let scenarioRisks: Risk[] = [];
+  if (scenarioType === 'ransomware') {
+    scenarioRisks = risks.filter(risk =>
+      risk.title.toLowerCase().includes('ransomware') ||
+      risk.category?.toLowerCase().includes('ransomware') ||
+      risk.description.toLowerCase().includes('ransomware')
+    );
+  } else if (scenarioType === 'data-breach') {
+    scenarioRisks = risks.filter(risk =>
+      risk.title.toLowerCase().includes('data') ||
+      risk.category?.toLowerCase().includes('data') ||
+      risk.description.toLowerCase().includes('data') ||
+      risk.title.toLowerCase().includes('breach') ||
+      risk.category?.toLowerCase().includes('breach') ||
+      risk.description.toLowerCase().includes('breach')
+    );
+  } else {
+    // General scenario view with all risks
+    scenarioRisks = risks;
+  }
+
+  // Create nodes (risks)
+  const nodes = scenarioRisks.map((risk, index) => ({
+    id: risk.id,
+    title: risk.title.substring(0, 20) + (risk.title.length > 20 ? '...' : ''),
+    riskScore: risk.riskScore,
+    financialImpact: risk.financialImpact?.expectedMean ?? 0,
+    index: index
+  }));
+
+  // Create links (for demonstration, connecting related risks)
+  const links: Array<{source: number, target: number}> = [];
+  for (let i = 0; i < nodes.length - 1; i++) {
+    if (Math.random() > 0.7) { // Randomly connect some nodes
+      links.push({ source: i, target: i + 1 });
+    }
+  }
+
+  const linkForce = d3.forceLink<any, any>(links)
+    .id((d: any) => d.index)
+    .distance(100)
+    .strength(1)
+
+  // Create a simple force-directed graph
+  const simulation = d3.forceSimulation<any>(nodes)
+    .force("link", linkForce)
+    .force("charge", d3.forceManyBody().strength(-300))
+    .force("center", d3.forceCenter(width / 2, height / 2));
+
+  // Add links to the graph
+  const link = svg.append("g")
+    .attr("stroke", "#999")
+    .attr("stroke-opacity", 0.6)
+    .selectAll("line")
+    .data(links)
+    .join("line")
+    .attr("stroke-width", 1);
+
+  // Add nodes to the graph
+  const node = svg.append("g")
+    .attr("stroke", "#fff")
+    .attr("stroke-width", 1.5)
+    .selectAll("circle")
+    .data(nodes)
+    .join("circle")
+    .attr("r", (d: any) => Math.max(5, d.riskScore * 3))
+    .attr("fill", (d: any) => {
+      if (d.riskScore > 6) return "#ef4444"; // High risk - red
+      if (d.riskScore >= 4) return "#f59e0b"; // Medium risk - yellow
+      return "#10b981"; // Low risk - green
+    });
+
+  // Add labels to nodes
+  const label = svg.append("g")
+    .attr("class", "labels")
+    .selectAll("text")
+    .data(nodes)
+    .join("text")
+    .text((d: any) => d.title)
+    .attr("font-size", "10px")
+    .attr("dx", 10)
+    .attr("dy", 4);
+
+  // Update positions based on simulation
+  simulation.on("tick", () => {
+    link
+      .attr("x1", (d: any) => d.source.x)
+      .attr("y1", (d: any) => d.source.y)
+      .attr("x2", (d: any) => d.target.x)
+      .attr("y2", (d: any) => d.target.y);
+
+    node
+      .attr("cx", (d: any) => d.x)
+      .attr("cy", (d: any) => d.y);
+
+    label
+      .attr("x", (d: any) => d.x)
+      .attr("y", (d: any) => d.y);
+  });
+};
+
 const RiskScenarioView: React.FC<RiskScenarioViewProps> = ({ risks }) => {
   const ransomwareRef = useRef<SVGSVGElement>(null);
   const dataBreachRef = useRef<SVGSVGElement>(null);
   const scenarioRef = useRef<SVGSVGElement>(null);
 
-  // Function to create a risk scenario visualization using D3
-  const createScenarioVisualization = (containerRef: React.RefObject<SVGSVGElement | null>, scenarioType: string) => {
-    if (!containerRef.current) return;
-
-    // Clear previous content
-    d3.select(containerRef.current).selectAll("*").remove();
-
-    const width = 600;
-    const height = 400;
-
-    const svg = d3.select(containerRef.current)
-      .attr("width", width)
-      .attr("height", height);
-
-    // Get risks for this scenario
-    let scenarioRisks: Risk[] = [];
-    if (scenarioType === 'ransomware') {
-      scenarioRisks = risks.filter(risk => 
-        risk.title.toLowerCase().includes('ransomware') || 
-        risk.category?.toLowerCase().includes('ransomware') ||
-        risk.description.toLowerCase().includes('ransomware')
-      );
-    } else if (scenarioType === 'data-breach') {
-      scenarioRisks = risks.filter(risk => 
-        risk.title.toLowerCase().includes('data') || 
-        risk.category?.toLowerCase().includes('data') ||
-        risk.description.toLowerCase().includes('data') ||
-        risk.title.toLowerCase().includes('breach') ||
-        risk.category?.toLowerCase().includes('breach') ||
-        risk.description.toLowerCase().includes('breach')
-      );
-    } else {
-      // General scenario view with all risks
-      scenarioRisks = risks;
-    }
-
-    // Create nodes (risks)
-    const nodes = scenarioRisks.map((risk, index) => ({
-      id: risk.id,
-      title: risk.title.substring(0, 20) + (risk.title.length > 20 ? '...' : ''),
-      riskScore: risk.riskScore,
-      financialImpact: risk.financialImpact?.expectedMean ?? 0,
-      index: index
-    }));
-
-    // Create links (for demonstration, connecting related risks)
-    const links: Array<{source: number, target: number}> = [];
-    for (let i = 0; i < nodes.length - 1; i++) {
-      if (Math.random() > 0.7) { // Randomly connect some nodes
-        links.push({ source: i, target: i + 1 });
-      }
-    }
-
-    const linkForce = d3.forceLink<any, any>(links)
-      .id((d: any) => d.index)
-      .distance(100)
-      .strength(1)
-
-    // Create a simple force-directed graph
-    const simulation = d3.forceSimulation<any>(nodes)
-      .force("link", linkForce)
-      .force("charge", d3.forceManyBody().strength(-300))
-      .force("center", d3.forceCenter(width / 2, height / 2));
-
-    // Add links to the graph
-    const link = svg.append("g")
-      .attr("stroke", "#999")
-      .attr("stroke-opacity", 0.6)
-      .selectAll("line")
-      .data(links)
-      .join("line")
-      .attr("stroke-width", 1);
-
-    // Add nodes to the graph
-    const node = svg.append("g")
-      .attr("stroke", "#fff")
-      .attr("stroke-width", 1.5)
-      .selectAll("circle")
-      .data(nodes)
-      .join("circle")
-      .attr("r", (d: any) => Math.max(5, d.riskScore * 3))
-      .attr("fill", (d: any) => {
-        if (d.riskScore > 6) return "#ef4444"; // High risk - red
-        if (d.riskScore >= 4) return "#f59e0b"; // Medium risk - yellow
-        return "#10b981"; // Low risk - green
-      });
-
-    // Add labels to nodes
-    const label = svg.append("g")
-      .attr("class", "labels")
-      .selectAll("text")
-      .data(nodes)
-      .join("text")
-      .text((d: any) => d.title)
-      .attr("font-size", "10px")
-      .attr("dx", 10)
-      .attr("dy", 4);
-
-    // Update positions based on simulation
-    simulation.on("tick", () => {
-      link
-        .attr("x1", (d: any) => d.source.x)
-        .attr("y1", (d: any) => d.source.y)
-        .attr("x2", (d: any) => d.target.x)
-        .attr("y2", (d: any) => d.target.y);
-
-      node
-        .attr("cx", (d: any) => d.x)
-        .attr("cy", (d: any) => d.y);
-
-      label
-        .attr("x", (d: any) => d.x)
-        .attr("y", (d: any) => d.y);
-    });
-  };
-
   useEffect(() => {
     // Create visualizations for each scenario
-    createScenarioVisualization(ransomwareRef, 'ransomware');
-    createScenarioVisualization(dataBreachRef, 'data-breach');
-    createScenarioVisualization(scenarioRef, 'general');
+    createScenarioVisualization(ransomwareRef, 'ransomware', risks);
+    createScenarioVisualization(dataBreachRef, 'data-breach', risks);
+    createScenarioVisualization(scenarioRef, 'general', risks);
   }, [risks]);
 
   // Get statistics for each scenario

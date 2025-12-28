@@ -328,6 +328,14 @@ export const riskService = {
 
   /** Creates a new risk record with the provided input data */
   create: async (input: RiskInput) => {
+    const { status: authStatus } = useAuthStore.getState()
+    if (authStatus !== 'authenticated') {
+      cacheUtil.delete('filteredRisks')
+      cacheUtil.delete('allRisks')
+      cacheUtil.delete('risk_stats')
+      return useRiskStore.getState().addRisk(input)
+    }
+
     cacheUtil.delete('filteredRisks')
     cacheUtil.delete('allRisks')
     cacheUtil.delete('risk_stats')
@@ -357,6 +365,15 @@ export const riskService = {
     id: string,
     updates: Partial<RiskInput> & { status?: Risk['status'] },
   ) => {
+    const { status: authStatus } = useAuthStore.getState()
+    if (authStatus !== 'authenticated') {
+      cacheUtil.delete(`risk_${id}`)
+      cacheUtil.delete('filteredRisks')
+      cacheUtil.delete('allRisks')
+      cacheUtil.delete('risk_stats')
+      return useRiskStore.getState().updateRisk(id, updates)
+    }
+
     cacheUtil.delete(`risk_${id}`)
     cacheUtil.delete('filteredRisks')
     cacheUtil.delete('allRisks')
@@ -424,6 +441,16 @@ export const riskService = {
 
   /** Removes a risk from the store by its ID */
   remove: async (id: string) => {
+    const { status: authStatus } = useAuthStore.getState()
+    if (authStatus !== 'authenticated') {
+      cacheUtil.delete(`risk_${id}`)
+      cacheUtil.delete('filteredRisks')
+      cacheUtil.delete('allRisks')
+      cacheUtil.delete('risk_stats')
+      useRiskStore.getState().deleteRisk(id)
+      return
+    }
+
     cacheUtil.delete(`risk_${id}`)
     cacheUtil.delete('filteredRisks')
     cacheUtil.delete('allRisks')

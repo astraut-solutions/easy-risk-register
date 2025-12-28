@@ -10,7 +10,7 @@ interface ExecutiveDashboardProps {
   onDrillDown?: (target: { filters: Partial<any>; label: string }) => void;
 }
 
-const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ risks, snapshots, onDrillDown }) => {
+const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ risks, snapshots: _snapshots, onDrillDown }) => {
   // Calculate risk distribution by severity
   const riskDistribution = [
     { name: 'High', value: risks.filter(risk => risk.riskScore > 6).length },
@@ -117,7 +117,6 @@ const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ risks, snapshot
 
   // Colors for charts
   const COLORS = ['#ef4444', '#f59e0b', '#10b981'];
-  const CATEGORY_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#14b8a6', '#f59e0b'];
 
   return (
     <div className="space-y-6">

@@ -32,6 +32,19 @@ export const MetricsModal = ({ isOpen, onClose }: MetricsModalProps) => {
   const [copied, setCopied] = useState(false)
 
   const payload = useMemo(() => {
+    if (!isOpen) {
+      return {
+        summary: {
+          totalEvents: 0,
+          submits: 0,
+          abandons: 0,
+          medianTimeToCreateMs: null,
+          medianTimeToAbandonMs: null,
+          medianValidationErrorsPerAttempt: null,
+        },
+        events: [],
+      }
+    }
     const summary = getAnalyticsSummary()
     const events = getAnalyticsEvents()
     return { summary, events }

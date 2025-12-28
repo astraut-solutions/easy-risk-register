@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Risk, RiskMitigationStep } from '../../types/risk';
 import { useRiskManagement } from '../../services/riskService';
 

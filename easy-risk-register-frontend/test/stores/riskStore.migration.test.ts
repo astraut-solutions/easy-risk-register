@@ -11,7 +11,7 @@ const getPersistOptions = () => {
 }
 
 describe('RiskStore persistence migration', () => {
-  it('should migrate v1 persisted state to v4 shape (defaults + cyber fields + categories + stats + settings)', () => {
+  it('should migrate legacy persisted state to preferences-only shape', () => {
     const migrate = getPersistOptions().migrate as (state: unknown, version: number) => any
 
     const persistedV1 = {
@@ -35,25 +35,18 @@ describe('RiskStore persistence migration', () => {
 
     const migrated = migrate(persistedV1, 1)
 
-    expect(migrated.risks).toHaveLength(1)
-    expect(migrated.risks[0].id).toBe('legacy-1')
-    expect(migrated.risks[0].owner).toBeDefined()
-    expect(migrated.risks[0].evidence).toEqual([])
-    expect(migrated.risks[0].mitigationSteps).toEqual([])
-    expect(migrated.risks[0].riskResponse).toBe('treat')
-    expect(migrated.risks[0].threatType).toBeDefined()
-    expect(migrated.risks[0].checklists).toEqual([])
-    expect(migrated.risks[0].checklistStatus).toBeDefined()
-    expect(migrated.categories).toContain('Legacy Custom Category')
-    expect(migrated.stats.total).toBe(1)
-    expect(migrated.filteredRisks).toHaveLength(1)
+    // Core register data must not be migrated into persistent browser storage.
+    expect(migrated.risks).toBeUndefined()
+    expect(migrated.categories).toBeUndefined()
+
+    // Preferences survive migration.
     expect(migrated.filters.threatType).toBe('all')
     expect(migrated.filters.checklistStatus).toBe('all')
     expect(migrated.settings).toBeDefined()
     expect(migrated.settings.tooltipsEnabled).toBeTypeOf('boolean')
   })
 
-  it('should sanitize and normalize during migration (drops unsafe evidence urls)', () => {
+  it('should drop legacy core data even when present', () => {
     const migrate = getPersistOptions().migrate as (state: unknown, version: number) => any
 
     const persistedV1 = {
@@ -80,9 +73,8 @@ describe('RiskStore persistence migration', () => {
     }
 
     const migrated = migrate(persistedV1, 1)
-    expect(migrated.risks).toHaveLength(1)
-    expect(migrated.risks[0].evidence).toHaveLength(1)
-    expect(migrated.risks[0].evidence[0].url).toBe('https://example.com/evidence')
+    expect(migrated.risks).toBeUndefined()
+    expect(migrated.categories).toBeUndefined()
   })
 })
 

@@ -182,6 +182,5 @@ const server = http.createServer(async (req, res) => {
 })
 
 server.listen(port, () => {
-  // eslint-disable-next-line no-console
   console.log(`Serving ${distDir} on http://localhost:${port}`)
 })

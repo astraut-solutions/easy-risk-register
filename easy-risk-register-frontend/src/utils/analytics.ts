@@ -77,7 +77,6 @@ export const trackEvent = (name: AnalyticsEventName, props?: Record<string, unkn
 
   try {
     // Keep this quiet by default; enabled only via localStorage flag.
-    // eslint-disable-next-line no-console
     console.debug('[analytics]', name, props ?? {})
   } catch {
     // ignore

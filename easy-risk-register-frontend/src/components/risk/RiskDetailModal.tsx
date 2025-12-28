@@ -34,8 +34,6 @@ export const RiskDetailModal = ({
   onAttachChecklistTemplate,
   onToggleChecklistItem,
 }: RiskDetailModalProps) => {
-  if (!risk) return null
-
   const [selectedChecklistTemplateId, setSelectedChecklistTemplateId] = useState(
     () => COMPLIANCE_CHECKLIST_TEMPLATES[0]?.id ?? '',
   )
@@ -50,10 +48,12 @@ export const RiskDetailModal = ({
   )
 
   const checklistSummary = useMemo(() => {
-    const items = risk.checklists.flatMap((checklist) => checklist.items ?? [])
+    const items = (risk?.checklists ?? []).flatMap((checklist) => checklist.items ?? [])
     const completed = items.filter((item) => Boolean(item.completedAt)).length
     return { completed, total: items.length }
-  }, [risk.checklists])
+  }, [risk?.checklists])
+
+  if (!risk) return null
 
   return (
     <Modal

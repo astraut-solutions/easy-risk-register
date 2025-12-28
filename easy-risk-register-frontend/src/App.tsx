@@ -677,7 +677,7 @@ function App() {
       title: 'No risks match the current filters',
       description: 'Adjust or reset the filters to reveal more risks.',
     }
-  }, [filters, stats.total])
+  }, [matrixSelection, risks.length, stats.total])
 
   const privacyIncidentRisks = useMemo(
     () =>
