@@ -123,11 +123,11 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [verify] Edge case: updating checklist templates does not overwrite existing completion timestamps
 
 ### Feature: Threat type + checklist status filtering enhancements
-- [x] [database] Add `threat_type` (or equivalent) fields/enums to risks and indexes for filtering
-- [x] [backend] Extend risk list endpoints to filter by threat type and checklist state consistently
-- [x] [frontend] Add filter UI and ensure matrix + list + dashboard share the same filter semantics
-- [ ] [deploy] Update env/docs as needed for new filters (none expected)
-- [ ] [verify] Filter combinations behave consistently across views
+ - [x] [database] Add `threat_type` (or equivalent) fields/enums to risks and indexes for filtering
+ - [x] [backend] Extend risk list endpoints to filter by threat type and checklist state consistently
+ - [x] [frontend] Add filter UI and ensure matrix + list + dashboard share the same filter semantics
+ - [x] [deploy] Update env/docs as needed for new filters (none expected)
+ - [x] [verify] Filter combinations behave consistently across views
 
 ### Feature: Guided onboarding + educational tooltips
 - [ ] [database] Add user/workspace settings (tooltips on/off, onboarding state)

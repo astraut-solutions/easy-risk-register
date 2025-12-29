@@ -22,7 +22,7 @@ Core risk register data is stored server-side (workspace-scoped with Supabase RL
 
 ## Cyber templates and checklists
 
-- Cyber templates, threat types, and filters: `docs/reference/high-level.md`
+- Cyber templates, threat types, checklists, and filters: `docs/reference/high-level.md`
 - Implementation note (MVP): cyber risk templates are bundled-only (no database table; no template APIs) and ship in the frontend build (`easy-risk-register-frontend/src/constants/cyber.ts`).
 - Compliance checklists (privacy incident assist) are stored in Supabase and are assistive guidance only: `docs/guides/security/privacy-controls.md`
 

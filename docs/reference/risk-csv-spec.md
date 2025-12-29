@@ -11,6 +11,11 @@ When deployed on Vercel (recommended), serverless endpoints are available under 
 
 Both endpoints require `Authorization: Bearer <supabase-jwt>` and are workspace-scoped (`x-workspace-id` header or personal-workspace fallback).
 
+Export supports optional query params for exporting a filtered subset:
+
+- `threatType` (or `threat_type`)
+- `checklistStatus` (or `checklist_status`)
+
 ## Versioning
 
 - `csvSpecVersion`: CSV spec version (current: `2`)
@@ -73,6 +78,7 @@ Includes all **Standard CSV** columns, plus:
 - Import creates **new** risk rows in the database; it does **not** update existing risks.
 - Required fields for a valid import row: `title`, `category`, `probability` (1-5), `impact` (1-5).
 - Fields not represented in the current DB schema are stored under the JSON column `risks.data` (for example owner/review fields, evidence JSON, mitigation steps JSON).
+- `checklistStatus` (when present) is stored in the first-class `public.risks.checklist_status` column.
 
 ## Security notes (CSV injection)
 

@@ -18,7 +18,7 @@ It enables users to:
 - Create new risks from bundled cyber templates (picker with preview; no template network calls required; template-derived risks are independent records).
 - Assign probability (1-5) and impact (1-5) and compute a risk score.
 - Visualize risks in a 5×5 probability-impact matrix and table views (click/keyboard drill-down from matrix cells).
-- Filter/search server-side via `/api/risks` (status/category/threat type, plus sorting/pagination).
+- Filter/search server-side via `/api/risks` (status/category/threat type/checklist status, plus sorting/pagination).
 - Export CSV and generate print-to-PDF reports from the browser.
 
 ## Why it works

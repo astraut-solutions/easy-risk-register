@@ -36,6 +36,7 @@ All `/api/*` routes require an **end-user Supabase JWT** (Bearer token):
 - `GET /api/users` (returns current user + resolved `workspaceId`)
 - `POST /api/audit`
 - `POST /api/data-protection` (encrypt/decrypt)
+- `GET /api/risks` (list risks; supports query params like `status`, `category`, `q`, `threatType`, `checklistStatus`, sorting/pagination)
 - `GET/POST /api/timeseries/*`
 - `GET /api/risks/:id/checklists` (list per-risk checklist instances + items)
 - `POST /api/risks/:id/checklists` (attach a checklist template to a risk)

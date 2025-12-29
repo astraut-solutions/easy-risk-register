@@ -59,6 +59,23 @@ Defined in `supabase/init/002_workspaces_core_tables_rls.sql` and `supabase/init
 
 See `api/risks/index.js` and `api/risks/[id].js`.
 
+## List filtering (`GET /api/risks`)
+
+The list endpoint supports server-side filtering/sorting/pagination via query params (all optional):
+
+- `status`: `open` | `mitigated` | `closed` | `accepted` | `all`
+- `category`: category name (string) | `all`
+- `q`: search term (matches title/description)
+- `threatType` (or `threat_type`): threat type enum value | `all`
+- `checklistStatus` (or `checklist_status`): `not_started` | `in_progress` | `done` | `all`
+- `probability`, `impact`: `1..5` | `all`
+- `minScore`, `maxScore`: `1..25`
+- `sort`: `updated_at` (default) | `created_at` | `risk_score` | `title`
+- `order`: `asc` | `desc` (default)
+- `limit`, `offset`: pagination
+
+Note: the UI may apply additional client-side-only filters (for example `severity`) after fetching.
+
 ## Compliance checklists (normalized)
 
 Per-risk checklists are stored in dedicated tables (not in `public.risks.data`):

@@ -46,4 +46,5 @@ If Playwright browsers are available locally, smoke the key flow in:
 Minimum checklist:
 - Load overview → click matrix cell → confirm table shows filtered results.
 - Apply category/status filters → verify matrix counts and table stay in sync.
+- Apply threat type + checklist status filters → verify overview KPIs, matrix counts, risk table, and dashboard drill-down reflect the same filtered set.
 - Keyboard navigation works as expected in each browser.
