@@ -334,7 +334,7 @@ test-id,"Missing fields","No title/description columns here"`
         {
           title: 'Medium Risk',
           description: 'A medium severity risk',
-          probability: 2,
+          probability: 3,
           impact: 3,
           category: 'Compliance',
           status: 'mitigated',
@@ -361,7 +361,7 @@ test-id,"Missing fields","No title/description columns here"`
     })
 
     it('should filter risks by severity', () => {
-      // 4*4=16 (high), 1*2=2 (low), 2*3=6 (medium with new thresholds)
+      // 4*4=16 (high), 1*2=2 (low), 3*3=9 (medium)
       useRiskStore.getState().setFilters({ severity: 'high' })
 
       const state = useRiskStore.getState()
@@ -370,11 +370,11 @@ test-id,"Missing fields","No title/description columns here"`
     })
 
     it('should correctly identify medium severity risks', () => {
-      // 4*4=16 (high), 1*2=2 (low), 2*3=6 (medium with new thresholds)
+      // 4*4=16 (high), 1*2=2 (low), 3*3=9 (medium)
       useRiskStore.getState().setFilters({ severity: 'medium' })
 
       const state = useRiskStore.getState()
-      expect(state.filteredRisks).toHaveLength(1) // Only 'Medium Risk' (6) should be medium
+      expect(state.filteredRisks).toHaveLength(1) // Only 'Medium Risk' (9) should be medium
       expect(state.filteredRisks[0].title).toBe('Medium Risk')
     })
 

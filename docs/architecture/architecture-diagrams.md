@@ -471,7 +471,7 @@ graph LR
 
 #### Unit Testing Strategy
 - Risk calculation functions: `calculateRiskScore(probability, impact)` - calculates probability × impact (5x5 matrix, scores 1-25)
-- Risk severity functions: `getRiskSeverity(score)` - determines Low (≤3), Medium (≤6), High (>6)
+- Risk severity functions: `getRiskSeverity(score)` - determines Low (1-8), Medium (9-15), High (16-25) (workspace-configurable)
 - Form validation logic: Input sanitization and validation
 - Export functionality: CSV generation and data integrity
 - State management: Store updates and persistence
@@ -498,7 +498,7 @@ graph LR
 
 #### Data Integrity Checks
 - Risk scores correctly calculated as probability × impact (range 1-25 for 5x5 matrix)
-- Risk severity correctly determined: Low (≤3), Medium (≤6), High (>6)
+- Risk severity correctly determined: Low (1-8), Medium (9-15), High (16-25) (workspace-configurable)
 - Risk IDs are unique and properly formatted (nanoid)
 - Dates are properly formatted as ISO strings
 - Data persists across browser sessions

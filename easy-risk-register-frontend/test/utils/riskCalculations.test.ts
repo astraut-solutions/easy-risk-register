@@ -74,22 +74,21 @@ describe('riskCalculations', () => {
   });
 
   describe('getRiskSeverity', () => {
-    it('should return "low" for scores <= 3', () => {
+    it('should return "low" for scores 1-8', () => {
       expect(getRiskSeverity(1)).toBe('low');
       expect(getRiskSeverity(2)).toBe('low');
-      expect(getRiskSeverity(3)).toBe('low');
+      expect(getRiskSeverity(8)).toBe('low');
     });
 
-    it('should return "medium" for scores 4-6', () => {
-      expect(getRiskSeverity(4)).toBe('medium');
-      expect(getRiskSeverity(5)).toBe('medium');
-      expect(getRiskSeverity(6)).toBe('medium');
+    it('should return "medium" for scores 9-15', () => {
+      expect(getRiskSeverity(9)).toBe('medium');
+      expect(getRiskSeverity(12)).toBe('medium');
+      expect(getRiskSeverity(15)).toBe('medium');
     });
 
-    it('should return "high" for scores > 6', () => {
-      expect(getRiskSeverity(7)).toBe('high');
-      expect(getRiskSeverity(8)).toBe('high');
-      expect(getRiskSeverity(12)).toBe('high');
+    it('should return "high" for scores 16-25', () => {
+      expect(getRiskSeverity(16)).toBe('high');
+      expect(getRiskSeverity(20)).toBe('high');
       expect(getRiskSeverity(25)).toBe('high');
     });
   });
@@ -175,7 +174,7 @@ describe('riskCalculations', () => {
         severity: 'high' 
       });
       expect(result).toHaveLength(1);
-      expect(result[0].riskScore).toBe(20); // High severity (20 > 6)
+      expect(result[0].riskScore).toBe(20); // High severity (16-25)
     });
 
     it('should combine multiple filters', () => {
@@ -231,7 +230,7 @@ describe('riskCalculations', () => {
       
       expect(result.total).toBe(1);
       expect(result.byStatus).toEqual({ open: 1, mitigated: 0, closed: 0, accepted: 0 });
-      expect(result.bySeverity).toEqual({ low: 0, medium: 0, high: 1 }); // 12 = high
+      expect(result.bySeverity).toEqual({ low: 0, medium: 1, high: 0 }); // 12 = medium
       expect(result.averageScore).toBe(12);
       expect(result.maxScore).toBe(12);
     });
@@ -254,7 +253,7 @@ describe('riskCalculations', () => {
           description: 'Medium Description',
           probability: 2,
           impact: 3,
-          riskScore: 6, // medium severity
+          riskScore: 12, // medium severity
           category: 'Operational',
           status: 'mitigated',
         }),
@@ -275,7 +274,7 @@ describe('riskCalculations', () => {
       expect(result.total).toBe(3);
       expect(result.byStatus).toEqual({ open: 1, mitigated: 1, closed: 1, accepted: 0 });
       expect(result.bySeverity).toEqual({ low: 1, medium: 1, high: 1 });
-      expect(result.averageScore).toBe(9.33); // (2 + 6 + 20) / 3 = 9.33
+      expect(result.averageScore).toBe(11.33); // (2 + 12 + 20) / 3 = 11.33
       expect(result.maxScore).toBe(20);
     });
 
@@ -287,7 +286,7 @@ describe('riskCalculations', () => {
           description: 'Open Description',
           probability: 2,
           impact: 2,
-          riskScore: 4, // medium severity
+          riskScore: 10, // medium severity
           category: 'Security',
           status: 'open',
         }),
@@ -297,7 +296,7 @@ describe('riskCalculations', () => {
           description: 'Mitigated Description',
           probability: 2,
           impact: 2,
-          riskScore: 4, // medium severity
+          riskScore: 10, // medium severity
           category: 'Operational',
           status: 'mitigated',
         }),
@@ -307,7 +306,7 @@ describe('riskCalculations', () => {
           description: 'Accepted Description',
           probability: 2,
           impact: 2,
-          riskScore: 4, // medium severity
+          riskScore: 10, // medium severity
           category: 'Compliance',
           status: 'accepted',
         }),
@@ -317,8 +316,8 @@ describe('riskCalculations', () => {
       
       expect(result.byStatus).toEqual({ open: 1, mitigated: 1, closed: 0, accepted: 1 });
       expect(result.bySeverity).toEqual({ low: 0, medium: 3, high: 0 });
-      expect(result.averageScore).toBe(4);
-      expect(result.maxScore).toBe(4);
+      expect(result.averageScore).toBe(10);
+      expect(result.maxScore).toBe(10);
     });
   });
 });

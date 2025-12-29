@@ -158,31 +158,31 @@ describe('RiskForm', () => {
 
     // With probability 4 and impact 3, risk score should be 12
     expect(screen.getByText('12')).toBeInTheDocument()
-    expect(screen.getByText('HIGH')).toBeInTheDocument()
+    expect(screen.getByText('MEDIUM')).toBeInTheDocument()
   })
 
   it('explains severity and recommends a next step', () => {
-    vi.mocked(mockUseForm.watch).mockReturnValue({ probability: 4, impact: 3 })
+    vi.mocked(mockUseForm.watch).mockReturnValue({ probability: 4, impact: 4 })
     render(<RiskForm {...defaultProps} />)
 
-    expect(screen.getByText(/Score > 6 is high severity/i)).toBeInTheDocument()
+    expect(screen.getByText(/Scores 16-25 are high severity/i)).toBeInTheDocument()
     expect(screen.getByText(/Recommended next step/i)).toBeInTheDocument()
     expect(screen.getByText(/Assign an owner and set a due date/i)).toBeInTheDocument()
   })
 
   it('shows different severity levels', () => {
     // Test low severity
-    vi.mocked(mockUseForm.watch).mockReturnValue({ probability: 1, impact: 2 })
+    vi.mocked(mockUseForm.watch).mockReturnValue({ probability: 2, impact: 3 })
     render(<RiskForm {...defaultProps} />)
     expect(screen.getByText('LOW')).toBeInTheDocument()
 
     // Test medium severity
-    vi.mocked(mockUseForm.watch).mockReturnValue({ probability: 2, impact: 3 })
+    vi.mocked(mockUseForm.watch).mockReturnValue({ probability: 3, impact: 3 })
     render(<RiskForm {...defaultProps} />)
     expect(screen.getByText('MEDIUM')).toBeInTheDocument()
 
     // Test high severity
-    vi.mocked(mockUseForm.watch).mockReturnValue({ probability: 4, impact: 3 })
+    vi.mocked(mockUseForm.watch).mockReturnValue({ probability: 5, impact: 5 })
     render(<RiskForm {...defaultProps} />)
     expect(screen.getByText('HIGH')).toBeInTheDocument()
   })

@@ -117,8 +117,8 @@ const RiskForm = ({ onSubmit, onCancel, initialData, mode = 'create' }) => {
 const RiskCard = ({ risk, onEdit, onDelete, onView }) => {
   // Risk score color coding implementation
   const getRiskColor = (score) => {
-    if (score <= 3) return 'green'; // Low
-    if (score <= 6) return 'yellow'; // Medium
+    if (score <= 8) return 'green'; // Low
+    if (score <= 15) return 'yellow'; // Medium
     return 'red'; // High
   };
   
@@ -294,10 +294,10 @@ const calculateRiskScore = memoize((probability, impact) => {
 });
 
 // Risk severity determination based on calculated risk score
-// Low: score <= 3, Medium: score <= 6, High: score > 6
+// Low: score 1-8, Medium: score 9-15, High: score 16-25
 const getRiskSeverity = (score: number): RiskSeverity => {
-  if (score <= 3) return 'low';
-  if (score <= 6) return 'medium';
+  if (score <= 8) return 'low';
+  if (score <= 15) return 'medium';
   return 'high';
 };
 ```

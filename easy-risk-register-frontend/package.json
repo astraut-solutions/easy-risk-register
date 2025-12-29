@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
-    "@influxdata/influxdb-client": "^1.35.0",
     "@react-email/components": "^1.0.2",
     "@react-email/render": "^2.0.0",
     "@supabase/supabase-js": "^2.56.0",

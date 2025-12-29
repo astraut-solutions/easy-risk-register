@@ -144,7 +144,7 @@ describe('RiskTable', () => {
     expect(firstRowQueries.getByText('First test risk description')).toBeInTheDocument()
     expect(firstRowQueries.getByText('Security')).toBeInTheDocument()
     expect(firstRowQueries.getByText('12')).toBeInTheDocument()
-    expect(firstRowQueries.getByText('4×3')).toBeInTheDocument()
+    expect(firstRowQueries.getByText(/4×3/i)).toBeInTheDocument()
     expect(firstRowQueries.getByText('open')).toBeInTheDocument()
 
     // Check second risk
@@ -153,29 +153,37 @@ describe('RiskTable', () => {
     expect(secondRowQueries.getByText('Second test risk description')).toBeInTheDocument()
     expect(secondRowQueries.getByText('Compliance')).toBeInTheDocument()
     expect(secondRowQueries.getByText('8')).toBeInTheDocument()
-    expect(secondRowQueries.getByText('2×4')).toBeInTheDocument()
+    expect(secondRowQueries.getByText(/2×4/i)).toBeInTheDocument()
     expect(secondRowQueries.getByText('mitigated')).toBeInTheDocument()
   })
 
   it('displays risk score with correct severity badge', () => {
+    const highRiskExample: Risk = {
+      ...mockRisk2,
+      id: 'high-risk-example',
+      title: 'High Severity Risk',
+      riskScore: 20,
+    }
+
     const mediumRiskExample: Risk = {
       ...mockRisk2,
       id: 'medium-risk-example',
       title: 'Medium Severity Risk',
-      riskScore: 5,
+      riskScore: 12,
     }
-    render(<RiskTable {...defaultProps} risks={[mockRisk1, mediumRiskExample]} />)
+
+    render(<RiskTable {...defaultProps} risks={[highRiskExample, mediumRiskExample]} />)
 
     const riskScoreBadges = screen
       .getAllByTestId('mock-badge')
       .filter((badge) => badge.getAttribute('aria-label')?.startsWith('Risk score:'))
 
     const highSeverityBadge = riskScoreBadges.find(
-      (badge) => badge.textContent?.trim() === `${mockRisk1.riskScore}`
+      (badge) => badge.textContent?.trim() === `${highRiskExample.riskScore}`
     )
     expect(highSeverityBadge).toHaveAttribute('tone', 'danger')
 
-    // Medium severity risk score (5) should have warning tone
+    // Medium severity risk score (12) should have warning tone
     const mediumSeverityBadge = riskScoreBadges.find(
       (badge) => badge.textContent?.trim() === `${mediumRiskExample.riskScore}`
     )
@@ -285,7 +293,7 @@ describe('RiskTable', () => {
   })
 
   it('maps risk scores to correct severity tones', () => {
-    // Test low severity (score <= 3)
+    // Test low severity (score 1-8)
     const lowRisk: Risk = {
       ...mockRisk1,
       id: 'low-risk-id',
@@ -293,11 +301,11 @@ describe('RiskTable', () => {
       title: 'Low Risk'
     }
 
-    // Test medium severity (score 4-6)
+    // Test medium severity (score 9-15)
     const mediumRisk: Risk = {
       ...mockRisk1,
       id: 'medium-risk-id',
-      riskScore: 5,
+      riskScore: 10,
       title: 'Medium Risk'
     }
 
@@ -305,7 +313,7 @@ describe('RiskTable', () => {
 
     // The badges for these risk scores should have the correct tones
     const riskScoreBadges = screen.getAllByTestId('mock-badge').filter(badge => 
-      ['2', '5'].includes(badge.textContent?.trim() || '')
+      ['2', '10'].includes(badge.textContent?.trim() || '')
     )
 
     expect(riskScoreBadges[0]).toHaveAttribute('tone', 'success') // Low risk
@@ -322,16 +330,16 @@ describe('RiskTable', () => {
 
   it('uses boundary risk scores to determine severity tones correctly', () => {
     const risksWithBoundaries: Risk[] = [
-      { ...mockRisk1, id: 'low', title: 'Low Risk', riskScore: 3 },
-      { ...mockRisk1, id: 'medium', title: 'Medium Risk', riskScore: 6 },
-      { ...mockRisk1, id: 'high', title: 'High Risk', riskScore: 9 },
+      { ...mockRisk1, id: 'low', title: 'Low Risk', riskScore: 8 },
+      { ...mockRisk1, id: 'medium', title: 'Medium Risk', riskScore: 15 },
+      { ...mockRisk1, id: 'high', title: 'High Risk', riskScore: 16 },
     ]
 
     render(<RiskTable risks={risksWithBoundaries} onEdit={vi.fn()} onDelete={vi.fn()} />)
 
     const scoreBadges = screen
       .getAllByTestId('mock-badge')
-      .filter((badge) => ['3', '6', '9'].includes(badge.textContent?.trim() ?? ''))
+      .filter((badge) => ['8', '15', '16'].includes(badge.textContent?.trim() ?? ''))
 
     expect(scoreBadges[0]).toHaveAttribute('tone', 'success')
     expect(scoreBadges[1]).toHaveAttribute('tone', 'warning')

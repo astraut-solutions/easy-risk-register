@@ -1,6 +1,6 @@
 # Serverless Integrations (No Browser Secrets)
 
-Any integration that needs credentials (InfluxDB tokens, threat intel API keys, etc.) must run server-side, not in the browser.
+Any integration that needs credentials (threat intel API keys, etc.) must run server-side, not in the browser.
 
 ## Why
 
@@ -45,23 +45,9 @@ Server-side environment variables:
 - `SUPABASE_JWT_SECRET` (optional; enables local JWT verification, otherwise the API verifies via Supabase Auth)
 - `ENCRYPTION_KEY` (required in production; used by `/api/data-protection`)
 
-## Time-series (InfluxDB)
+## Time-series (Supabase Postgres)
 
-API routes:
-
-- `POST /api/timeseries/write`
-- `GET /api/timeseries/query`
-
-Server-side environment variables:
-
-- `INFLUXDB_URL`
-- `INFLUXDB_TOKEN`
-- `INFLUXDB_ORG`
-- `INFLUXDB_BUCKET`
-
-## Time-series (Supabase Postgres) - local-first
-
-Create a `risk_trends` table (recommended types):
+Time-series snapshots are stored in Supabase Postgres in `public.risk_trends`:
 - `workspace_id` (uuid), `risk_id` (text), `probability` (int), `impact` (int), `risk_score` (int), `timestamp` (bigint), `category` (text), `status` (text)
 
 ### Docker Compose (dev only)

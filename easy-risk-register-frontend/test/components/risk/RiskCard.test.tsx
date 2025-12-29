@@ -69,18 +69,19 @@ describe('RiskCard', () => {
   })
 
   it('displays risk score with correct severity badge', () => {
-    // Test high severity (score 12)
-    const { rerender } = render(<RiskCard {...defaultProps} />)
-    expect(screen.getByText('12')).toBeInTheDocument()
+    // Test high severity (score 20)
+    const highRisk = makeRisk({ riskScore: 20 })
+    const { rerender } = render(<RiskCard risk={highRisk} onEdit={vi.fn()} onDelete={vi.fn()} />)
+    expect(getRiskScoreBadge()).toHaveTextContent(/^20\b/)
     expect(getRiskScoreBadge()).toHaveAttribute('tone', 'danger')
 
-    // Test medium severity (score 5)
-    const mediumRisk = makeRisk({ riskScore: 5 })
+    // Test medium severity (score 12)
+    const mediumRisk = makeRisk({ riskScore: 12 })
     rerender(<RiskCard risk={mediumRisk} onEdit={vi.fn()} onDelete={vi.fn()} />)
     expect(getRiskScoreBadge()).toHaveAttribute('tone', 'warning')
 
-    // Test low severity (score 2)
-    const lowRisk = makeRisk({ riskScore: 2 })
+    // Test low severity (score 5)
+    const lowRisk = makeRisk({ riskScore: 5 })
     rerender(<RiskCard risk={lowRisk} onEdit={vi.fn()} onDelete={vi.fn()} />)
     expect(getRiskScoreBadge()).toHaveAttribute('tone', 'success')
   })
@@ -144,7 +145,7 @@ describe('RiskCard', () => {
     // Check ARIA label for risk score badge
     expect(getRiskScoreBadge()).toHaveAttribute(
       'aria-label',
-      'Risk score: 12, danger severity'
+      'Risk score: 12, medium severity'
     )
   })
 
@@ -170,8 +171,8 @@ describe('RiskCard', () => {
   })
 
   it('maps boundary risk scores to the expected severity tone', () => {
-    const lowBoundaryRisk = makeRisk({ riskScore: 3 })
-    const mediumBoundaryRisk = makeRisk({ riskScore: 6 })
+    const lowBoundaryRisk = makeRisk({ riskScore: 8 })
+    const mediumBoundaryRisk = makeRisk({ riskScore: 9 })
 
     const { unmount } = render(
       <RiskCard risk={lowBoundaryRisk} onEdit={vi.fn()} onDelete={vi.fn()} />

@@ -36,7 +36,7 @@ const mockRisks = [
     description: 'Medium risk description',
     probability: 3,
     impact: 3,
-    riskScore: 6,
+    riskScore: 9,
     category: 'Operational',
     status: 'mitigated',
     mitigationPlan: 'Medium risk plan',

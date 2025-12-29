@@ -32,7 +32,7 @@ Easy Risk Register addresses a critical market gap where SMBs currently rely on 
 A medical practice with 15 staff members uses Easy Risk Register to track patient data security risks, equipment failure possibilities, and regulatory compliance issues. They can visualize risks on the probability-impact matrix to prioritize which threats require immediate attention, like potential HIPAA violations or medical device failures.
 
 ### Manufacturing Company
-A small manufacturing company tracks risks related to supply chain disruptions, workplace safety incidents, and quality control failures. Using the risk scoring feature (probability x impact), they prioritize which risks could have the greatest effect on production and revenue.
+A small manufacturing company tracks risks related to supply chain disruptions, workplace safety incidents, and quality control failures. Using the risk scoring feature (probability × impact), they prioritize which risks could have the greatest effect on production and revenue.
 
 ### Financial Services Firm
 A regional financial advisor firm manages risks including market volatility, cybersecurity threats, and regulatory changes. The CSV export feature allows them to share risk assessments with their compliance team and create reports for stakeholders.
@@ -41,7 +41,7 @@ A regional financial advisor firm manages risks including market volatility, cyb
 
 - Supabase Auth sign-in/out and workspace-scoped access (default “Personal” workspace; no multi-workspace switcher UX yet)
 - Risk CRUD via APIs (`/api/risks`, `/api/categories`) with validation and consistent error handling
-- Automatic risk scoring (probability × impact) and probability-impact matrix + table views
+- Automatic risk scoring (probability × impact; score 1-25) with severity labels (defaults: Low 1-8, Medium 9-15, High 16-25) and probability-impact matrix + table views
 - Filters and search (status/category/threat type/score)
 - CSV export (standard + audit pack) with CSV/Excel formula injection protection
 - PDF export via print-to-PDF (`report.html` viewer; popups must be allowed)
@@ -165,7 +165,7 @@ docker compose down
 ### Creating Your First Risk
 1. Click the "Create New Risk" button on the dashboard
 2. Fill in the risk details: title, description, probability (1-5 scale), impact (1-5 scale), and category
-3. The system automatically calculates the risk score (probability x impact)
+3. The system automatically calculates the risk score (probability × impact)
 4. Add a mitigation plan if applicable
 5. Save the risk to add it to your register
 
@@ -216,7 +216,7 @@ npx vitest test/stores/riskStore.test.ts
 ### Test Coverage
 
 Aim for at least 80% test coverage for business logic, especially for:
-- Risk calculations (probability x impact)
+- Risk calculations (probability × impact)
 - Risk store operations (add, update, delete)
 - Data import/export functionality
 - Filtering and search functionality

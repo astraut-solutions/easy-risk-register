@@ -48,7 +48,7 @@ This document maps the design system components and specifications to the specif
 - Risk score is calculated using probability × impact → Implemented in RiskForm with real-time calculation
 - Scores are displayed visually to indicate severity levels → Color-coded display in RiskCard component
 - Calculation is updated in real-time when inputs change → Implemented in RiskForm component
-- Risk score ranges are clearly defined based on a 5x5 probability-impact matrix (scores 1-25): Low: ≤3, Medium: ≤6, High: >6 → Color-coded ranges with green/yellow/red
+- Risk score ranges are clearly defined based on a 5x5 probability-impact matrix (scores 1-25): Low: 1-8, Medium: 9-15, High: 16-25 (admin-configurable) → Color-coded ranges with green/yellow/red
 
 #### 2.1.3 Risk Visualization
 **Requirement**: Dynamic probability-impact matrix visualization showing all risks

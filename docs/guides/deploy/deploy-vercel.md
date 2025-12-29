@@ -44,12 +44,22 @@ Admin-only (only needed if you add endpoints that must bypass RLS):
 
 - `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (**server-only; never expose to the browser**)
 
-If you enable time-series integrations:
+## Risk scoring thresholds (workspace-configurable)
 
-- `INFLUXDB_URL`
-- `INFLUXDB_TOKEN`
-- `INFLUXDB_ORG`
-- `INFLUXDB_BUCKET`
+Risk score is computed as `probability × impact` (1-25). Severity labels are derived from per-workspace thresholds stored in Postgres:
+
+- Table: `public.workspace_risk_thresholds`
+- Defaults (PRD): **Low 1-8**, **Medium 9-15**, **High 16-25**
+
+There are **no environment variables** for thresholds. To change thresholds for a workspace, update the row in `public.workspace_risk_thresholds` (Owner/Admin only under RLS).
+
+Example (Supabase SQL editor):
+
+```sql
+update public.workspace_risk_thresholds
+set low_max = 7, medium_max = 14
+where workspace_id = '<workspace-uuid>';
+```
 
 ## Where to find Supabase values
 
@@ -102,6 +112,17 @@ After deploying (or when running locally), validate the end-to-end persistence p
 3) Edit the risk, refresh, confirm changes persist.
 4) Delete the risk, refresh, confirm it is gone.
 5) Sign in on another device/profile and confirm the same risks are visible (same user/workspace).
+
+### Scoring boundary checks (manual)
+
+Confirm the UI and API agree on severity boundaries by creating risks with these probability/impact pairs:
+
+- Score `1` = `1×1` → `low`
+- Score `8` = `2×4` (or `4×2`) → `low`
+- Score `9` = `3×3` → `medium`
+- Score `15` = `3×5` (or `5×3`) → `medium`
+- Score `16` = `4×4` → `high`
+- Score `25` = `5×5` → `high`
 
 ## Local parity (optional)
 

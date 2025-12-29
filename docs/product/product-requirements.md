@@ -61,10 +61,10 @@ Primary personas:
   - Risk categories are predefined based on common industry needs
 
 #### 2.1.2 Risk Scoring
-- **Feature Description**: Automatic calculation of risk scores using probability x impact formulas
+- **Feature Description**: Automatic calculation of risk scores using probability × impact formulas
 - **User Story**: As a manager, I want to see calculated risk scores so that I can prioritize which risks require immediate attention
 - **Acceptance Criteria**:
-  - Risk score is calculated using probability x impact
+  - Risk score is calculated using probability × impact
   - Scores are displayed visually to indicate severity levels
   - Calculation is updated in real-time when inputs change
   - Risk score ranges are clearly defined based on a 5x5 probability-impact matrix (scores 1-25): Low: 1-8, Medium: 9-15, High: 16-25 (or configurable by an admin)
@@ -270,7 +270,7 @@ Primary personas:
 
 ### 3.1 Risk Management Functions
 - **REQ-001**: The system shall allow users to create new risk entries with description, probability, impact, and mitigation plan
-- **REQ-002**: The system shall calculate risk score using the formula: Probability x Impact
+- **REQ-002**: The system shall calculate risk score using the formula: Probability × Impact
 - **REQ-003**: The system shall provide CRUD (Create, Read, Update, Delete) operations for risk entries
 - **REQ-004**: The system shall display risks in an interactive probability-impact matrix
 - **REQ-005**: The system shall support filtering and sorting of risks by various criteria (category, severity, etc.)

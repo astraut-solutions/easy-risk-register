@@ -75,17 +75,17 @@ describe('filterRisks consistency', () => {
 
         it('should filter by severity consistently', () => {
             const risks = [
-                createMockRisk({ riskScore: 2 }), // Low
-                createMockRisk({ riskScore: 5 }), // Medium
-                createMockRisk({ riskScore: 4 }), // Medium
-                createMockRisk({ riskScore: 10 }), // High
+                createMockRisk({ riskScore: 2 }), // Low (1-8)
+                createMockRisk({ riskScore: 10 }), // Medium (9-15)
+                createMockRisk({ riskScore: 12 }), // Medium (9-15)
+                createMockRisk({ riskScore: 20 }), // High (16-25)
             ]
 
             const filters: RiskFilters = { ...DEFAULT_FILTERS, severity: 'medium' }
             const result = filterRisks(risks, filters)
 
             expect(result).toHaveLength(2)
-            expect(result.every((r) => r.riskScore <= 6 && r.riskScore > 3)).toBe(true)
+            expect(result.every((r) => r.riskScore >= 9 && r.riskScore <= 15)).toBe(true)
         })
 
         it('should return all risks when filter array is empty', () => {

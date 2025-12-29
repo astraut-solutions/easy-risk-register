@@ -71,8 +71,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [database] Add workspace-configurable thresholds if required (defaults: Low 1-8, Medium 9-15, High 16-25)
 - [x] [backend] Enforce score/severity consistency server-side (don't trust client calculations)
 - [x] [frontend] Display score and severity labels; update in real-time as probability/impact change
-- [ ] [deploy] Add configuration knobs (if any) to documented env/settings flow
-- [ ] [verify] Check boundary cases (1, 8, 9, 15, 16, 25) render correctly and match API output
+- [x] [deploy] Add configuration knobs (if any) to documented env/settings flow
+- [x] [verify] Check boundary cases (1, 8, 9, 15, 16, 25) render correctly and match API output
 
 ### Feature: Matrix view + filtering + drill-down
 - [ ] [database] Ensure filterable fields exist for MVP (category, status; add threat type later if needed)
@@ -141,7 +141,7 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 ### Feature: Risk score history (bounded) for trends
 - [ ] [database] Add `risk_score_snapshots` (or `risk_trends`) table with bounded retention strategy (20 snapshots per risk or 90 days)
 - [ ] [backend] Record snapshots on create/update; add query endpoints for overall and per-risk trends
-- [ ] [backend] Migrate off Influx-based time-series if present (use Supabase as system of record)
+- [x] [backend] Migrate off Influx-based time-series if present (use Supabase as system of record)
 - [ ] [frontend] Add trend views (overall exposure + per-risk history) with clear "what changed" UX
 - [ ] [deploy] Remove/replace time-series env vars that are no longer needed (if applicable)
 - [ ] [verify] Performance check on 1000 risks; retention bounds enforced
