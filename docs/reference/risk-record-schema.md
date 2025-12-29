@@ -9,12 +9,16 @@ This document describes the **current risk schema** as implemented in Supabase a
 
 ## Core tables
 
-Defined in `supabase/init/002_workspaces_core_tables_rls.sql`:
+Defined in `supabase/init/002_workspaces_core_tables_rls.sql` and `supabase/init/006_compliance_checklists.sql`:
 
 - `public.workspaces`
 - `public.workspace_members`
 - `public.categories`
 - `public.risks`
+- `public.checklist_templates`
+- `public.checklist_template_items`
+- `public.risk_checklists`
+- `public.risk_checklist_items`
 
 ## `public.risks` columns
 
@@ -29,7 +33,8 @@ Defined in `supabase/init/002_workspaces_core_tables_rls.sql`:
 - `category` (text)
 - `status` (text: `open` | `mitigated` | `closed` | `accepted`)
 - `threat_type` (text: `phishing` | `ransomware` | `business_email_compromise` | `malware` | `vulnerability` | `data_breach` | `supply_chain` | `insider` | `other`)
-- `data` (jsonb, default `{}`) — extension payload used by the UI for optional/advanced fields
+- `checklist_status` (enum: `not_started` | `in_progress` | `done`) - rollup across attached checklists for server-side filtering
+- `data` (jsonb, default `{}`) - extension payload used by the UI for optional/advanced fields
 - `created_at`, `updated_at` (timestamptz)
 - `created_by`, `updated_by` (uuid)
 
@@ -47,15 +52,25 @@ Defined in `supabase/init/002_workspaces_core_tables_rls.sql`:
 - `status`
 - `threatType`
 - `mitigationPlan`
+- `checklistStatus` (from `checklist_status`)
 - `data` (object; passthrough from `public.risks.data`)
 - `creationDate` (from `created_at`)
 - `lastModified` (from `updated_at`)
 
 See `api/risks/index.js` and `api/risks/[id].js`.
 
+## Compliance checklists (normalized)
+
+Per-risk checklists are stored in dedicated tables (not in `public.risks.data`):
+
+- Templates (global): `public.checklist_templates` + `public.checklist_template_items`
+- Per-risk instances: `public.risk_checklists` + `public.risk_checklist_items`
+
+Template changes do **not** rewrite existing per-risk checklist items; instances copy template content at attach-time and retain completion timestamps.
+
 ## `data` extension payload (current usage)
 
-The frontend currently stores several “Phase 2+” fields inside the `data` JSON (not normalized into separate tables yet). This allows incremental rollout while keeping the core schema stable.
+The frontend currently stores several "Phase 2+" fields inside the `data` JSON (not normalized into separate tables yet). This allows incremental rollout while keeping the core schema stable.
 
 Common keys include:
 
@@ -65,7 +80,6 @@ Common keys include:
 - `riskResponse` (enum string)
 - `mitigationSteps` (array)
 - `evidence` (array)
-- `checklists` (array), `checklistStatus` (enum string)
 - `playbook` (object)
 
 If you plan to query/filter these fields server-side, consider promoting them to first-class columns or tables (see `TASK_PLAN.md` Cycle 2+).

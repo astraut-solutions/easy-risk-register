@@ -18,11 +18,13 @@ Core risk register data is stored server-side (workspace-scoped with Supabase RL
 - Matrix + filters performance and accessibility quick pass: `docs/verification/matrix-filters-performance-a11y.md`
 - Offline expectations (deploy + privacy): `docs/guides/deploy/deploy-vercel.md#offline-behavior-expectations`
 - Offline / read-only mode and cache: `docs/verification/offline-readonly-cache.md`
+- Checklist template updates (no timestamp overwrites): `docs/verification/checklist-template-updates.md`
 
 ## Cyber templates and checklists
 
 - Cyber templates, threat types, and filters: `docs/reference/high-level.md`
 - Implementation note (MVP): cyber risk templates are bundled-only (no database table; no template APIs) and ship in the frontend build (`easy-risk-register-frontend/src/constants/cyber.ts`).
+- Compliance checklists (privacy incident assist) are stored in Supabase and are assistive guidance only: `docs/guides/security/privacy-controls.md`
 
 ## Maturity and Settings
 

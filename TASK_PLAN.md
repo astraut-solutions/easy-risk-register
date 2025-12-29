@@ -119,8 +119,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [database] Add checklist status fields/indexes to support filtering (not started/in progress/done)
 - [x] [backend] Implement checklist endpoints (attach template, complete item, list status) with workspace scoping
 - [x] [frontend] Add checklist UI on risk details (progress, timestamps) and checklist-based filtering
-- [ ] [deploy] Ensure checklist endpoints are protected and documented (assistive guidance only)
-- [ ] [verify] Edge case: updating checklist templates does not overwrite existing completion timestamps
+- [x] [deploy] Ensure checklist endpoints are protected and documented (assistive guidance only)
+- [x] [verify] Edge case: updating checklist templates does not overwrite existing completion timestamps
 
 ### Feature: Threat type + checklist status filtering enhancements
 - [ ] [database] Add `threat_type` (or equivalent) fields/enums to risks and indexes for filtering

@@ -37,6 +37,14 @@ All `/api/*` routes require an **end-user Supabase JWT** (Bearer token):
 - `POST /api/audit`
 - `POST /api/data-protection` (encrypt/decrypt)
 - `GET/POST /api/timeseries/*`
+- `GET /api/risks/:id/checklists` (list per-risk checklist instances + items)
+- `POST /api/risks/:id/checklists` (attach a checklist template to a risk)
+- `PATCH /api/risks/:id/checklists/items/:itemId` (complete/uncomplete a checklist item)
+
+Notes:
+
+- Checklist templates and checklist UX are **assistive guidance only** (not legal advice).
+- Checklist endpoints are workspace-scoped via `x-workspace-id` (or personal-workspace fallback) and enforced primarily by Supabase RLS.
 
 Server-side environment variables:
 
