@@ -1,7 +1,17 @@
-const { ensureRequestId, handleOptions, setCors } = require('../_lib/http')
-const { requireApiContext } = require('../_lib/context')
-const { logApiError, logApiRequest, logApiResponse, logApiWarn } = require('../_lib/logger')
-const { sendApiError, supabaseErrorToApiError, unexpectedErrorToApiError } = require('../_lib/apiErrors')
+const { ensureRequestId, handleOptions, setCors } = require('../../_lib/http')
+const { requireApiContext } = require('../../_lib/context')
+const { logApiError, logApiRequest, logApiResponse, logApiWarn } = require('../../_lib/logger')
+const { sendApiError, supabaseErrorToApiError, unexpectedErrorToApiError } = require('../../_lib/apiErrors')
+
+const UUID_V4ish_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function normalizeUuid(value) {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!UUID_V4ish_REGEX.test(trimmed)) return null
+  return trimmed.toLowerCase()
+}
 
 function clampInt(value, { min, max, fallback }) {
   const num = Number.parseInt(String(value), 10)
@@ -33,7 +43,11 @@ module.exports = async function handler(req, res) {
     const ctx = await requireApiContext(req, res)
     if (!ctx) return
 
-    const { riskId, category, start, end, limit } = req.query || {}
+    const idParam = Array.isArray(req.query?.id) ? req.query.id[0] : req.query?.id
+    const riskId = normalizeUuid(idParam)
+    if (!riskId) return res.status(400).json({ error: 'Invalid risk id' })
+
+    const { start, end, limit } = req.query || {}
     const limitN = clampInt(limit, { min: 1, max: 5000, fallback: 500 })
 
     const startMs = typeof start === 'string' && start ? parseTimestampMs(start) : null
@@ -45,29 +59,28 @@ module.exports = async function handler(req, res) {
       .from('risk_score_snapshots')
       .select('risk_id, probability, impact, risk_score, created_at, category, status')
       .eq('workspace_id', workspaceId)
+      .eq('risk_id', riskId)
       .order('created_at', { ascending: true })
       .limit(limitN)
 
-    if (typeof riskId === 'string' && riskId) query = query.eq('risk_id', riskId)
-    if (typeof category === 'string' && category) query = query.eq('category', category)
     if (Number.isFinite(startMs)) query = query.gte('created_at', new Date(startMs).toISOString())
     if (Number.isFinite(endMs)) query = query.lte('created_at', new Date(endMs).toISOString())
 
     const { data, error } = await query
     if (error) {
-      logApiWarn('supabase_query_failed', { requestId, workspaceId, message: error.message })
+      logApiWarn('supabase_query_failed', { requestId, workspaceId, riskId, message: error.message })
       const apiError = supabaseErrorToApiError(error, { action: 'query' })
       return sendApiError(req, res, apiError)
     }
 
-    const points = (data || []).map(r => ({
-      riskId: r.risk_id,
-      probability: Number(r.probability),
-      impact: Number(r.impact),
-      riskScore: Number(r.risk_score),
-      timestamp: Date.parse(r.created_at),
-      category: r.category ?? undefined,
-      status: r.status ?? undefined,
+    const points = (data || []).map((row) => ({
+      riskId: row.risk_id,
+      probability: Number(row.probability),
+      impact: Number(row.impact),
+      riskScore: Number(row.risk_score),
+      timestamp: Date.parse(row.created_at),
+      category: row.category,
+      status: row.status,
     }))
 
     return res.status(200).json(points)
@@ -85,3 +98,4 @@ module.exports = async function handler(req, res) {
     })
   }
 }
+
