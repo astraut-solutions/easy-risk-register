@@ -29,25 +29,25 @@ export const RiskSummaryCards = ({ stats }: RiskSummaryCardsProps) => {
     {
       label: 'Total Risks',
       value: stats.total,
-      description: 'All tracked risks across categories',
+      description: 'Risks in the current view',
       accent: 'brand',
     },
     {
       label: 'High Severity',
       value: stats.bySeverity.high,
-      description: 'Risks requiring immediate attention',
+      description: 'High severity risks in view',
       accent: 'high',
     },
     {
       label: 'Open vs Mitigated',
       value: `${stats.byStatus.open}/${stats.byStatus.mitigated}`,
-      description: 'Active vs mitigated risks',
+      description: 'Open vs mitigated in view',
       accent: 'medium',
     },
     {
       label: 'Average Score',
       value: stats.averageScore.toFixed(1),
-      description: 'Mean probability x impact',
+      description: 'Mean probability x impact in view',
       accent: 'low',
     },
   ]

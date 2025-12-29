@@ -2,13 +2,14 @@ import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '../../design-system/components/Card';
 import type { Risk } from '../../types/risk';
+import type { RiskFilters } from '../../types/risk';
 import type { RiskScoreSnapshot } from '../../types/visualization';
 import { getRiskSeverity } from '../../utils/riskCalculations';
 
 interface ExecutiveDashboardProps {
   risks: Risk[];
   snapshots: RiskScoreSnapshot[];
-  onDrillDown?: (target: { filters: Partial<any>; label: string }) => void;
+  onDrillDown?: (target: { filters: Partial<RiskFilters>; label: string }) => void;
 }
 
 const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ risks, snapshots: _snapshots, onDrillDown }) => {

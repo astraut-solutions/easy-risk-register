@@ -63,6 +63,54 @@ function safeJsonStringify(value) {
   }
 }
 
+function parseThreatType(value) {
+  if (typeof value !== 'string') return null
+  const v = value.trim().toLowerCase()
+  const allowed = new Set([
+    'phishing',
+    'ransomware',
+    'business_email_compromise',
+    'malware',
+    'vulnerability',
+    'data_breach',
+    'supply_chain',
+    'insider',
+    'other',
+  ])
+  return allowed.has(v) ? v : null
+}
+
+function parseThreatTypeFilter(value) {
+  if (value === undefined || value === null) return { value: null }
+  if (typeof value !== 'string') return { error: 'Invalid threatType' }
+
+  const v = value.trim().toLowerCase()
+  if (!v || v === 'all') return { value: null }
+
+  const parsed = parseThreatType(v)
+  if (!parsed) return { error: 'Invalid threatType' }
+  return { value: parsed }
+}
+
+function parseChecklistStatus(value) {
+  if (typeof value !== 'string') return null
+  const v = value.trim().toLowerCase()
+  if (v === 'not_started' || v === 'in_progress' || v === 'done') return v
+  return null
+}
+
+function parseChecklistStatusFilter(value) {
+  if (value === undefined || value === null) return { value: null }
+  if (typeof value !== 'string') return { error: 'Invalid checklistStatus' }
+
+  const v = value.trim().toLowerCase()
+  if (!v || v === 'all') return { value: null }
+
+  const parsed = parseChecklistStatus(v)
+  if (!parsed) return { error: 'Invalid checklistStatus' }
+  return { value: parsed }
+}
+
 module.exports = async function handler(req, res) {
   setCors(req, res)
   const requestId = ensureRequestId(req, res)
@@ -83,10 +131,24 @@ module.exports = async function handler(req, res) {
     const { supabase, workspaceId } = ctx
     const maxRows = DEFAULT_MAX_ROWS
 
+    const threatType = req.query?.threatType ?? req.query?.threat_type
+    const checklistStatus = req.query?.checklistStatus ?? req.query?.checklist_status
+
+    const threatResult = parseThreatTypeFilter(threatType)
+    if (threatResult.error) return sendApiError(req, res, { status: 400, code: 'BAD_REQUEST', message: threatResult.error })
+
+    const checklistStatusResult = parseChecklistStatusFilter(checklistStatus)
+    if (checklistStatusResult.error)
+      return sendApiError(req, res, { status: 400, code: 'BAD_REQUEST', message: checklistStatusResult.error })
+
     const { count, error: countError } = await supabase
       .from('risks')
       .select('id', { count: 'exact', head: true })
       .eq('workspace_id', workspaceId)
+      .match({
+        ...(threatResult.value ? { threat_type: threatResult.value } : {}),
+        ...(checklistStatusResult.value ? { checklist_status: checklistStatusResult.value } : {}),
+      })
 
     if (countError) {
       logApiWarn('supabase_query_failed', { requestId, workspaceId, message: countError.message })
@@ -117,9 +179,13 @@ module.exports = async function handler(req, res) {
       const { data, error } = await supabase
         .from('risks')
         .select(
-          'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, data, created_at, updated_at',
+          'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, checklist_status, data, created_at, updated_at',
         )
         .eq('workspace_id', workspaceId)
+        .match({
+          ...(threatResult.value ? { threat_type: threatResult.value } : {}),
+          ...(checklistStatusResult.value ? { checklist_status: checklistStatusResult.value } : {}),
+        })
         .order('updated_at', { ascending: false })
         .range(offset, offset + pageSize - 1)
 
@@ -160,7 +226,7 @@ module.exports = async function handler(req, res) {
           securityAdvisorComment: normalizeString(dataObj.securityAdvisorComment, { maxLen: 2000 }),
           vendorResponse: normalizeString(dataObj.vendorResponse, { maxLen: 2000 }),
           notes: normalizeString(dataObj.notes, { maxLen: 10000 }),
-          checklistStatus: normalizeString(dataObj.checklistStatus, { maxLen: 32 }),
+          checklistStatus: normalizeString(risk.checklist_status ?? 'not_started', { maxLen: 32 }),
           checklistsJson: safeJsonStringify(normalizeJsonArray(dataObj.checklists)),
           evidenceJson: safeJsonStringify(normalizeJsonArray(dataObj.evidence)),
           mitigationStepsJson: safeJsonStringify(normalizeJsonArray(dataObj.mitigationSteps)),

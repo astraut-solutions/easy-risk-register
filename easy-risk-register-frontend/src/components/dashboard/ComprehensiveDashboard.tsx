@@ -5,12 +5,8 @@ import FinancialImpactCharts from './FinancialImpactCharts';
 import ActionCenter from './ActionCenter';
 import TrendAnalysis from './TrendAnalysis';
 import type { Risk } from '../../types/risk';
+import type { RiskFilters } from '../../types/risk';
 import type { RiskScoreSnapshot, TrendDefaultMode } from '../../types/visualization';
-
-interface RiskFilters {
-  // Define the filters interface based on the existing application
-  [key: string]: any;
-}
 
 interface ComprehensiveDashboardProps {
   risks: Risk[];

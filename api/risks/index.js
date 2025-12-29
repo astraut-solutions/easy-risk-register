@@ -73,6 +73,25 @@ function parseThreatTypeFilter(value) {
   return { value: parsed }
 }
 
+function parseChecklistStatus(value) {
+  if (typeof value !== 'string') return null
+  const v = value.trim().toLowerCase()
+  if (v === 'not_started' || v === 'in_progress' || v === 'done') return v
+  return null
+}
+
+function parseChecklistStatusFilter(value) {
+  if (value === undefined || value === null) return { value: null }
+  if (typeof value !== 'string') return { error: 'Invalid checklistStatus' }
+
+  const v = value.trim().toLowerCase()
+  if (!v || v === 'all') return { value: null }
+
+  const parsed = parseChecklistStatus(v)
+  if (!parsed) return { error: 'Invalid checklistStatus' }
+  return { value: parsed }
+}
+
 function parseCategoryFilter(value) {
   if (value === undefined || value === null) return { value: null }
   if (typeof value !== 'string') return { error: 'Invalid category' }
@@ -149,6 +168,7 @@ module.exports = async function handler(req, res) {
       case 'GET': {
         const { status, category, q, threatType, probability, impact, minScore, maxScore, sort, order, limit, offset } =
           req.query || {}
+        const checklistStatus = req.query?.checklistStatus ?? req.query?.checklist_status
 
         const limitN = clampInt(limit, { min: 1, max: 1000, fallback: 100 })
         const offsetN = clampInt(offset, { min: 0, max: 100000, fallback: 0 })
@@ -171,6 +191,9 @@ module.exports = async function handler(req, res) {
 
         const threatResult = parseThreatTypeFilter(threatType)
         if (threatResult.error) return res.status(400).json({ error: threatResult.error })
+
+        const checklistStatusResult = parseChecklistStatusFilter(checklistStatus)
+        if (checklistStatusResult.error) return res.status(400).json({ error: checklistStatusResult.error })
 
         const categoryResult = parseCategoryFilter(category)
         if (categoryResult.error) return res.status(400).json({ error: categoryResult.error })
@@ -197,6 +220,7 @@ module.exports = async function handler(req, res) {
         if (statusResult.value) query = query.eq('status', statusResult.value)
         if (categoryResult.value) query = query.eq('category', categoryResult.value)
         if (threatResult.value) query = query.eq('threat_type', threatResult.value)
+        if (checklistStatusResult.value) query = query.eq('checklist_status', checklistStatusResult.value)
         if (probabilityResult.value) query = query.eq('probability', probabilityResult.value)
         if (impactResult.value) query = query.eq('impact', impactResult.value)
         if (Number.isFinite(minScoreN)) query = query.gte('risk_score', minScoreN)

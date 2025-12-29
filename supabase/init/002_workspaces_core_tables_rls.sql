@@ -240,6 +240,30 @@ create table if not exists public.risks (
   updated_by uuid
 );
 
+-- Ensure `threat_type` exists on older deployments (when `public.risks` predates this column).
+alter table public.risks
+  add column if not exists threat_type text not null default 'other';
+
+do $$
+begin
+  alter table public.risks
+    add constraint risks_threat_type_check check (
+      threat_type in (
+        'phishing',
+        'ransomware',
+        'business_email_compromise',
+        'malware',
+        'vulnerability',
+        'data_breach',
+        'supply_chain',
+        'insider',
+        'other'
+      )
+    );
+exception
+  when duplicate_object then null;
+end $$;
+
 alter table public.risks add column if not exists mitigation_plan text not null default '';
 
 create index if not exists risks_workspace_id_idx on public.risks (workspace_id);

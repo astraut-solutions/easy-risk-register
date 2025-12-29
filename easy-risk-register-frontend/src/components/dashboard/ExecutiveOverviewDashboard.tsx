@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import { StatCard, Badge, Card } from '../../design-system';
 import type { Risk } from '../../types/risk';
+import type { RiskFilters } from '../../types/risk';
 import type { RiskScoreSnapshot } from '../../types/visualization';
 import { timeSeriesService } from '../../services/timeSeriesService';
 import { getRiskSeverity } from '../../utils/riskCalculations';
@@ -24,7 +25,7 @@ import { getRiskSeverity } from '../../utils/riskCalculations';
 interface ExecutiveOverviewDashboardProps {
   risks: Risk[];
   snapshots: RiskScoreSnapshot[];
-  onDrillDown?: (target: { filters: Partial<any>; label: string }) => void;
+  onDrillDown?: (target: { filters: Partial<RiskFilters>; label: string }) => void;
 }
 
 const ExecutiveOverviewDashboard: React.FC<ExecutiveOverviewDashboardProps> = ({
@@ -481,7 +482,7 @@ const ExecutiveOverviewDashboard: React.FC<ExecutiveOverviewDashboardProps> = ({
             </p>
             <button
               className="text-sm text-brand-primary font-medium hover:underline"
-              onClick={() => onDrillDown && onDrillDown({ filters: { financialImpact: { min: 100000 } }, label: 'Show high financial impact risks' })}
+              onClick={() => onDrillDown && onDrillDown({ filters: { category: 'Financial' }, label: 'Show financial risks' })}
             >
               View Financial Impact →
             </button>
@@ -494,7 +495,7 @@ const ExecutiveOverviewDashboard: React.FC<ExecutiveOverviewDashboardProps> = ({
             </p>
             <button
               className="text-sm text-brand-primary font-medium hover:underline"
-              onClick={() => onDrillDown && onDrillDown({ filters: { category: 'compliance' }, label: 'Show compliance risks' })}
+              onClick={() => onDrillDown && onDrillDown({ filters: { category: 'Compliance' }, label: 'Show compliance risks' })}
             >
               View Compliance Risks →
             </button>

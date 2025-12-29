@@ -16,7 +16,7 @@ import { MaturityAssessmentPanel } from './components/maturity/MaturityAssessmen
 import { useRiskManagement } from './services/riskService'
 import type { Risk, RiskSeverity } from './types/risk'
 import { exportRisksToCSV, type CSVExportVariant, type ReminderFrequency } from './stores/riskStore'
-import { DEFAULT_FILTERS, getRiskSeverity } from './utils/riskCalculations'
+import { DEFAULT_FILTERS, computeRiskStats, getRiskSeverity } from './utils/riskCalculations'
 import { Button, Input, Modal, SectionHeader, Select } from './design-system'
 import { cn } from './utils/cn'
 import { useToast } from './components/feedback/ToastProvider'
@@ -743,6 +743,8 @@ function App() {
     )
   }, [matrixSelection, risks])
 
+  const visibleStats = useMemo(() => computeRiskStats(visibleRisks), [visibleRisks])
+
   const templateSelectOptions = useMemo(
     () => [
       { value: '', label: 'Start from scratch' },
@@ -1326,7 +1328,7 @@ function App() {
             </div>
           ) : (
             <>
-              <RiskSummaryCards stats={stats} />
+              <RiskSummaryCards stats={visibleStats} />
 
               <RiskFiltersBar
                 filters={filters}

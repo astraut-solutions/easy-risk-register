@@ -407,6 +407,7 @@ module.exports = async function handler(req, res) {
         category,
         status,
         threat_type: threatType,
+        ...(checklistStatus ? { checklist_status: checklistStatus } : {}),
         data,
       })
     }
