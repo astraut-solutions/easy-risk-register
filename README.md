@@ -176,14 +176,16 @@ docker compose down
 4. Use the risk score to prioritize which risks need immediate attention
 
 ### Exporting for Reports
-1. Click the "Export" button on the dashboard or risk list
-2. Download the CSV file containing all your risk data
-3. Open in Excel or other spreadsheet applications for further analysis
+1. Apply filters (and/or select a matrix cell) to scope what you want to export
+2. Click **Export CSV**
+3. Choose **Standard** (round-trip friendly) or **Audit pack** (adds evidence URL columns)
+4. Download the CSV and open it in Excel or another spreadsheet tool
 
 ### Importing from CSV
 1. Click the "Import CSV" button on the dashboard
-2. Select a CSV file exported from Easy Risk Register (or a compatible format)
-3. Review the updated risk list and matrix after import completes
+2. Choose a CSV file exported from Easy Risk Register (or a compatible format)
+3. Review the preview, then click **Import to workspace**
+4. If any rows are rejected, the UI shows row-level errors (and the server blocks spreadsheet injection patterns)
 
 ## Testing
 

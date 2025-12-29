@@ -365,7 +365,7 @@ A: Yes, if both users are members of the same workspace in Supabase. The UI curr
 A: Export to CSV or PDF regularly. Store files securely (email, cloud drive, or local backup).
 
 **Q: Can I import risks from another tool?**
-A: Yes, if you export them to CSV format first. The CSV must match the Easy Risk Register column structure.
+A: Yes. Use **Import CSV** to upload a file into your workspace. The app shows a preview, then the server validates rows and blocks spreadsheet injection patterns. The CSV should match the Easy Risk Register column structure (see `docs/reference/risk-csv-spec.md`).
 
 ---
 
