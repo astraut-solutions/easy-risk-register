@@ -1,4 +1,5 @@
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
+import Papa from 'papaparse'
 
 import {
   DashboardSidebar,
@@ -14,11 +15,12 @@ import { RiskTable } from './components/risk/RiskTable'
 import { MaturityAssessmentPanel } from './components/maturity/MaturityAssessmentPanel'
 import { useRiskManagement } from './services/riskService'
 import type { Risk, RiskSeverity } from './types/risk'
-import type { CSVExportVariant, ReminderFrequency } from './stores/riskStore'
+import { exportRisksToCSV, type CSVExportVariant, type ReminderFrequency } from './stores/riskStore'
 import { DEFAULT_FILTERS, getRiskSeverity } from './utils/riskCalculations'
 import { Button, Input, Modal, SectionHeader, Select } from './design-system'
 import { cn } from './utils/cn'
 import { useToast } from './components/feedback/ToastProvider'
+import { apiFetch } from './services/apiClient'
 import { MetricsModal } from './components/feedback/MetricsModal'
 import { isAnalyticsEnabled, setAnalyticsEnabled, trackEvent } from './utils/analytics'
 import { CYBER_RISK_TEMPLATES } from './constants/cyber'
@@ -48,6 +50,16 @@ type DashboardView = 'overview' | 'dashboard' | 'maturity' | 'table' | 'new' | '
 type DashboardWorkspaceView = Exclude<DashboardView, 'new'>
 
 const RISK_FORM_DRAFT_KEY = 'easy-risk-register:risk-form-draft'
+
+type CsvPreview = {
+  headers: string[]
+  rows: Array<Record<string, string>>
+  rowCount: number
+  parseErrors: string[]
+}
+
+type CsvImportRowError = { row: number; field: string; error: string }
+type CsvImportApiResponse = { imported: number; skipped: number; errors?: CsvImportRowError[] }
 
 const NAV_ITEMS: SidebarNavItem[] = [
   {
@@ -106,6 +118,13 @@ function App() {
   const [returnView, setReturnView] = useState<DashboardWorkspaceView>('overview')
   const [isExportModalOpen, setIsExportModalOpen] = useState(false)
   const [exportVariant, setExportVariant] = useState<CSVExportVariant>('standard')
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+  const [importFileName, setImportFileName] = useState<string | null>(null)
+  const [importCsvText, setImportCsvText] = useState<string | null>(null)
+  const [importPreview, setImportPreview] = useState<CsvPreview | null>(null)
+  const [importApiResult, setImportApiResult] = useState<CsvImportApiResponse | null>(null)
+  const [importApiError, setImportApiError] = useState<string | null>(null)
+  const [isImporting, setIsImporting] = useState(false)
   const [isPdfExportModalOpen, setIsPdfExportModalOpen] = useState(false)
   const [pdfRegisterScope, setPdfRegisterScope] = useState<'filtered' | 'all'>('filtered')
   const [selectedPrivacyRiskId, setSelectedPrivacyRiskId] = useState('')
@@ -537,7 +556,7 @@ function App() {
   }
 
   const handleDownloadExport = () => {
-    const csvContent = actions.exportToCSV(exportVariant)
+    const csvContent = exportRisksToCSV(visibleRisks, exportVariant)
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -552,50 +571,122 @@ function App() {
     setIsExportModalOpen(false)
   }
 
+  const resetImportState = () => {
+    setImportFileName(null)
+    setImportCsvText(null)
+    setImportPreview(null)
+    setImportApiResult(null)
+    setImportApiError(null)
+    setIsImporting(false)
+  }
+
   const handleImport = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
+
+    resetImportState()
+    setImportFileName(file.name)
+
     const reader = new FileReader()
-    reader.onload = (loadEvent) => {
+    reader.onload = async (loadEvent) => {
       const content = loadEvent.target?.result
       if (typeof content === 'string') {
-        const result = actions.importFromCSV(content)
-        if (result.imported > 0) {
-          toast.notify({
-            title: 'CSV import complete',
-            description: `Imported ${result.imported} risk${result.imported === 1 ? '' : 's'}.`,
-            variant: 'success',
-          })
-        } else if (result.reason === 'invalid_content') {
-          toast.notify({
-            title: 'CSV blocked for safety',
-            description:
-              'The file appears to contain spreadsheet injection patterns (cells starting with =, +, -, or @).',
-            variant: 'danger',
-          })
-        } else if (result.reason === 'parse_error') {
-          toast.notify({
-            title: 'Unable to read CSV',
-            description: 'The CSV could not be parsed. Confirm it is valid CSV with a header row.',
-            variant: 'danger',
-          })
-        } else if (result.reason === 'no_valid_rows') {
-          toast.notify({
-            title: 'No valid risks found',
-            description: 'No rows contained the required fields (title and description).',
-            variant: 'warning',
-          })
-        } else {
-          toast.notify({
-            title: 'Nothing to import',
-            description: 'The CSV file appears to be empty.',
-            variant: 'info',
-          })
-        }
+        setImportCsvText(content)
+
+        const parsed = Papa.parse<Record<string, string>>(content, {
+          header: true,
+          skipEmptyLines: true,
+          transform: (value) => (typeof value === 'string' ? value.trim() : String(value ?? '')),
+        })
+
+        const parseErrors = (parsed.errors ?? []).slice(0, 10).map((err) => err.message || 'CSV parse error')
+        const headers = (parsed.meta?.fields ?? []).filter((field): field is string => typeof field === 'string' && field.trim())
+        const rowsRaw = Array.isArray(parsed.data) ? parsed.data : []
+        const rows = rowsRaw.slice(0, 5).map((row) => row ?? {})
+
+        setImportPreview({
+          headers,
+          rows,
+          rowCount: rowsRaw.length,
+          parseErrors,
+        })
       }
     }
     reader.readAsText(file)
     event.target.value = ''
+  }
+
+  const handleConfirmImport = async () => {
+    if (!importCsvText || isImporting) return
+    if (authStatus !== 'authenticated') {
+      toast.notify({
+        title: 'Sign in required',
+        description: 'Sign in to import risks into your workspace.',
+        variant: 'info',
+      })
+      return
+    }
+
+    setIsImporting(true)
+    setImportApiResult(null)
+    setImportApiError(null)
+
+    try {
+      const res = await apiFetch('/api/imports/risks.csv', {
+        method: 'POST',
+        headers: { 'content-type': 'text/csv; charset=utf-8' },
+        body: importCsvText,
+      })
+
+      const raw = await res.text().catch(() => '')
+      const parsedJson = (() => {
+        if (!raw) return null
+        try {
+          return JSON.parse(raw) as any
+        } catch {
+          return null
+        }
+      })()
+
+      if (!res.ok) {
+        const message =
+          typeof parsedJson?.error === 'string'
+            ? parsedJson.error
+            : raw || res.statusText || 'Import failed'
+        setImportApiError(message)
+        if (Array.isArray(parsedJson?.details)) {
+          setImportApiResult({
+            imported: 0,
+            skipped: (importPreview?.rowCount ?? 0) || 0,
+            errors: parsedJson.details as CsvImportRowError[],
+          })
+        }
+
+        toast.notify({
+          title: 'CSV import failed',
+          description: message,
+          variant: 'danger',
+        })
+        return
+      }
+
+      const result = (parsedJson ?? {}) as CsvImportApiResponse
+      setImportApiResult(result)
+
+      await syncFromApi()
+
+      toast.notify({
+        title: 'CSV import complete',
+        description: `Imported ${result.imported ?? 0} risk${result.imported === 1 ? '' : 's'}.`,
+        variant: 'success',
+      })
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Import failed. Please try again.'
+      setImportApiError(message)
+      toast.notify({ title: 'CSV import failed', description: message, variant: 'danger' })
+    } finally {
+      setIsImporting(false)
+    }
   }
 
   const handleResetFilters = () => {
@@ -745,7 +836,11 @@ function App() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => {
+                    resetImportState()
+                    setIsImportModalOpen(true)
+                    window.setTimeout(() => fileInputRef.current?.click(), 0)
+                  }}
                   aria-label="Import CSV file"
                 >
                   Import CSV
@@ -1495,6 +1590,135 @@ function App() {
       </Modal>
 
       <Modal
+        isOpen={isImportModalOpen}
+        onClose={() => {
+          if (isImporting) return
+          setIsImportModalOpen(false)
+          resetImportState()
+        }}
+        title="Import CSV"
+        eyebrow="Import/Export"
+        description="Uploads a CSV into your workspace. Review the preview first; the server validates rows and blocks spreadsheet injection patterns."
+        size="md"
+      >
+        <div className="space-y-5">
+          {authStatus !== 'authenticated' ? (
+            <div className="rounded-2xl border border-status-warning/30 bg-status-warning/5 p-4 text-sm text-text-low">
+              Sign in to import risks into your workspace.
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border-faint bg-surface-secondary/40 p-4">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-text-high">Selected file</p>
+              <p className="text-sm text-text-low">{importFileName ?? 'No file selected yet.'}</p>
+            </div>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isImporting}
+            >
+              {importFileName ? 'Choose another' : 'Choose CSV'}
+            </Button>
+          </div>
+
+          {importPreview ? (
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-text-high">Preview</p>
+                <p className="text-xs text-text-low">
+                  {importPreview.rowCount} row{importPreview.rowCount === 1 ? '' : 's'} detected
+                </p>
+              </div>
+
+              {importPreview.parseErrors.length ? (
+                <div className="rounded-2xl border border-status-warning/30 bg-status-warning/5 p-3 text-sm text-text-low">
+                  <p className="font-semibold text-text-high">CSV parse warnings</p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                    {importPreview.parseErrors.map((msg, idx) => (
+                      <li key={idx}>{msg}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              <div className="overflow-auto rounded-2xl border border-border-faint">
+                <table className="min-w-full text-left text-xs">
+                  <thead className="bg-surface-secondary/60 text-text-low">
+                    <tr>
+                      {(importPreview.headers.length ? importPreview.headers : Object.keys(importPreview.rows?.[0] ?? {}))
+                        .slice(0, 10)
+                        .map((header) => (
+                          <th key={header} className="whitespace-nowrap px-3 py-2 font-semibold">
+                            {header}
+                          </th>
+                        ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border-faint">
+                    {importPreview.rows.map((row, idx) => {
+                      const keys = (importPreview.headers.length ? importPreview.headers : Object.keys(row)).slice(0, 10)
+                      return (
+                        <tr key={idx} className="text-text-high">
+                          {keys.map((key) => (
+                            <td key={key} className="max-w-[220px] truncate px-3 py-2 text-text-low" title={row?.[key] ?? ''}>
+                              {row?.[key] ?? ''}
+                            </td>
+                          ))}
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : null}
+
+          {importApiError ? (
+            <div className="rounded-2xl border border-status-danger/30 bg-status-danger/5 p-3 text-sm text-text-low">
+              <p className="font-semibold text-text-high">Import error</p>
+              <p className="mt-1">{importApiError}</p>
+            </div>
+          ) : null}
+
+          {importApiResult?.errors?.length ? (
+            <div className="space-y-2 rounded-2xl border border-status-warning/30 bg-status-warning/5 p-3 text-sm text-text-low">
+              <p className="font-semibold text-text-high">Row errors (showing first {Math.min(importApiResult.errors.length, 50)})</p>
+              <ul className="list-disc space-y-1 pl-5">
+                {importApiResult.errors.slice(0, 50).map((err, idx) => (
+                  <li key={`${err.row}-${err.field}-${idx}`}>
+                    Row {err.row}: {err.field} — {err.error}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                if (isImporting) return
+                setIsImportModalOpen(false)
+                resetImportState()
+              }}
+            >
+              Close
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={handleConfirmImport}
+              disabled={!importCsvText || authStatus !== 'authenticated'}
+              aria-busy={isImporting}
+            >
+              {isImporting ? 'Importing.' : 'Import to workspace'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
         isOpen={isPdfExportModalOpen}
         onClose={() => setIsPdfExportModalOpen(false)}
         title="Export PDF"
@@ -1573,7 +1797,7 @@ function App() {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".csv"
+        accept=".csv,text/csv"
         onChange={handleImport}
         className="hidden"
       />

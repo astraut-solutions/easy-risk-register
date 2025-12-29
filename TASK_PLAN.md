@@ -86,7 +86,7 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [database] Decide which fields are exported/imported; align columns with schema and docs
 - [x] [backend] Implement `GET /api/exports/risks.csv` (server-side) and validate workspace scoping
 - [x] [backend] Implement `POST /api/imports/risks.csv` with validation and CSV injection defenses
-- [ ] [frontend] Add export UI (filters respected) and import UI (preview + error reporting)
+- [x] [frontend] Add export UI (filters respected) and import UI (preview + error reporting)
 - [ ] [deploy] Ensure export routes work in Vercel (streaming/response headers) and are protected by auth
 - [ ] [verify] Validate CSV injection neutralization (`=`, `+`, `-`, `@`) on export/import and round-trip import
 

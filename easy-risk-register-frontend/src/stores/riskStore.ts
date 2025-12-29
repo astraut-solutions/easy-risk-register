@@ -778,6 +778,9 @@ const toCSV = (risks: Risk[], variant: CSVExportVariant = 'standard'): string =>
   })
 }
 
+export const exportRisksToCSV = (risks: Risk[], variant: CSVExportVariant = 'standard'): string =>
+  toCSV(risks, variant)
+
 export type CSVImportFailureReason =
   | 'empty'
   | 'invalid_content'
