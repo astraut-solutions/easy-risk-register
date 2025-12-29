@@ -115,9 +115,9 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [verify] Create from template path end-to-end; ensure no network call required for bundled templates — covered by `easy-risk-register-frontend/test/integration/app.integration.test.tsx`
 
 ### Feature: Compliance checklists (privacy incident assist)
-- [ ] [database] Add checklist data model: checklist templates + per-risk checklist items with timestamps
-- [ ] [database] Add checklist status fields/indexes to support filtering (not started/in progress/done)
-- [ ] [backend] Implement checklist endpoints (attach template, complete item, list status) with workspace scoping
+- [x] [database] Add checklist data model: checklist templates + per-risk checklist items with timestamps
+- [x] [database] Add checklist status fields/indexes to support filtering (not started/in progress/done)
+- [x] [backend] Implement checklist endpoints (attach template, complete item, list status) with workspace scoping
 - [ ] [frontend] Add checklist UI on risk details (progress, timestamps) and checklist-based filtering
 - [ ] [deploy] Ensure checklist endpoints are protected and documented (assistive guidance only)
 - [ ] [verify] Edge case: updating checklist templates does not overwrite existing completion timestamps
