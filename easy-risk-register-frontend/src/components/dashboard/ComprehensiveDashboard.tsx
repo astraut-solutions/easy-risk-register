@@ -21,6 +21,7 @@ interface ComprehensiveDashboardProps {
 const ComprehensiveDashboard: React.FC<ComprehensiveDashboardProps> = ({
   risks,
   snapshots,
+  historyEnabled = true,
   onDrillDown = () => {}
 }) => {
   const [activeTab, setActiveTab] = useState('executive');
@@ -48,7 +49,7 @@ const ComprehensiveDashboard: React.FC<ComprehensiveDashboardProps> = ({
       case 'actions':
         return <ActionCenter risks={risks} />;
       case 'trends':
-        return <TrendAnalysis risks={risks} snapshots={snapshots} />;
+        return <TrendAnalysis risks={risks} historyEnabled={historyEnabled} />;
       default:
         return <ExecutiveDashboard
           risks={risks}

@@ -9,8 +9,8 @@ interface RiskDetailModalProps {
   isOpen: boolean
   onClose: () => void
   onEdit: (risk: Risk) => void
-  onAttachChecklistTemplate: (riskId: string, templateId: string) => void
-  onToggleChecklistItem: (riskId: string, checklistId: string, itemId: string) => void
+  onAttachChecklistTemplate: (riskId: string, templateId: string) => void | Promise<unknown>
+  onToggleChecklistItem: (riskId: string, checklistId: string, itemId: string) => void | Promise<unknown>
 }
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {

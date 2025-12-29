@@ -25,30 +25,14 @@ type TimeSeriesFeatureFlags = {
 }
 
 const getTimeSeriesFlags = (): TimeSeriesFeatureFlags => ({
-  enabled: import.meta.env.VITE_ENABLE_TIMESERIES === 'true',
+  // Score history is now stored server-side; default to enabled unless explicitly disabled.
+  enabled: import.meta.env.VITE_ENABLE_TIMESERIES !== 'false',
 })
 
 export class TimeSeriesService {
   async writeSnapshot(_risk: Risk): Promise<void> {
-    const flags = getTimeSeriesFlags()
-    if (!flags.enabled) return
-    if (!useAuthStore.getState().accessToken) return
-
-    const body: RiskTrendData = {
-      riskId: _risk.id,
-      probability: _risk.probability,
-      impact: _risk.impact,
-      riskScore: _risk.riskScore,
-      timestamp: Date.now(),
-      category: _risk.category,
-      status: _risk.status,
-    }
-
-    await apiFetch('/api/timeseries/write', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    })
+    // Deprecated: snapshots are captured server-side on risk create/update.
+    void _risk
   }
 
   async query(_options: TimeSeriesQueryOptions = {}): Promise<RiskTrendData[]> {

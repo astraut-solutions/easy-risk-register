@@ -25,8 +25,8 @@ interface RiskFormProps {
   mode?: 'create' | 'edit'
   riskId?: string
   onSubmit: (values: RiskFormValues) => void | Promise<void>
-  onLoadChecklists?: (riskId: string) => void | Promise<void>
-  onAttachChecklistTemplate?: (riskId: string, templateId: string) => void | Promise<void>
+  onLoadChecklists?: (riskId: string) => void | Promise<unknown>
+  onAttachChecklistTemplate?: (riskId: string, templateId: string) => void | Promise<unknown>
   onToggleChecklistItem?: (riskId: string, checklistId: string, itemId: string) => void | Promise<void>
   onAddCategory?: (category: string) => void
   onCancel?: () => void

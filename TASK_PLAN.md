@@ -142,7 +142,7 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [database] Add `risk_score_snapshots` (or `risk_trends`) table with bounded retention strategy (20 snapshots per risk or 90 days)
 - [x] [backend] Record snapshots on create/update; add query endpoints for overall and per-risk trends
 - [x] [backend] Migrate off Influx-based time-series if present (use Supabase as system of record)
-- [ ] [frontend] Add trend views (overall exposure + per-risk history) with clear "what changed" UX
+- [x] [frontend] Add trend views (overall exposure + per-risk history) with clear "what changed" UX
 - [ ] [deploy] Remove/replace time-series env vars that are no longer needed (if applicable)
 - [ ] [verify] Performance check on 1000 risks; retention bounds enforced
 
