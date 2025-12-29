@@ -18,6 +18,13 @@ Ensure that the Easy Risk Register remains responsive and performant when handli
 - Real-time chart rendering and updates
 - Seamless interaction across matrix, dashboard, and table views
 
+## Quick verification (matrix + filters)
+
+- Checklist + commands: `docs/verification/matrix-filters-performance-a11y.md`
+- Focused automated check (fast):
+  - `cd easy-risk-register-frontend`
+  - `npm run test:run -- test/performance/performance.test.ts -t "Matrix Render Performance"`
+
 ## Key Performance Metrics
 
 ### Target Metrics

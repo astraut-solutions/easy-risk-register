@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useCallback, useMemo, useRef, useState } from 'react'
 
 import type { Risk, RiskSeverity } from '../../types/risk'
 import { getRiskSeverity } from '../../utils/riskCalculations'
@@ -11,10 +11,13 @@ interface RiskMatrixProps {
 
 const probabilityScale = [5, 4, 3, 2, 1]
 const impactScale = [1, 2, 3, 4, 5]
+const GRID_COLS = impactScale.length
 
 // Enhanced risk matrix with better color coding and interactivity
 export const RiskMatrix = ({ risks, onSelect }: RiskMatrixProps) => {
   const [activeCellKey, setActiveCellKey] = useState<string | null>(null)
+  const [focusedCellKey, setFocusedCellKey] = useState<string>(() => `${probabilityScale[0]}-${impactScale[0]}`)
+  const cellRefs = useRef<Record<string, HTMLButtonElement | null>>({})
 
   const cells = useMemo(
     () =>
@@ -48,6 +51,45 @@ export const RiskMatrix = ({ risks, onSelect }: RiskMatrixProps) => {
       ),
     [risks],
   )
+
+  const focusCell = useCallback(
+    (key: string) => {
+      const el = cellRefs.current[key]
+      if (!el) return
+      el.focus()
+      setFocusedCellKey(key)
+      setActiveCellKey(key)
+    },
+    [setFocusedCellKey],
+  )
+
+  const handleCellAction = useCallback(
+    (cell: { probability: number; impact: number; severity: RiskSeverity | null; risks: Risk[] }) => {
+      if (!cell.risks.length) return
+      onSelect?.({
+        probability: cell.probability,
+        impact: cell.impact,
+        severity: cell.severity ?? 'low',
+        riskIds: cell.risks.map((risk) => risk.id),
+      })
+    },
+    [onSelect],
+  )
+
+  const keyToPosition = useCallback((key: string) => {
+    const [probabilityRaw, impactRaw] = key.split('-')
+    const probability = Number(probabilityRaw)
+    const impact = Number(impactRaw)
+    const row = probabilityScale.indexOf(probability)
+    const col = impactScale.indexOf(impact)
+    return { row, col }
+  }, [])
+
+  const positionToKey = useCallback((row: number, col: number) => {
+    const probability = probabilityScale[row]
+    const impact = impactScale[col]
+    return `${probability}-${impact}`
+  }, [])
 
   // Get color based on risk severity
   const getCellColor = (severity: string | null) => {
@@ -121,50 +163,93 @@ export const RiskMatrix = ({ risks, onSelect }: RiskMatrixProps) => {
         role="grid"
         aria-label="Risk matrix grid showing risk distribution by likelihood and impact"
         aria-labelledby="risk-matrix-title"
+        aria-rowcount={probabilityScale.length + 1}
+        aria-colcount={impactScale.length + 1}
       >
-        <div role="gridcell" />
-        {impactScale.map((impact) => (
+        <div role="row" className="contents">
           <div
-            key={`impact-${impact}`}
             className="text-center text-xs text-text-low font-semibold"
             role="columnheader"
-            aria-label={`Impact level ${impact}`}
-          >
-            Impact {impact}
-          </div>
-        ))}
+            aria-label="Likelihood and impact axes"
+          />
+          {impactScale.map((impact) => (
+            <div
+              key={`impact-${impact}`}
+              className="text-center text-xs text-text-low font-semibold"
+              role="columnheader"
+              aria-label={`Impact level ${impact}`}
+            >
+              Impact {impact}
+            </div>
+          ))}
+        </div>
 
         {cells.map((row, rowIndex) => (
           <Fragment key={`prob-row-${probabilityScale[rowIndex]}`}>
+            <div role="row" className="contents">
             <div
               className="flex items-center justify-center text-xs text-text-low font-semibold"
               role="rowheader"
               aria-label={`Likelihood level ${probabilityScale[rowIndex]}`}
             >
-              Like {probabilityScale[rowIndex]}
+              Likelihood {probabilityScale[rowIndex]}
             </div>
             {row.map((cell) => (
               <button
                 key={cell.key}
                 type="button"
-                onClick={() =>
-                  cell.risks.length &&
-                  onSelect?.({
-                    probability: cell.probability,
-                    impact: cell.impact,
-                    severity: cell.severity ?? 'low',
-                    riskIds: cell.risks.map((risk) => risk.id),
-                  })
-                }
+                ref={(el) => {
+                  cellRefs.current[cell.key] = el
+                }}
+                tabIndex={focusedCellKey === cell.key ? 0 : -1}
+                onClick={() => handleCellAction(cell)}
                 onMouseEnter={() => setActiveCellKey(cell.key)}
                 onMouseLeave={() => setActiveCellKey((current) => (current === cell.key ? null : current))}
-                onFocus={() => setActiveCellKey(cell.key)}
-                onBlur={() => setActiveCellKey((current) => (current === cell.key ? null : current))}
-                className={`min-h-[76px] rounded-xl border p-2 text-center text-text-high transition-all hover:shadow-md focus-visible:outline focus-visible:outline-brand-primary/30 ${getCellColor(cell.severity)}`}
+                onFocus={() => {
+                  setActiveCellKey(cell.key)
+                  setFocusedCellKey(cell.key)
+                }}
+                onKeyDown={(event) => {
+                  const { key } = event
+                  if (key === 'Enter' || key === ' ') {
+                    handleCellAction(cell)
+                    return
+                  }
+
+                  if (
+                    key !== 'ArrowLeft' &&
+                    key !== 'ArrowRight' &&
+                    key !== 'ArrowUp' &&
+                    key !== 'ArrowDown' &&
+                    key !== 'Home' &&
+                    key !== 'End' &&
+                    key !== 'PageUp' &&
+                    key !== 'PageDown'
+                  ) {
+                    return
+                  }
+
+                  event.preventDefault()
+                  const { row, col } = keyToPosition(cell.key)
+                  if (row < 0 || col < 0) return
+
+                  const next = { row, col }
+                  if (key === 'ArrowLeft') next.col = Math.max(0, col - 1)
+                  if (key === 'ArrowRight') next.col = Math.min(GRID_COLS - 1, col + 1)
+                  if (key === 'ArrowUp') next.row = Math.max(0, row - 1)
+                  if (key === 'ArrowDown') next.row = Math.min(probabilityScale.length - 1, row + 1)
+                  if (key === 'Home') next.col = 0
+                  if (key === 'End') next.col = GRID_COLS - 1
+                  if (key === 'PageUp') next.row = 0
+                  if (key === 'PageDown') next.row = probabilityScale.length - 1
+
+                  focusCell(positionToKey(next.row, next.col))
+                }}
+                className={`min-h-[76px] rounded-xl border p-2 text-center text-text-high transition-all hover:shadow-md focus-visible:outline focus-visible:outline-brand-primary/30 ${getCellColor(cell.severity)} ${cell.risks.length ? 'cursor-pointer' : 'cursor-default opacity-70'}`}
                 role="gridcell"
                 aria-label={`Risk cell: Likelihood ${cell.probability}, Impact ${cell.impact}, ${cell.risks.length} risk(s), ${cell.severity ? cell.severity : 'no'} severity${cell.acceptedCount ? `, ${cell.acceptedCount} accepted` : ''}${cell.nextReview ? `, next review ${new Date(cell.nextReview).toLocaleDateString()}` : ''}`}
                 aria-describedby="risk-matrix-instructions"
-                disabled={!cell.risks.length}
+                aria-disabled={!cell.risks.length}
               >
                 <div className="text-xl font-bold">
                   {cell.risks.length ? cell.risks.length : '-'}
@@ -183,12 +268,13 @@ export const RiskMatrix = ({ risks, onSelect }: RiskMatrixProps) => {
                 ) : null}
               </button>
             ))}
+            </div>
           </Fragment>
         ))}
       </div>
 
       <div id="risk-matrix-instructions" className="text-xs text-text-low text-center pt-2">
-        Click or press Enter on a populated cell to filter risks by likelihood and impact.
+        Use Arrow keys to move between cells. Press Enter to drill down to the filtered list for a populated cell.
       </div>
     </div>
   )

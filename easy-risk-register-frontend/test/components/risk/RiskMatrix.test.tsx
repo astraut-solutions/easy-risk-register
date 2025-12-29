@@ -86,7 +86,7 @@ describe('RiskMatrix', () => {
 
     // Check likelihood headers
     for (let i = 1; i <= 5; i++) {
-      expect(screen.getByText(`Like ${i}`)).toBeInTheDocument()
+      expect(screen.getByText(`Likelihood ${i}`)).toBeInTheDocument()
     }
   })
 
@@ -111,6 +111,7 @@ describe('RiskMatrix', () => {
     buttons.forEach(button => {
       expect(button).toHaveTextContent('-')
       expect(button).toHaveTextContent('none')
+      expect(button).toHaveAttribute('aria-disabled', 'true')
     })
   })
 
@@ -223,30 +224,28 @@ describe('RiskMatrix', () => {
     expect(highRiskCell).toBeInTheDocument()
   })
 
-  it('has disabled cells when there are no risks', () => {
+  it('supports arrow-key navigation between cells', () => {
     render(<RiskMatrix risks={[]} />)
 
-    const emptyCells = screen.getAllByRole('gridcell').filter(cell => {
-      return cell.tagName === 'BUTTON' && cell.textContent?.includes('-')
-    })
+    const start = screen.getByLabelText(/Risk cell: Likelihood 5, Impact 1/i)
+    start.focus()
+    expect(document.activeElement).toBe(start)
 
-    emptyCells.forEach(cell => {
-      expect(cell).toBeDisabled()
-    })
-  })
+    fireEvent.keyDown(start, { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(screen.getByLabelText(/Risk cell: Likelihood 5, Impact 2/i))
 
-  it('has enabled cells when there are risks', () => {
-    render(<RiskMatrix risks={mockRisks} />)
+    fireEvent.keyDown(document.activeElement as Element, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(screen.getByLabelText(/Risk cell: Likelihood 4, Impact 2/i))
 
-    const highRiskCell = screen.getByLabelText(/Risk cell: Likelihood 5, Impact 5/i)
-    expect(highRiskCell).not.toBeDisabled()
+    fireEvent.keyDown(document.activeElement as Element, { key: 'Home' })
+    expect(document.activeElement).toBe(screen.getByLabelText(/Risk cell: Likelihood 4, Impact 1/i))
   })
 
   it('shows instructions text', () => {
     render(<RiskMatrix risks={[]} />)
 
     expect(
-      screen.getByText('Click or press Enter on a populated cell to filter risks by likelihood and impact.')
+      screen.getByText('Use Arrow keys to move between cells. Press Enter to drill down to the filtered list for a populated cell.')
     ).toBeInTheDocument()
   })
 })

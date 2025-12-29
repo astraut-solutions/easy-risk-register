@@ -6,7 +6,14 @@
  * for WCAG 2.1 Level AA compliance across the dashboard, maturity, and matrix views.
  */
 
-# Phase 6 — Accessibility Audit Checklist (WCAG 2.1 AA)
+# Phase 6 - Accessibility Audit Checklist (WCAG 2.1 AA)
+
+## Quick pass (matrix + filters)
+
+- Checklist + commands: `docs/verification/matrix-filters-performance-a11y.md`
+- Automated smoke test:
+  - `cd easy-risk-register-frontend`
+  - `npm run test:run -- test/a11y/matrix-filters.a11y.test.tsx`
 
 ## 1. Perceivable Principle
 

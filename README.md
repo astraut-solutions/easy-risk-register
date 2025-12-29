@@ -41,8 +41,8 @@ A regional financial advisor firm manages risks including market volatility, cyb
 
 - Supabase Auth sign-in/out and workspace-scoped access (default “Personal” workspace; no multi-workspace switcher UX yet)
 - Risk CRUD via APIs (`/api/risks`, `/api/categories`) with validation and consistent error handling
-- Automatic risk scoring (probability × impact; score 1-25) with severity labels (defaults: Low 1-8, Medium 9-15, High 16-25) and probability-impact matrix + table views
-- Filters and search (status/category/threat type/score)
+- Automatic risk scoring (probability × impact; score 1-25) with severity labels (defaults: Low 1-8, Medium 9-15, High 16-25) and an interactive 5×5 matrix + table views (click/keyboard drill-down)
+- Server-side filtering/sorting/pagination via `/api/risks` (avoid client-only filtering; supports up to 1000 risks per workspace snapshot for the MVP matrix/table)
 - CSV export (standard + audit pack) with CSV/Excel formula injection protection
 - PDF export via print-to-PDF (`report.html` viewer; popups must be allowed)
 - Per-risk optional fields stored in `public.risks.data` (jsonb): templates, checklists, evidence, playbooks, structured mitigation steps
@@ -250,6 +250,7 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | | [Testing Guide](docs/guides/dev/testing.md) | How to run and write tests |
 | | [Development Workflow](docs/guides/dev/development-workflow.md) | Standard development process and commands |
 | | [Code Style Guide](docs/guides/dev/code-style.md) | Coding standards and best practices |
+| **Verification** | [Matrix + filters perf/a11y verification](docs/verification/matrix-filters-performance-a11y.md) | Validate “up to 1000 risks” performance + matrix/filters accessibility |
 | | [Audit-ready workflow](docs/guides/product/audit-ready-workflow.md) | Owners, reviews, evidence, and audit pack exports |
 | | [PDF exports](docs/guides/product/pdf-exports.md) | Print-to-PDF reports + troubleshooting |
 | | [Evidence guidance](docs/guides/product/evidence-guidance.md) | What counts as evidence and how to capture it |

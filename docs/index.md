@@ -13,6 +13,10 @@ Core risk register data is stored server-side (workspace-scoped with Supabase RL
 - Deployment (Vercel + env vars): `docs/guides/deploy/deploy-vercel.md`
 - Auth + workspace scoping baseline: `docs/guides/security/auth-workspace-scoping-baseline.md`
 
+## Verification
+
+- Matrix + filters performance and accessibility quick pass: `docs/verification/matrix-filters-performance-a11y.md`
+
 ## Cyber templates and checklists
 
 - Cyber templates, threat types, and filters: `docs/reference/high-level.md`

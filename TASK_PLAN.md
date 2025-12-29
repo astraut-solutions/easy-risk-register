@@ -75,12 +75,12 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [verify] Check boundary cases (1, 8, 9, 15, 16, 25) render correctly and match API output
 
 ### Feature: Matrix view + filtering + drill-down
-- [ ] [database] Ensure filterable fields exist for MVP (category, status; add threat type later if needed)
-- [ ] [backend] Add list endpoints/params for filtering/sorting/pagination (avoid client-side filtering only)
-- [ ] [frontend] Implement interactive 5x5 matrix with cell counts and drill-down to filtered list
-- [ ] [frontend] Add accessible legends/labels (not color-only) and keyboard navigation for drill-down
-- [ ] [deploy] Verify performance on "up to 1000 risks" target (basic instrumentation notes)
-- [ ] [verify] Cross-browser spot check + accessibility quick pass (matrix + filters)
+- [x] [database] Ensure filterable fields exist for MVP (category, status; add threat type later if needed)
+- [x] [backend] Add list endpoints/params for filtering/sorting/pagination (avoid client-side filtering only)
+- [x] [frontend] Implement interactive 5x5 matrix with cell counts and drill-down to filtered list
+- [x] [frontend] Add accessible legends/labels (not color-only) and keyboard navigation for drill-down
+- [x] [deploy] Verify performance on "up to 1000 risks" target (basic instrumentation notes)
+- [x] [verify] Cross-browser spot check + accessibility quick pass (matrix + filters)
 
 ### Feature: Export baseline (CSV) + safe import (CSV)
 - [ ] [database] Decide which fields are exported/imported; align columns with schema and docs

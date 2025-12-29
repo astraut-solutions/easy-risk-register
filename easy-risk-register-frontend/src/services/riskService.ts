@@ -262,7 +262,7 @@ export const riskService = {
     try {
       const [categories, risksResponse] = await Promise.all([
         apiGetJson<ApiCategory[]>('/api/categories'),
-        apiGetJson<ApiRisksListResponse>('/api/risks?limit=500&sort=updated_at&order=desc'),
+        apiGetJson<ApiRisksListResponse>('/api/risks?limit=1000&sort=updated_at&order=desc'),
       ])
 
       const categoryNames = Array.from(

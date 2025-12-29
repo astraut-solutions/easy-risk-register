@@ -32,6 +32,17 @@ function parseRiskStatus(value) {
   return null
 }
 
+function parseRiskStatusFilter(value) {
+  if (value === undefined || value === null) return { value: null }
+  if (typeof value !== 'string') return { error: 'Invalid status' }
+
+  const v = value.trim().toLowerCase()
+  if (!v || v === 'all') return { value: null }
+  if (v === 'open' || v === 'mitigated' || v === 'closed' || v === 'accepted') return { value: v }
+
+  return { error: 'Invalid status' }
+}
+
 function parseThreatType(value) {
   if (typeof value !== 'string') return null
   const v = value.trim().toLowerCase()
@@ -47,6 +58,37 @@ function parseThreatType(value) {
     'other',
   ])
   return allowed.has(v) ? v : null
+}
+
+function parseThreatTypeFilter(value) {
+  if (value === undefined || value === null) return { value: null }
+  if (typeof value !== 'string') return { error: 'Invalid threatType' }
+
+  const v = value.trim().toLowerCase()
+  if (!v || v === 'all') return { value: null }
+
+  const parsed = parseThreatType(v)
+  if (!parsed) return { error: 'Invalid threatType' }
+  return { value: parsed }
+}
+
+function parseCategoryFilter(value) {
+  if (value === undefined || value === null) return { value: null }
+  if (typeof value !== 'string') return { error: 'Invalid category' }
+
+  const normalized = value.trim()
+  if (!normalized || normalized.toLowerCase() === 'all') return { value: null }
+
+  return { value: normalized }
+}
+
+function parseProbabilityImpactFilter(value) {
+  if (value === undefined || value === null) return { value: null }
+  if (typeof value !== 'string' && typeof value !== 'number') return { error: 'Invalid value' }
+  if (typeof value === 'string' && value.trim().toLowerCase() === 'all') return { value: null }
+  const num = clampInt(value, { min: 1, max: 5, fallback: NaN })
+  if (!Number.isFinite(num)) return { error: 'Invalid value' }
+  return { value: num }
 }
 
 async function readJsonBody(req) {
@@ -103,9 +145,10 @@ module.exports = async function handler(req, res) {
 
     switch (req.method) {
       case 'GET': {
-        const { status, category, q, threatType, minScore, maxScore, sort, order, limit, offset } = req.query || {}
+        const { status, category, q, threatType, probability, impact, minScore, maxScore, sort, order, limit, offset } =
+          req.query || {}
 
-        const limitN = clampInt(limit, { min: 1, max: 500, fallback: 100 })
+        const limitN = clampInt(limit, { min: 1, max: 1000, fallback: 100 })
         const offsetN = clampInt(offset, { min: 0, max: 100000, fallback: 0 })
 
         const sortKey = typeof sort === 'string' ? sort.trim() : ''
@@ -121,11 +164,20 @@ module.exports = async function handler(req, res) {
         const orderKey = typeof order === 'string' ? order.trim().toLowerCase() : 'desc'
         const ascending = orderKey === 'asc'
 
-        const statusValue = parseRiskStatus(status)
-        if (status && !statusValue) return res.status(400).json({ error: 'Invalid status' })
+        const statusResult = parseRiskStatusFilter(status)
+        if (statusResult.error) return res.status(400).json({ error: statusResult.error })
 
-        const threatValue = parseThreatType(threatType)
-        if (threatType && !threatValue) return res.status(400).json({ error: 'Invalid threatType' })
+        const threatResult = parseThreatTypeFilter(threatType)
+        if (threatResult.error) return res.status(400).json({ error: threatResult.error })
+
+        const categoryResult = parseCategoryFilter(category)
+        if (categoryResult.error) return res.status(400).json({ error: categoryResult.error })
+
+        const probabilityResult = parseProbabilityImpactFilter(probability)
+        if (probabilityResult.error) return res.status(400).json({ error: 'Invalid probability' })
+
+        const impactResult = parseProbabilityImpactFilter(impact)
+        if (impactResult.error) return res.status(400).json({ error: 'Invalid impact' })
 
         const minScoreN = minScore !== undefined ? clampInt(minScore, { min: 1, max: 25, fallback: null }) : null
         const maxScoreN = maxScore !== undefined ? clampInt(maxScore, { min: 1, max: 25, fallback: null }) : null
@@ -140,9 +192,11 @@ module.exports = async function handler(req, res) {
           .order(sortColumn, { ascending })
           .range(offsetN, offsetN + limitN - 1)
 
-        if (statusValue) query = query.eq('status', statusValue)
-        if (typeof category === 'string' && category.trim()) query = query.eq('category', category.trim())
-        if (threatValue) query = query.eq('threat_type', threatValue)
+        if (statusResult.value) query = query.eq('status', statusResult.value)
+        if (categoryResult.value) query = query.eq('category', categoryResult.value)
+        if (threatResult.value) query = query.eq('threat_type', threatResult.value)
+        if (probabilityResult.value) query = query.eq('probability', probabilityResult.value)
+        if (impactResult.value) query = query.eq('impact', impactResult.value)
         if (Number.isFinite(minScoreN)) query = query.gte('risk_score', minScoreN)
         if (Number.isFinite(maxScoreN)) query = query.lte('risk_score', maxScoreN)
 

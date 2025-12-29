@@ -13,26 +13,25 @@ The **Executive Overview** tab provides an at-a-glance view of all your risks us
 ### What It Shows
 
 A **5×5 probability-impact matrix** where each cell displays:
-- **Risk count** (number of risks at that severity level)
-- **Severity color** (Red = High, Orange = Medium, Yellow = Low)
-- **Text labels** (for better accessibility)
-- **Severity text** (e.g., "High likelihood / Major impact")
+- **Risk count** (number of risks in that cell)
+- **Severity cues** (H/M/L labels + border styles; not color-only)
+- **Accessible labels** (screen-reader-friendly cell summaries)
 
 ### How to Use It
 
-**View all risks**:
-1. Click on any cell in the matrix
-2. The risk list below filters to show only risks in that cell
-3. A "Filters Applied" indicator appears at the top
+**Drill down to the list**:
+1. Click a populated cell (or focus it and press **Enter**)
+2. The app opens the **Risk table** view with a matrix filter active (Likelihood × Impact)
+3. Use **Clear matrix filter** to remove the cell selection
 
 **Drill into severity levels**:
 - Click the **High severity** cell to see top-priority risks
 - Click **Medium** to focus on secondary risks
 - Click a specific cell combination (e.g., High likelihood + Low impact)
 
-**Clear filters**:
-- Click the "Clear Filters" button to see all risks again
-- Or click another cell to switch your view
+**Keyboard navigation**:
+- Use **Arrow keys** to move between cells
+- Press **Enter/Space** to activate a populated cell
 
 **Tips for interpreting the matrix**:
 - Red cells (top right) = immediate attention required

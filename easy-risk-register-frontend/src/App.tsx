@@ -1205,13 +1205,14 @@ function App() {
                 <div className="flex flex-col gap-6">
                   <RiskMatrix
                     risks={visibleRisks}
-                    onSelect={(selection) =>
+                    onSelect={(selection) => {
                       handleMatrixSelect({
                         probability: selection.probability,
                         impact: selection.impact,
                         severity: selection.severity,
                       })
-                    }
+                      requestNavigate('table')
+                    }}
                   />
 
                   {matrixSelection ? (
