@@ -93,8 +93,16 @@ Vercel automatically deploys any files under the repo root `api/` directory as S
 - `api/users.js` becomes `GET /api/users`
 - `api/risks/index.js` becomes `/api/risks`
 - `api/risks/[id].js` becomes `/api/risks/:id`
+- `api/exports/risks.csv.js` becomes `GET /api/exports/risks.csv` (download)
+- `api/imports/risks.csv.js` becomes `POST /api/imports/risks.csv` (upload)
 
 If the frontend and API are deployed in the same Vercel project (recommended), the frontend calls `/api/*` as **same-origin** requests.
+
+## CSV export/import notes (Vercel)
+
+- Export responses include `Content-Type: text/csv; charset=utf-8`, `Content-Disposition: attachment`, and `Cache-Control: no-store`.
+- Both endpoints require a valid `Authorization: Bearer <supabase-jwt>` header and are workspace-scoped via `x-workspace-id` (or fallback to personal workspace).
+- Large exports/imports are bounded (row + payload limits). If you hit 413 errors, split the CSV into smaller files.
 
 ## CORS notes
 

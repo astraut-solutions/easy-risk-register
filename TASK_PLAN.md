@@ -87,8 +87,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [backend] Implement `GET /api/exports/risks.csv` (server-side) and validate workspace scoping
 - [x] [backend] Implement `POST /api/imports/risks.csv` with validation and CSV injection defenses
 - [x] [frontend] Add export UI (filters respected) and import UI (preview + error reporting)
-- [ ] [deploy] Ensure export routes work in Vercel (streaming/response headers) and are protected by auth
-- [ ] [verify] Validate CSV injection neutralization (`=`, `+`, `-`, `@`) on export/import and round-trip import
+- [x] [deploy] Ensure export routes work in Vercel (streaming/response headers) and are protected by auth
+- [x] [verify] Validate CSV injection neutralization (`=`, `+`, `-`, `@`) on export/import and round-trip import
 
 ### Feature: Offline/unreachable behavior (MVP rules)
 - [ ] [database] No change (behavioral requirement)

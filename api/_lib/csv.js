@@ -50,17 +50,25 @@ function stringifyCsv({ columns, rows }) {
   const lines = [header]
 
   for (const row of rows) {
-    const line = columns
-      .map((col) => {
-        const raw = row && typeof row === 'object' ? row[col] : ''
-        const asString = typeof raw === 'string' ? escapeCsvInjection(raw) : raw
-        return quoteCsvCell(asString)
-      })
-      .join(',')
+    const line = stringifyCsvRow({ columns, row })
     lines.push(line)
   }
 
   return lines.join('\n') + '\n'
+}
+
+function stringifyCsvRow({ columns, row }) {
+  return columns
+    .map((col) => {
+      const raw = row && typeof row === 'object' ? row[col] : ''
+      const asString = typeof raw === 'string' ? escapeCsvInjection(raw) : raw
+      return quoteCsvCell(asString)
+    })
+    .join(',')
+}
+
+function stringifyCsvHeader(columns) {
+  return columns.map((c) => quoteCsvCell(c)).join(',')
 }
 
 function readTextBody(req, { maxBytes = DEFAULT_MAX_CSV_BYTES } = {}) {
@@ -100,12 +108,21 @@ function parseCsv(text, { maxRows = DEFAULT_MAX_ROWS, maxColumns = DEFAULT_MAX_C
   let field = ''
   let inQuotes = false
 
+  const isRowEmpty = (candidate) => {
+    if (!Array.isArray(candidate) || candidate.length === 0) return true
+    for (const cell of candidate) {
+      if (cell === null || cell === undefined) continue
+      if (String(cell) !== '') return false
+    }
+    return true
+  }
+
   const pushField = () => {
     row.push(field)
     field = ''
   }
   const pushRow = () => {
-    if (row.length === 1 && row[0] === '' && rows.length === 0) {
+    if (isRowEmpty(row)) {
       row = []
       return
     }
@@ -211,8 +228,9 @@ module.exports = {
   DEFAULT_MAX_COLUMNS,
   escapeCsvInjection,
   stringifyCsv,
+  stringifyCsvHeader,
+  stringifyCsvRow,
   parseCsv,
   readTextBody,
   hasUnescapedFormulaCell,
 }
-

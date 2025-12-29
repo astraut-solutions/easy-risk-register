@@ -22,7 +22,7 @@ function setCors(req, res) {
   res.setHeader('Access-Control-Allow-Origin', origin || '*')
   res.setHeader('Access-Control-Allow-Credentials', 'true')
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT')
-  res.setHeader('Access-Control-Expose-Headers', 'x-request-id')
+  res.setHeader('Access-Control-Expose-Headers', 'x-request-id, content-disposition, content-type, content-length')
   res.setHeader(
     'Access-Control-Allow-Headers',
     'Authorization, Content-Type, X-Workspace-Id, X-Request-Id, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Date, X-Api-Version',

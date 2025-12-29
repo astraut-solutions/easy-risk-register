@@ -1,7 +1,7 @@
 const { ensureRequestId, handleOptions, setCors } = require('../_lib/http')
 const { requireApiContext } = require('../_lib/context')
 const { logApiError, logApiRequest, logApiResponse, logApiWarn } = require('../_lib/logger')
-const { stringifyCsv, DEFAULT_MAX_ROWS } = require('../_lib/csv')
+const { stringifyCsvHeader, stringifyCsvRow, DEFAULT_MAX_ROWS } = require('../_lib/csv')
 
 const CSV_SPEC_VERSION = 2
 const CSV_VARIANT = 'standard'
@@ -62,36 +62,6 @@ function safeJsonStringify(value) {
   }
 }
 
-async function fetchRisksForExport({ supabase, workspaceId, maxRows }) {
-  const pageSize = 1000
-  let offset = 0
-  const items = []
-
-  while (true) {
-    const { data, error } = await supabase
-      .from('risks')
-      .select(
-        'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, data, created_at, updated_at',
-      )
-      .eq('workspace_id', workspaceId)
-      .order('updated_at', { ascending: false })
-      .range(offset, offset + pageSize - 1)
-
-    if (error) return { error: `Supabase query failed: ${error.message}` }
-
-    const batch = data || []
-    if (!batch.length) break
-
-    items.push(...batch)
-    if (items.length > maxRows) return { error: `Export exceeds limit (${maxRows} rows)` }
-
-    if (batch.length < pageSize) break
-    offset += pageSize
-  }
-
-  return { items }
-}
-
 module.exports = async function handler(req, res) {
   setCors(req, res)
   const requestId = ensureRequestId(req, res)
@@ -112,55 +82,93 @@ module.exports = async function handler(req, res) {
     const { supabase, workspaceId } = ctx
     const maxRows = DEFAULT_MAX_ROWS
 
-    const result = await fetchRisksForExport({ supabase, workspaceId, maxRows })
-    if (result.error) {
-      logApiWarn('supabase_query_failed', { requestId, workspaceId, message: result.error })
-      const status = result.error.includes('exceeds limit') ? 413 : 502
-      return res.status(status).json({ error: result.error })
+    const { count, error: countError } = await supabase
+      .from('risks')
+      .select('id', { count: 'exact', head: true })
+      .eq('workspace_id', workspaceId)
+
+    if (countError) {
+      logApiWarn('supabase_query_failed', { requestId, workspaceId, message: countError.message })
+      return res.status(502).json({ error: `Supabase query failed: ${countError.message}` })
     }
-
-    const rows = result.items.map((risk) => {
-      const data = normalizeObject(risk.data)
-
-      return {
-        csvSpecVersion: CSV_SPEC_VERSION,
-        csvVariant: CSV_VARIANT,
-        id: risk.id,
-        title: normalizeString(risk.title, { maxLen: 200 }),
-        description: normalizeString(risk.description ?? '', { maxLen: 5000 }),
-        probability: Number(risk.probability),
-        impact: Number(risk.impact),
-        riskScore: Number(risk.risk_score),
-        category: normalizeString(risk.category, { maxLen: 100 }),
-        threatType: normalizeString(risk.threat_type, { maxLen: 64 }),
-        templateId: normalizeString(data.templateId, { maxLen: 200 }),
-        status: normalizeString(risk.status, { maxLen: 32 }),
-        mitigationPlan: normalizeString(risk.mitigation_plan ?? '', { maxLen: 5000 }),
-        owner: normalizeString(data.owner, { maxLen: 200 }),
-        ownerTeam: normalizeString(data.ownerTeam, { maxLen: 200 }),
-        dueDate: normalizeString(data.dueDate, { maxLen: 64 }),
-        reviewDate: normalizeString(data.reviewDate, { maxLen: 64 }),
-        reviewCadence: normalizeString(data.reviewCadence, { maxLen: 32 }),
-        riskResponse: normalizeString(data.riskResponse, { maxLen: 32 }),
-        ownerResponse: normalizeString(data.ownerResponse, { maxLen: 2000 }),
-        securityAdvisorComment: normalizeString(data.securityAdvisorComment, { maxLen: 2000 }),
-        vendorResponse: normalizeString(data.vendorResponse, { maxLen: 2000 }),
-        notes: normalizeString(data.notes, { maxLen: 10000 }),
-        checklistStatus: normalizeString(data.checklistStatus, { maxLen: 32 }),
-        checklistsJson: safeJsonStringify(normalizeJsonArray(data.checklists)),
-        evidenceJson: safeJsonStringify(normalizeJsonArray(data.evidence)),
-        mitigationStepsJson: safeJsonStringify(normalizeJsonArray(data.mitigationSteps)),
-        creationDate: risk.created_at,
-        lastModified: risk.updated_at,
-      }
-    })
-
-    const csv = stringifyCsv({ columns: CSV_COLUMNS, rows })
+    if (Number.isFinite(count) && count > maxRows) {
+      return res.status(413).json({ error: `Export exceeds limit (${maxRows} rows)` })
+    }
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8')
     res.setHeader('Content-Disposition', 'attachment; filename="risks.csv"')
     res.setHeader('Cache-Control', 'no-store')
-    return res.status(200).end(csv)
+    res.statusCode = 200
+
+    res.write(stringifyCsvHeader(CSV_COLUMNS) + '\n')
+
+    const pageSize = 1000
+    let offset = 0
+    let total = 0
+
+    while (true) {
+      const { data, error } = await supabase
+        .from('risks')
+        .select(
+          'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, data, created_at, updated_at',
+        )
+        .eq('workspace_id', workspaceId)
+        .order('updated_at', { ascending: false })
+        .range(offset, offset + pageSize - 1)
+
+      if (error) {
+        logApiWarn('supabase_query_failed', { requestId, workspaceId, offset, message: error.message })
+        break
+      }
+
+      const batch = data || []
+      if (!batch.length) break
+
+      for (const risk of batch) {
+        total += 1
+        if (total > maxRows) break
+
+        const dataObj = normalizeObject(risk.data)
+        const row = {
+          csvSpecVersion: CSV_SPEC_VERSION,
+          csvVariant: CSV_VARIANT,
+          id: risk.id,
+          title: normalizeString(risk.title, { maxLen: 200 }),
+          description: normalizeString(risk.description ?? '', { maxLen: 5000 }),
+          probability: Number(risk.probability),
+          impact: Number(risk.impact),
+          riskScore: Number(risk.risk_score),
+          category: normalizeString(risk.category, { maxLen: 100 }),
+          threatType: normalizeString(risk.threat_type, { maxLen: 64 }),
+          templateId: normalizeString(dataObj.templateId, { maxLen: 200 }),
+          status: normalizeString(risk.status, { maxLen: 32 }),
+          mitigationPlan: normalizeString(risk.mitigation_plan ?? '', { maxLen: 5000 }),
+          owner: normalizeString(dataObj.owner, { maxLen: 200 }),
+          ownerTeam: normalizeString(dataObj.ownerTeam, { maxLen: 200 }),
+          dueDate: normalizeString(dataObj.dueDate, { maxLen: 64 }),
+          reviewDate: normalizeString(dataObj.reviewDate, { maxLen: 64 }),
+          reviewCadence: normalizeString(dataObj.reviewCadence, { maxLen: 32 }),
+          riskResponse: normalizeString(dataObj.riskResponse, { maxLen: 32 }),
+          ownerResponse: normalizeString(dataObj.ownerResponse, { maxLen: 2000 }),
+          securityAdvisorComment: normalizeString(dataObj.securityAdvisorComment, { maxLen: 2000 }),
+          vendorResponse: normalizeString(dataObj.vendorResponse, { maxLen: 2000 }),
+          notes: normalizeString(dataObj.notes, { maxLen: 10000 }),
+          checklistStatus: normalizeString(dataObj.checklistStatus, { maxLen: 32 }),
+          checklistsJson: safeJsonStringify(normalizeJsonArray(dataObj.checklists)),
+          evidenceJson: safeJsonStringify(normalizeJsonArray(dataObj.evidence)),
+          mitigationStepsJson: safeJsonStringify(normalizeJsonArray(dataObj.mitigationSteps)),
+          creationDate: risk.created_at,
+          lastModified: risk.updated_at,
+        }
+
+        res.write(stringifyCsvRow({ columns: CSV_COLUMNS, row }) + '\n')
+      }
+
+      if (batch.length < pageSize) break
+      offset += pageSize
+    }
+
+    return res.end()
   } catch (error) {
     logApiError({ requestId, method: req.method, path: req.url, error })
     return res.status(500).json({ error: 'Unexpected API error' })
@@ -174,4 +182,3 @@ module.exports = async function handler(req, res) {
     })
   }
 }
-
