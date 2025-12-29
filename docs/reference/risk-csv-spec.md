@@ -55,6 +55,7 @@ Columns (in order):
 Notes:
 - Playbooks are not currently exported to CSV. Use PDF exports for playbook inclusion.
 - JSON columns are intended to support **round-trip import/export** without losing structure.
+- `templateId` is informational (the bundled cyber template used to create the risk, if any); templates themselves are shipped with the frontend build.
 
 ## Audit Pack CSV (`csvSpecVersion = 2`, `csvVariant = audit_pack`)
 

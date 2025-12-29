@@ -111,8 +111,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [backend] If customizable: implement template CRUD APIs (workspace-scoped); otherwise no backend required — bundled-only, so no backend required
 - [x] [frontend] Add template picker with preview; selecting a template pre-fills the risk form
 - [x] [frontend] Ensure template-derived risks become independent records when edited
-- [ ] [deploy] Ensure templates are bundled in build artifacts (no runtime dependency)
-- [ ] [verify] Create from template path end-to-end; ensure no network call required for bundled templates
+- [x] [deploy] Ensure templates are bundled in build artifacts (no runtime dependency) — bundled as TS constants in `easy-risk-register-frontend/src/constants/cyber.ts`
+- [x] [verify] Create from template path end-to-end; ensure no network call required for bundled templates — covered by `easy-risk-register-frontend/test/integration/app.integration.test.tsx`
 
 ### Feature: Compliance checklists (privacy incident assist)
 - [ ] [database] Add checklist data model: checklist templates + per-risk checklist items with timestamps

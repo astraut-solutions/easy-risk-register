@@ -59,7 +59,7 @@ The frontend currently stores several “Phase 2+” fields inside the `data` JS
 
 Common keys include:
 
-- `templateId` (string)
+- `templateId` (string; identifies the bundled template used to create the risk, if any)
 - `owner` (string), `ownerTeam` (string)
 - `dueDate` (ISO string), `reviewDate` (ISO string), `reviewCadence` (enum string)
 - `riskResponse` (enum string)

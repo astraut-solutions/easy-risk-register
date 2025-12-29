@@ -130,4 +130,57 @@ describe('App integration', () => {
     const table = await screen.findByRole('table', { name: /risk register table/i })
     expect(within(table).getByText(/AI model drift/i)).toBeInTheDocument()
   }, 30000)
+
+  it('creates a new risk from a bundled template without any template network calls', async () => {
+    const fetchSpy = vi
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .spyOn(globalThis as any, 'fetch')
+      .mockResolvedValue({
+        ok: true,
+        status: 200,
+        // eslint-disable-next-line @typescript-eslint/require-await
+        json: async () => ({}),
+        text: async () => '{}',
+      })
+
+    try {
+      const user = userEvent.setup()
+      render(
+        <ToastProvider>
+          <App />
+        </ToastProvider>,
+      )
+
+      expect(await screen.findByText(/Showing 3 of 3 risks/i)).toBeInTheDocument()
+      fetchSpy.mockClear()
+
+      await user.click(screen.getByRole('button', { name: /create new risk/i }))
+      expect(await screen.findByText(/Create risk/i)).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: /browse & preview/i }))
+
+      const modalTitle = await screen.findByRole('heading', { name: /Cyber templates/i })
+      const modal = modalTitle.closest('[role="dialog"]') ?? modalTitle.parentElement
+      expect(modal).toBeTruthy()
+
+      const phishingTemplateButton = within(modal as HTMLElement).getByRole('button', {
+        name: /Phishing \/ credential theft/i,
+      })
+      await user.click(phishingTemplateButton)
+
+      await user.click(within(modal as HTMLElement).getByRole('button', { name: /use template/i }))
+
+      expect(fetchSpy).not.toHaveBeenCalled()
+
+      const titleInput = (await screen.findByLabelText(/title/i)) as HTMLInputElement
+      const descriptionInput = screen.getByLabelText(/description/i) as HTMLTextAreaElement
+      const mitigationPlanInput = screen.getByLabelText(/mitigation plan/i) as HTMLTextAreaElement
+
+      expect(titleInput).toHaveValue('Phishing leads to credential compromise')
+      expect(descriptionInput.value).toMatch(/phishing/i)
+      expect(mitigationPlanInput.value).toMatch(/mfa/i)
+    } finally {
+      fetchSpy.mockRestore()
+    }
+  }, 30000)
 })
