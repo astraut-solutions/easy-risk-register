@@ -9,6 +9,7 @@ import { apiDelete, apiGetJson, apiPatchJson, apiPostJson } from './apiClient'
 import { timeSeriesService } from './timeSeriesService'
 import { useAuthStore } from '../stores/authStore'
 import { getRiskSeverity } from '../utils/riskCalculations'
+import { loadWorkspaceOfflineCache, saveWorkspaceOfflineCache } from '../utils/offlineCache'
 
 /**
  * Cache Utility for frequently accessed data
@@ -237,10 +238,60 @@ function extractRiskData(input: RiskInput): Record<string, unknown> {
 function formatApiError(error: unknown): string {
   const err = error as ApiError
   if (err && typeof err.status === 'number' && typeof err.message === 'string') {
-    return `${err.status}: ${err.message}`
+    if (err.status === 0) return err.message
+    if (err.requestId) return `${err.message} (request ${err.requestId})`
+    return err.message
   }
   if (error instanceof Error) return error.message
   return 'Unexpected error'
+}
+
+function isOfflineOrUnreachable(error: unknown): boolean {
+  const err = error as ApiError
+  if (!err || typeof err.status !== 'number') return false
+  if (err.status === 0) return true
+  if (err.status === 503) return true
+  if (typeof err.code === 'string' && err.code === 'SUPABASE_UNREACHABLE') return true
+  return Boolean(err.retryable) && (err.status === 502 || err.status === 503)
+}
+
+function parseIsoTimestamp(value: unknown): number | null {
+  if (typeof value !== 'string' || !value.trim()) return null
+  const ms = Date.parse(value)
+  return Number.isFinite(ms) ? ms : null
+}
+
+function buildBoundedOfflineCache(risks: Risk[]) {
+  const now = Date.now()
+  const cutoff = now - 7 * 24 * 60 * 60 * 1000
+
+  return [...risks]
+    .map((risk) => ({ risk, ts: parseIsoTimestamp(risk.lastModified) ?? parseIsoTimestamp(risk.creationDate) ?? 0 }))
+    .filter((entry) => entry.ts >= cutoff)
+    .sort((a, b) => b.ts - a.ts)
+    .slice(0, 100)
+    .map((entry) => entry.risk)
+}
+
+function normalizeCachedRisk(value: unknown): Risk | null {
+  if (!value || typeof value !== 'object') return null
+  const raw = value as any
+  if (typeof raw.id !== 'string' || !raw.id.trim()) return null
+  if (typeof raw.title !== 'string') return null
+  if (typeof raw.description !== 'string') return null
+  if (typeof raw.category !== 'string') return null
+  if (typeof raw.status !== 'string') return null
+  if (typeof raw.threatType !== 'string') return null
+  if (typeof raw.mitigationPlan !== 'string') return null
+  if (typeof raw.creationDate !== 'string') return null
+  if (typeof raw.lastModified !== 'string') return null
+
+  const probability = Number(raw.probability)
+  const impact = Number(raw.impact)
+  const riskScore = Number(raw.riskScore)
+  if (!Number.isFinite(probability) || !Number.isFinite(impact) || !Number.isFinite(riskScore)) return null
+
+  return raw as Risk
 }
 
 /**
@@ -258,6 +309,7 @@ export const riskService = {
 
     const store = useRiskStore.getState()
     store.setDataSyncState({ status: 'loading', error: null })
+    store.setReadOnlyState({ readOnly: false, reason: null })
 
     try {
       const [categories, risksResponse] = await Promise.all([
@@ -276,14 +328,63 @@ export const riskService = {
 
       const risks = (risksResponse?.items || []).map(inflateRisk)
 
+      const lastSyncedAt = new Date().toISOString()
+
       store.replaceFromApi({ risks, categories: categoryNames })
       store.setDataSyncState({
         status: 'ready',
         error: null,
-        lastSyncedAt: new Date().toISOString(),
+        lastSyncedAt,
       })
       cacheUtil.clear()
+
+      const workspaceId = useAuthStore.getState().workspaceId
+      if (workspaceId) {
+        const boundedRisks = buildBoundedOfflineCache(risks)
+        void saveWorkspaceOfflineCache({
+          workspaceId,
+          lastUpdatedAt: lastSyncedAt,
+          risks: boundedRisks,
+          categories: categoryNames,
+        }).catch(() => {})
+      }
     } catch (error) {
+      if (isOfflineOrUnreachable(error)) {
+        const workspaceId = useAuthStore.getState().workspaceId
+        if (workspaceId) {
+          try {
+            const cached = await loadWorkspaceOfflineCache(workspaceId)
+            const cachedRisks = (cached?.risks || [])
+              .map((risk) => normalizeCachedRisk(risk))
+              .filter((risk): risk is Risk => Boolean(risk))
+            const cachedCategories = Array.isArray(cached?.categories) ? cached!.categories : []
+
+            if (cached && cachedRisks.length) {
+              store.replaceFromApi({ risks: cachedRisks, categories: cachedCategories })
+              store.setDataSyncState({
+                status: 'ready',
+                error: null,
+                lastSyncedAt: cached.lastUpdatedAt,
+              })
+              store.setReadOnlyState({
+                readOnly: true,
+                reason: `Offline/unavailable: showing cached data (last updated ${new Date(cached.lastUpdatedAt).toLocaleString()}).`,
+              })
+              return
+            }
+          } catch {
+            // ignore cache read failures
+          }
+        }
+
+        store.setDataSyncState({ status: 'error', error: formatApiError(error) })
+        store.setReadOnlyState({
+          readOnly: true,
+          reason: 'Offline/unavailable: changes will not be saved.',
+        })
+        throw error
+      }
+
       store.setDataSyncState({ status: 'error', error: formatApiError(error) })
       throw error
     }
@@ -540,6 +641,9 @@ export const useRiskManagement = () => {
   const maturityAssessments = useRiskStore((state) => state.maturityAssessments)
   const dataSyncStatus = useRiskStore((state) => state.dataSyncStatus)
   const dataSyncError = useRiskStore((state) => state.dataSyncError)
+  const dataLastSyncedAt = useRiskStore((state) => state.dataLastSyncedAt)
+  const readOnlyMode = useRiskStore((state) => state.readOnlyMode)
+  const readOnlyReason = useRiskStore((state) => state.readOnlyReason)
   const createMaturityAssessment = useRiskStore((state) => state.createMaturityAssessment)
   const updateMaturityDomain = useRiskStore((state) => state.updateMaturityDomain)
   const deleteMaturityAssessment = useRiskStore((state) => state.deleteMaturityAssessment)
@@ -599,6 +703,9 @@ export const useRiskManagement = () => {
     maturityAssessments,
     dataSyncStatus,
     dataSyncError,
+    dataLastSyncedAt,
+    readOnlyMode,
+    readOnlyReason,
     actions,
   }
 }

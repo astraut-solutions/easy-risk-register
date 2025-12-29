@@ -13,12 +13,100 @@ function joinUrl(base: string, path: string): string {
 export type ApiError = {
   status: number
   message: string
+  code?: string
+  requestId?: string
+  retryable?: boolean
+  details?: unknown
+}
+
+const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+
+function isOnline() {
+  if (typeof navigator === 'undefined') return true
+  if (typeof navigator.onLine !== 'boolean') return true
+  return navigator.onLine
+}
+
+async function parseApiErrorResponse(res: Response): Promise<ApiError> {
+  const text = await res.text().catch(() => '')
+  const contentType = res.headers.get('content-type') || ''
+
+  const parsed = (() => {
+    if (!text) return null
+    if (!contentType.toLowerCase().includes('application/json')) {
+      try {
+        return JSON.parse(text) as any
+      } catch {
+        return null
+      }
+    }
+    try {
+      return JSON.parse(text) as any
+    } catch {
+      return null
+    }
+  })()
+
+  if (parsed && typeof parsed === 'object') {
+    const message = typeof parsed.error === 'string' ? parsed.error : text || res.statusText
+    const err: ApiError = {
+      status: res.status,
+      message,
+      code: typeof parsed.code === 'string' ? parsed.code : undefined,
+      requestId: typeof parsed.requestId === 'string' ? parsed.requestId : undefined,
+      retryable: typeof parsed.retryable === 'boolean' ? parsed.retryable : undefined,
+      details: parsed.details,
+    }
+    return err
+  }
+
+  return { status: res.status, message: text || res.statusText }
+}
+
+function toNetworkApiError(error: unknown, method: string): ApiError {
+  const offline = !isOnline()
+  if (offline) {
+    return {
+      status: 0,
+      code: 'OFFLINE',
+      message: method && WRITE_METHODS.has(method) ? 'Offline: changes were not saved.' : 'Offline: unable to load data.',
+      retryable: true,
+    }
+  }
+
+  if (error && typeof error === 'object' && typeof (error as any).message === 'string') {
+    return {
+      status: 0,
+      code: 'NETWORK_ERROR',
+      message: (error as any).message,
+      retryable: true,
+    }
+  }
+
+  return {
+    status: 0,
+    code: 'NETWORK_ERROR',
+    message: 'Network error',
+    retryable: true,
+  }
 }
 
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const { accessToken, workspaceId } = useAuthStore.getState()
 
   const headers = new Headers(init.headers)
+  const method = (init.method || 'GET').toUpperCase()
+
+  if (WRITE_METHODS.has(method) && !isOnline()) {
+    const error: ApiError = {
+      status: 0,
+      code: 'OFFLINE',
+      message: 'Offline: changes were not saved. Reconnect and try again.',
+      retryable: true,
+    }
+    throw error
+  }
+
   if (accessToken && !headers.has('authorization')) {
     headers.set('authorization', `Bearer ${accessToken}`)
   }
@@ -27,15 +115,17 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   }
 
   const url = joinUrl(getApiBaseUrl(), path)
-  return fetch(url, { ...init, headers })
+  try {
+    return await fetch(url, { ...init, headers, method })
+  } catch (error) {
+    throw toNetworkApiError(error, method)
+  }
 }
 
 export async function apiGetJson<T>(path: string): Promise<T> {
   const res = await apiFetch(path, { method: 'GET' })
   if (!res.ok) {
-    const message = await res.text().catch(() => '')
-    const error: ApiError = { status: res.status, message: message || res.statusText }
-    throw error
+    throw await parseApiErrorResponse(res)
   }
   const text = await res.text().catch(() => '')
   if (!text) {
@@ -63,9 +153,7 @@ export async function apiPostJson<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body ?? {}),
   })
   if (!res.ok) {
-    const message = await res.text().catch(() => '')
-    const error: ApiError = { status: res.status, message: message || res.statusText }
-    throw error
+    throw await parseApiErrorResponse(res)
   }
   const text = await res.text().catch(() => '')
   if (!text) return undefined as unknown as T
@@ -90,9 +178,7 @@ export async function apiPatchJson<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body ?? {}),
   })
   if (!res.ok) {
-    const message = await res.text().catch(() => '')
-    const error: ApiError = { status: res.status, message: message || res.statusText }
-    throw error
+    throw await parseApiErrorResponse(res)
   }
   const text = await res.text().catch(() => '')
   if (!text) return undefined as unknown as T
@@ -113,9 +199,7 @@ export async function apiPatchJson<T>(path: string, body: unknown): Promise<T> {
 export async function apiDelete(path: string): Promise<void> {
   const res = await apiFetch(path, { method: 'DELETE' })
   if (!res.ok) {
-    const message = await res.text().catch(() => '')
-    const error: ApiError = { status: res.status, message: message || res.statusText }
-    throw error
+    throw await parseApiErrorResponse(res)
   }
 }
 

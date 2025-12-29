@@ -2,6 +2,7 @@ const { ensureRequestId, handleOptions, setCors } = require('../_lib/http')
 const { requireApiContext } = require('../_lib/context')
 const { logApiError, logApiRequest, logApiResponse, logApiWarn } = require('../_lib/logger')
 const { stringifyCsvHeader, stringifyCsvRow, DEFAULT_MAX_ROWS } = require('../_lib/csv')
+const { sendApiError, supabaseErrorToApiError, unexpectedErrorToApiError } = require('../_lib/apiErrors')
 
 const CSV_SPEC_VERSION = 2
 const CSV_VARIANT = 'standard'
@@ -76,7 +77,7 @@ module.exports = async function handler(req, res) {
 
     if (req.method !== 'GET') {
       res.setHeader('allow', 'GET,OPTIONS')
-      return res.status(405).json({ error: 'Method Not Allowed' })
+      return sendApiError(req, res, { status: 405, code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' })
     }
 
     const { supabase, workspaceId } = ctx
@@ -89,10 +90,16 @@ module.exports = async function handler(req, res) {
 
     if (countError) {
       logApiWarn('supabase_query_failed', { requestId, workspaceId, message: countError.message })
-      return res.status(502).json({ error: `Supabase query failed: ${countError.message}` })
+      const apiError = supabaseErrorToApiError(countError, { action: 'query' })
+      return sendApiError(req, res, apiError)
     }
     if (Number.isFinite(count) && count > maxRows) {
-      return res.status(413).json({ error: `Export exceeds limit (${maxRows} rows)` })
+      return sendApiError(req, res, {
+        status: 413,
+        code: 'PAYLOAD_TOO_LARGE',
+        message: `Export exceeds limit (${maxRows} rows)`,
+        retryable: false,
+      })
     }
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8')
@@ -171,7 +178,8 @@ module.exports = async function handler(req, res) {
     return res.end()
   } catch (error) {
     logApiError({ requestId, method: req.method, path: req.url, error })
-    return res.status(500).json({ error: 'Unexpected API error' })
+    const apiError = unexpectedErrorToApiError(error)
+    return sendApiError(req, res, apiError)
   } finally {
     logApiResponse({
       requestId,

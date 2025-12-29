@@ -1,6 +1,7 @@
 const { ensureRequestId, handleOptions, setCors } = require('../_lib/http')
 const { requireApiContext } = require('../_lib/context')
 const { logApiError, logApiRequest, logApiResponse, logApiWarn } = require('../_lib/logger')
+const { sendApiError, supabaseErrorToApiError, unexpectedErrorToApiError } = require('../_lib/apiErrors')
 const {
   getWorkspaceRiskThresholds,
   scoreFromProbabilityImpact,
@@ -138,8 +139,8 @@ module.exports = async function handler(req, res) {
     const { supabase, workspaceId } = ctx
     const thresholdsResult = await getWorkspaceRiskThresholds({ supabase, workspaceId })
     if (thresholdsResult.error) {
-      logApiWarn('supabase_query_failed', { requestId, workspaceId, message: thresholdsResult.error })
-      return res.status(502).json({ error: thresholdsResult.error })
+      logApiWarn('supabase_query_failed', { requestId, workspaceId, message: thresholdsResult.error.message })
+      return sendApiError(req, res, thresholdsResult.error)
     }
     const thresholds = thresholdsResult.thresholds
 
@@ -208,7 +209,8 @@ module.exports = async function handler(req, res) {
         const { data, error, count } = await query
         if (error) {
           logApiWarn('supabase_query_failed', { requestId, workspaceId, message: error.message })
-          return res.status(502).json({ error: `Supabase query failed: ${error.message}` })
+          const apiError = supabaseErrorToApiError(error, { action: 'query' })
+          return sendApiError(req, res, apiError)
         }
 
         const items = (data || []).map((row) => mapRiskRow(row, { thresholds }))
@@ -279,7 +281,8 @@ module.exports = async function handler(req, res) {
 
         if (error) {
           logApiWarn('supabase_insert_failed', { requestId, workspaceId, message: error.message })
-          return res.status(502).json({ error: `Supabase insert failed: ${error.message}` })
+          const apiError = supabaseErrorToApiError(error, { action: 'insert' })
+          return sendApiError(req, res, apiError)
         }
 
         return res.status(201).json(mapRiskRow(createdRow, { thresholds }))
@@ -287,11 +290,12 @@ module.exports = async function handler(req, res) {
 
       default:
         res.setHeader('allow', 'GET,POST,OPTIONS')
-        return res.status(405).json({ error: 'Method Not Allowed' })
+        return sendApiError(req, res, { status: 405, code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' })
     }
   } catch (error) {
     logApiError({ requestId, method: req.method, path: req.url, error })
-    return res.status(500).json({ error: 'Unexpected API error' })
+    const apiError = unexpectedErrorToApiError(error)
+    return sendApiError(req, res, apiError)
   } finally {
     logApiResponse({
       requestId,

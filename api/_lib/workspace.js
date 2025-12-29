@@ -1,3 +1,5 @@
+const { supabaseErrorToApiError } = require('./apiErrors')
+
 const UUID_V4ish_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -11,13 +13,13 @@ function normalizeWorkspaceId(value) {
 
 async function resolveWorkspaceId({ supabase, userId, requestedWorkspaceId }) {
   if (!userId) {
-    return { error: { status: 401, message: 'Unauthenticated' } }
+    return { error: { status: 401, code: 'UNAUTHENTICATED', message: 'Unauthenticated', retryable: false } }
   }
 
   if (requestedWorkspaceId !== undefined && requestedWorkspaceId !== null && requestedWorkspaceId !== '') {
     const workspaceId = normalizeWorkspaceId(requestedWorkspaceId)
     if (!workspaceId) {
-      return { error: { status: 400, message: 'Invalid x-workspace-id' } }
+      return { error: { status: 400, code: 'BAD_REQUEST', message: 'Invalid x-workspace-id', retryable: false } }
     }
 
     const { data, error } = await supabase
@@ -29,10 +31,10 @@ async function resolveWorkspaceId({ supabase, userId, requestedWorkspaceId }) {
       .maybeSingle()
 
     if (error) {
-      return { error: { status: 502, message: `Supabase query failed: ${error.message}` } }
+      return { error: supabaseErrorToApiError(error, { action: 'query' }) }
     }
     if (!data?.workspace_id) {
-      return { error: { status: 403, message: 'Not a member of workspace' } }
+      return { error: { status: 403, code: 'FORBIDDEN', message: 'Not a member of workspace', retryable: false } }
     }
 
     return { workspaceId }
@@ -47,7 +49,7 @@ async function resolveWorkspaceId({ supabase, userId, requestedWorkspaceId }) {
     .maybeSingle()
 
   if (personalError) {
-    return { error: { status: 502, message: `Supabase query failed: ${personalError.message}` } }
+    return { error: supabaseErrorToApiError(personalError, { action: 'query' }) }
   }
   if (personalWorkspace?.id) {
     return { workspaceId: personalWorkspace.id }
@@ -62,7 +64,7 @@ async function resolveWorkspaceId({ supabase, userId, requestedWorkspaceId }) {
     .maybeSingle()
 
   if (membershipError) {
-    return { error: { status: 502, message: `Supabase query failed: ${membershipError.message}` } }
+    return { error: supabaseErrorToApiError(membershipError, { action: 'query' }) }
   }
   if (membership?.workspace_id) {
     return { workspaceId: membership.workspace_id }
@@ -73,10 +75,12 @@ async function resolveWorkspaceId({ supabase, userId, requestedWorkspaceId }) {
   })
 
   if (createError) {
-    return { error: { status: 502, message: `Supabase RPC failed: ${createError.message}` } }
+    return { error: supabaseErrorToApiError(createError, { action: 'rpc' }) }
   }
   if (!createdWorkspaceId) {
-    return { error: { status: 502, message: 'Supabase RPC failed: missing workspace id' } }
+    return {
+      error: { status: 502, code: 'SUPABASE_ERROR', message: 'Supabase rpc failed: missing workspace id', retryable: false },
+    }
   }
 
   return { workspaceId: createdWorkspaceId }

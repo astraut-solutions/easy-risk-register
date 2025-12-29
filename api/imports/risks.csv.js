@@ -2,6 +2,7 @@ const { ensureRequestId, handleOptions, setCors } = require('../_lib/http')
 const { requireApiContext } = require('../_lib/context')
 const { logApiError, logApiRequest, logApiResponse, logApiWarn } = require('../_lib/logger')
 const { parseCsv, readTextBody, hasUnescapedFormulaCell, DEFAULT_MAX_CSV_BYTES } = require('../_lib/csv')
+const { sendApiError, supabaseErrorToApiError, unexpectedErrorToApiError } = require('../_lib/apiErrors')
 
 const MAX_IMPORT_ROWS = 2000
 
@@ -198,17 +199,19 @@ module.exports = async function handler(req, res) {
 
     if (req.method !== 'POST') {
       res.setHeader('allow', 'POST,OPTIONS')
-      return res.status(405).json({ error: 'Method Not Allowed' })
+      return sendApiError(req, res, { status: 405, code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' })
     }
 
     const { supabase, workspaceId } = ctx
     const csvText = await readTextBody(req, { maxBytes: DEFAULT_MAX_CSV_BYTES })
 
     const parsed = parseCsv(csvText, { maxRows: MAX_IMPORT_ROWS, maxColumns: 64 })
-    if (parsed.error) return res.status(400).json({ error: parsed.error })
+    if (parsed.error) return sendApiError(req, res, { status: 400, code: 'BAD_REQUEST', message: parsed.error })
 
     const records = parsed.records || []
-    if (!records.length) return res.status(400).json({ error: 'CSV contains no data rows' })
+    if (!records.length) {
+      return sendApiError(req, res, { status: 400, code: 'BAD_REQUEST', message: 'CSV contains no data rows' })
+    }
 
     const toInsert = []
     const errors = []
@@ -409,7 +412,12 @@ module.exports = async function handler(req, res) {
     }
 
     if (!toInsert.length) {
-      return res.status(400).json({ error: 'No valid rows to import', details: errors.slice(0, 50) })
+      return sendApiError(req, res, {
+        status: 400,
+        code: 'BAD_REQUEST',
+        message: 'No valid rows to import',
+        details: errors.slice(0, 50),
+      })
     }
 
     let imported = 0
@@ -418,7 +426,8 @@ module.exports = async function handler(req, res) {
       const { error } = await supabase.from('risks').insert(batch)
       if (error) {
         logApiWarn('supabase_insert_failed', { requestId, workspaceId, message: error.message })
-        return res.status(502).json({ error: `Supabase insert failed: ${error.message}` })
+        const apiError = supabaseErrorToApiError(error, { action: 'insert' })
+        return sendApiError(req, res, apiError)
       }
       imported += batch.length
     }
@@ -430,10 +439,11 @@ module.exports = async function handler(req, res) {
     })
   } catch (error) {
     if (error && error.code === 'PAYLOAD_TOO_LARGE') {
-      return res.status(413).json({ error: 'CSV payload too large' })
+      return sendApiError(req, res, { status: 413, code: 'PAYLOAD_TOO_LARGE', message: 'CSV payload too large' })
     }
     logApiError({ requestId, method: req.method, path: req.url, error })
-    return res.status(500).json({ error: 'Unexpected API error' })
+    const apiError = unexpectedErrorToApiError(error)
+    return sendApiError(req, res, apiError)
   } finally {
     logApiResponse({
       requestId,

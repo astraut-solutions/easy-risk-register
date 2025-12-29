@@ -1,6 +1,7 @@
 const { ensureRequestId, handleOptions, setCors } = require('./_lib/http')
 const { requireApiContext } = require('./_lib/context')
 const { logApiError, logApiRequest, logApiResponse, logApiWarn } = require('./_lib/logger')
+const { sendApiError, unexpectedErrorToApiError } = require('./_lib/apiErrors')
 
 module.exports = async function handler(req, res) {
   setCors(req, res)
@@ -41,16 +42,17 @@ module.exports = async function handler(req, res) {
       }
 
       case 'POST': {
-        return res.status(501).json({ error: 'Not implemented' })
+        return sendApiError(req, res, { status: 501, code: 'NOT_IMPLEMENTED', message: 'Not implemented' })
       }
 
       default:
         res.setHeader('allow', 'GET,POST,OPTIONS')
-        return res.status(405).json({ error: 'Method not allowed' })
+        return sendApiError(req, res, { status: 405, code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' })
     }
   } catch (error) {
     logApiError({ requestId, method: req.method, path: req.url, error })
-    return res.status(500).json({ error: 'Unexpected API error' })
+    const apiError = unexpectedErrorToApiError(error)
+    return sendApiError(req, res, apiError)
   } finally {
     logApiResponse({
       requestId,

@@ -903,6 +903,8 @@ export interface RiskStoreState {
   dataSyncStatus: RiskDataSyncStatus
   dataSyncError: string | null
   dataLastSyncedAt: string | null
+  readOnlyMode: boolean
+  readOnlyReason: string | null
   risks: Risk[]
   filteredRisks: Risk[]
   categories: string[]
@@ -949,6 +951,7 @@ export interface RiskStoreState {
     error?: string | null
     lastSyncedAt?: string | null
   }) => void
+  setReadOnlyState: (payload: { readOnly: boolean; reason?: string | null }) => void
 }
 
 const recalc = (risks: Risk[], filters: RiskFilters) => ({
@@ -1100,6 +1103,8 @@ export const useRiskStore = create<RiskStoreState>()(
       dataSyncStatus: 'idle',
       dataSyncError: null,
       dataLastSyncedAt: null,
+      readOnlyMode: false,
+      readOnlyReason: null,
       risks: [],
       filteredRisks: [],
       categories: [...DEFAULT_CATEGORIES],
@@ -1114,6 +1119,11 @@ export const useRiskStore = create<RiskStoreState>()(
           dataSyncError: error ?? null,
           dataLastSyncedAt: lastSyncedAt ?? null,
         })),
+      setReadOnlyState: ({ readOnly, reason }) =>
+        set(() => ({
+          readOnlyMode: Boolean(readOnly),
+          readOnlyReason: reason ?? null,
+        })),
       resetApiData: () =>
         set((state) => ({
           ...recalc([], state.filters),
@@ -1121,6 +1131,8 @@ export const useRiskStore = create<RiskStoreState>()(
           dataSyncStatus: 'idle',
           dataSyncError: null,
           dataLastSyncedAt: null,
+          readOnlyMode: false,
+          readOnlyReason: null,
         })),
       replaceFromApi: ({ risks, categories }) =>
         set((state) => {

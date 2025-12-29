@@ -1,3 +1,5 @@
+const { supabaseErrorToApiError } = require('./apiErrors')
+
 function clampInt(value, { min, max, fallback }) {
   const num = Number.parseInt(String(value), 10)
   if (!Number.isFinite(num)) return fallback
@@ -32,7 +34,7 @@ async function getWorkspaceRiskThresholds({ supabase, workspaceId }) {
     .maybeSingle()
 
   if (error) {
-    return { error: `Supabase query failed: ${error.message}` }
+    return { error: supabaseErrorToApiError(error, { action: 'query' }) }
   }
 
   const lowMax = clampInt(data?.low_max ?? 8, { min: 1, max: 23, fallback: 8 })
@@ -70,4 +72,3 @@ module.exports = {
   validateClientRiskScore,
   validateClientSeverity,
 }
-

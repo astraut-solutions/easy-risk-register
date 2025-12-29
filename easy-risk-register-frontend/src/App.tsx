@@ -96,6 +96,9 @@ function App() {
     maturityAssessments,
     dataSyncStatus,
     dataSyncError,
+    dataLastSyncedAt,
+    readOnlyMode,
+    readOnlyReason,
     actions,
   } = useRiskManagement()
   const toast = useToast()
@@ -133,6 +136,9 @@ function App() {
     overdue: number
     dueSoon: number
   } | null>(null)
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator === 'undefined' ? true : navigator.onLine,
+  )
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const formModalOpenedAtRef = useRef<number | null>(null)
   const formModalModeRef = useRef<'create' | 'edit' | null>(null)
@@ -145,6 +151,18 @@ function App() {
       return new URLSearchParams(window.location.search).has('metrics') || isAnalyticsEnabled()
     } catch {
       return false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
     }
   }, [])
 
@@ -415,6 +433,15 @@ function App() {
   const handleConfirmDelete = async () => {
     if (!deleteConfirm || isDeletingRisk) return
 
+    if (authStatus === 'authenticated' && !isOnline) {
+      toast.notify({
+        title: 'Not saved',
+        description: 'You are offline. Reconnect to delete risks from the workspace.',
+        variant: 'danger',
+      })
+      return
+    }
+
     setIsDeletingRisk(true)
     try {
       await actions.deleteRisk(deleteConfirm.id)
@@ -600,7 +627,9 @@ function App() {
         })
 
         const parseErrors = (parsed.errors ?? []).slice(0, 10).map((err) => err.message || 'CSV parse error')
-        const headers = (parsed.meta?.fields ?? []).filter((field): field is string => typeof field === 'string' && field.trim())
+        const headers = (parsed.meta?.fields ?? []).filter(
+          (field): field is string => typeof field === 'string' && field.trim().length > 0,
+        )
         const rowsRaw = Array.isArray(parsed.data) ? parsed.data : []
         const rows = rowsRaw.slice(0, 5).map((row) => row ?? {})
 
@@ -624,6 +653,13 @@ function App() {
         description: 'Sign in to import risks into your workspace.',
         variant: 'info',
       })
+      return
+    }
+
+    if (!isOnline) {
+      const message = 'You are offline. Reconnect to import risks into the workspace.'
+      setImportApiError(message)
+      toast.notify({ title: 'Import blocked', description: message, variant: 'danger' })
       return
     }
 
@@ -883,6 +919,27 @@ function App() {
             </div>
           ) : null}
 
+          {authStatus === 'authenticated' && (!isOnline || readOnlyMode) ? (
+            <div className="rr-panel flex flex-wrap items-center justify-between gap-3 border border-status-warning/30 bg-status-warning/5 p-4">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-text-high">Read-only mode</p>
+                <p className="text-sm text-text-low">
+                  {!isOnline ? 'You are offline. Changes will not be saved.' : readOnlyReason || 'Backend unavailable.'}
+                </p>
+                {dataLastSyncedAt ? (
+                  <p className="text-xs text-text-low">
+                    Last updated: {new Date(dataLastSyncedAt).toLocaleString()}
+                  </p>
+                ) : null}
+              </div>
+              {isOnline ? (
+                <Button size="sm" variant="secondary" onClick={() => syncFromApi()}>
+                  Retry sync
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+
           {!settings.onboardingDismissed ? (
             <OnboardingCard
               onStart={() => startCreateRisk()}
@@ -999,6 +1056,7 @@ function App() {
                   onSaveDraft={!editingRisk ? handleSaveDraft : undefined}
                   onDirtyChange={setIsRiskFormDirty}
                   showTooltips={settings.tooltipsEnabled}
+                  writeBlockedReason={authStatus === 'authenticated' && !isOnline ? 'Offline: changes will not be saved.' : null}
                   className="border-0 bg-transparent p-0 shadow-none"
                 />
               </div>

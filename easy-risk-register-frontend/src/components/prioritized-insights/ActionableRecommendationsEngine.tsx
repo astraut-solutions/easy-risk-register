@@ -1,6 +1,7 @@
 import React from 'react';
 import { Risk, RiskMitigationStep } from '../../types/risk';
 import { useRiskManagement } from '../../services/riskService';
+import { useToast } from '../feedback/ToastProvider';
 
 interface ActionableRecommendationsEngineProps {
   risks?: Risk[];
@@ -11,6 +12,7 @@ export const ActionableRecommendationsEngine: React.FC<ActionableRecommendations
 }) => {
   const { risks: storeRisks, actions } = useRiskManagement();
   const risks = propRisks || storeRisks;
+  const toast = useToast();
 
   // Generate recommendations based on risk characteristics
   const generateRecommendations = (risk: Risk): string[] => {
@@ -92,7 +94,13 @@ export const ActionableRecommendationsEngine: React.FC<ActionableRecommendations
     const existingRisk = risks.find(r => r.id === riskId);
     if (existingRisk) {
       const updatedSteps = [...(existingRisk.mitigationSteps || []), newStep];
-      actions.updateRisk(riskId, { mitigationSteps: updatedSteps });
+      void actions.updateRisk(riskId, { mitigationSteps: updatedSteps }).catch((error: unknown) => {
+        toast.notify({
+          title: 'Not saved',
+          description: error instanceof Error ? error.message : 'Please try again.',
+          variant: 'danger',
+        });
+      });
     }
   };
 

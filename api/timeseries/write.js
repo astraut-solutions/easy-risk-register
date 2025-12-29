@@ -1,6 +1,7 @@
 const { ensureRequestId, handleOptions, setCors } = require('../_lib/http')
 const { requireApiContext } = require('../_lib/context')
 const { logApiError, logApiRequest, logApiResponse, logApiWarn } = require('../_lib/logger')
+const { sendApiError, supabaseErrorToApiError, unexpectedErrorToApiError } = require('../_lib/apiErrors')
 
 async function readJsonBody(req) {
   if (req.body && typeof req.body === 'object') return req.body
@@ -21,7 +22,7 @@ module.exports = async function handler(req, res) {
 
   if (req.method !== 'POST') {
     res.setHeader('allow', 'POST,OPTIONS')
-    return res.status(405).json({ error: 'Method Not Allowed' })
+    return sendApiError(req, res, { status: 405, code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' })
   }
 
   const start = Date.now()
@@ -65,13 +66,15 @@ module.exports = async function handler(req, res) {
     const { error } = await supabase.from('risk_trends').insert(row)
     if (error) {
       logApiWarn('supabase_insert_failed', { requestId, workspaceId, message: error.message })
-      return res.status(502).json({ error: `Supabase insert failed: ${error.message}` })
+      const apiError = supabaseErrorToApiError(error, { action: 'insert' })
+      return sendApiError(req, res, apiError)
     }
 
     return res.status(204).end()
   } catch (error) {
     logApiError({ requestId, method: req.method, path: req.url, error })
-    return res.status(500).json({ error: 'Failed to write time-series data' })
+    const apiError = unexpectedErrorToApiError(error)
+    return sendApiError(req, res, apiError)
   } finally {
     logApiResponse({
       requestId,

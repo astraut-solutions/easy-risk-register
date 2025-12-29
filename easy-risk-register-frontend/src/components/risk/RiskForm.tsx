@@ -26,6 +26,7 @@ interface RiskFormProps {
   onAddCategory?: (category: string) => void
   onCancel?: () => void
   onSaveDraft?: (values: RiskFormValues) => void
+  writeBlockedReason?: string | null
   onDirtyChange?: (isDirty: boolean) => void
   onMetaChange?: (meta: {
     isDirty: boolean
@@ -48,6 +49,7 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
   onAddCategory,
   onCancel,
   onSaveDraft,
+  writeBlockedReason,
   onDirtyChange,
   onMetaChange,
   formId,
@@ -108,7 +110,7 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
     return missing
   }, [formValues.category, formValues.description, formValues.status, formValues.title])
 
-  const isPrimaryDisabled = isSubmitting || !isValid || missingRequiredFields.length > 0
+  const isPrimaryDisabled = Boolean(writeBlockedReason) || isSubmitting || !isValid || missingRequiredFields.length > 0
 
   const severityMeta = useMemo(() => {
     switch (severity) {
@@ -1269,9 +1271,11 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
           </div>
           {isPrimaryDisabled ? (
             <p id="risk-form-submit-help" className="mt-2 text-xs text-text-low" aria-live="polite">
-              {missingRequiredFields.length
-                ? `Complete required fields: ${missingRequiredFields.join(', ')}.`
-                : 'Complete required fields marked * to enable submission.'}
+              {writeBlockedReason
+                ? writeBlockedReason
+                : missingRequiredFields.length
+                  ? `Complete required fields: ${missingRequiredFields.join(', ')}.`
+                  : 'Complete required fields marked * to enable submission.'}
             </p>
           ) : null}
         </div>

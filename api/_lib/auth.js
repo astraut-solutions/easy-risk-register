@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken')
 
 const { getSupabaseAuthClient, getSupabaseUserClient, requireEnv } = require('./supabase')
 const { logSecurityEvent } = require('./logger')
+const { sendApiError, supabaseErrorToApiError, unexpectedErrorToApiError } = require('./apiErrors')
 
 function getBearerToken(req) {
   const authHeader = req.headers?.authorization || ''
@@ -71,7 +72,12 @@ async function verifySupabaseJwt(accessToken) {
 
   const supabase = getSupabaseAuthClient()
   const { data, error } = await supabase.auth.getUser(accessToken)
-  if (error || !data?.user?.id) return null
+  if (error) {
+    const apiError = supabaseErrorToApiError(error, { action: 'auth' })
+    if (apiError.code === 'SUPABASE_UNREACHABLE') return { apiError }
+    return null
+  }
+  if (!data?.user?.id) return null
   return { user: data.user, claims: null }
 }
 
@@ -79,15 +85,20 @@ async function requireSupabaseAuth(req, res) {
   const accessToken = getBearerToken(req)
   if (!accessToken) {
     logSecurityEvent('missing_bearer_token', { path: req.url, requestId: req.requestId })
-    res.status(401).json({ error: 'Unauthenticated' })
+    sendApiError(req, res, { status: 401, code: 'UNAUTHENTICATED', message: 'Unauthenticated' })
     return null
   }
 
   try {
     const verified = await verifySupabaseJwt(accessToken)
+    if (verified?.apiError) {
+      logSecurityEvent('supabase_auth_unavailable', { path: req.url, requestId: req.requestId })
+      sendApiError(req, res, verified.apiError)
+      return null
+    }
     if (!verified) {
       logSecurityEvent('invalid_supabase_jwt', { path: req.url, requestId: req.requestId })
-      res.status(401).json({ error: 'Unauthenticated' })
+      sendApiError(req, res, { status: 401, code: 'UNAUTHENTICATED', message: 'Unauthenticated' })
       return null
     }
 
@@ -104,9 +115,10 @@ async function requireSupabaseAuth(req, res) {
 
     const supabase = getSupabaseUserClient(postgrestToken)
     return { user: verified.user, accessToken, supabase }
-  } catch {
+  } catch (error) {
     logSecurityEvent('supabase_auth_error', { path: req.url, requestId: req.requestId })
-    res.status(401).json({ error: 'Unauthenticated' })
+    const apiError = unexpectedErrorToApiError(error)
+    sendApiError(req, res, apiError)
     return null
   }
 }

@@ -91,10 +91,10 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [verify] Validate CSV injection neutralization (`=`, `+`, `-`, `@`) on export/import and round-trip import
 
 ### Feature: Offline/unreachable behavior (MVP rules)
-- [ ] [database] No change (behavioral requirement)
-- [ ] [backend] Ensure APIs return clear error shapes for offline/unreachable cases
-- [ ] [frontend] Block writes while offline; show explicit "not saved" messaging (no silent failures)
-- [ ] [frontend] Optional: implement bounded read-only cache (last 7 days or 100 items) with "last updated" timestamp
+- [x] [database] No change (behavioral requirement)
+- [x] [backend] Ensure APIs return clear error shapes for offline/unreachable cases
+- [x] [frontend] Block writes while offline; show explicit "not saved" messaging (no silent failures)
+- [x] [frontend] Optional: implement bounded read-only cache (last 7 days or 100 items) with "last updated" timestamp
 - [ ] [deploy] Document offline expectations and any caching limits (privacy + storage)
 - [ ] [verify] Toggle offline in browser devtools: confirm writes are blocked and cached view (if enabled) is read-only
 

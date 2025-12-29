@@ -1,6 +1,7 @@
 const { ensureRequestId, handleOptions, setCors } = require('../_lib/http')
 const { requireApiContext } = require('../_lib/context')
 const { logApiError, logApiRequest, logApiResponse, logApiWarn } = require('../_lib/logger')
+const { sendApiError, supabaseErrorToApiError, unexpectedErrorToApiError } = require('../_lib/apiErrors')
 
 function clampInt(value, { min, max, fallback }) {
   const num = Number.parseInt(String(value), 10)
@@ -22,7 +23,7 @@ module.exports = async function handler(req, res) {
 
   if (req.method !== 'GET') {
     res.setHeader('allow', 'GET,OPTIONS')
-    return res.status(405).json({ error: 'Method Not Allowed' })
+    return sendApiError(req, res, { status: 405, code: 'METHOD_NOT_ALLOWED', message: 'Method Not Allowed' })
   }
 
   const start = Date.now()
@@ -55,7 +56,8 @@ module.exports = async function handler(req, res) {
     const { data, error } = await query
     if (error) {
       logApiWarn('supabase_query_failed', { requestId, workspaceId, message: error.message })
-      return res.status(502).json({ error: `Supabase query failed: ${error.message}` })
+      const apiError = supabaseErrorToApiError(error, { action: 'query' })
+      return sendApiError(req, res, apiError)
     }
 
     const points = (data || []).map(r => ({
@@ -71,7 +73,8 @@ module.exports = async function handler(req, res) {
     return res.status(200).json(points)
   } catch (error) {
     logApiError({ requestId, method: req.method, path: req.url, error })
-    return res.status(500).json({ error: 'Failed to query time-series data' })
+    const apiError = unexpectedErrorToApiError(error)
+    return sendApiError(req, res, apiError)
   } finally {
     logApiResponse({
       requestId,
