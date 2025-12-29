@@ -6,11 +6,13 @@ This document describes what Easy Risk Register stores in the browser, and what 
 
 Core risk register data is stored in **Supabase Postgres** and accessed via `/api/*`. Workspace scoping is enforced via Supabase **RLS** (see `supabase/init/002_workspaces_core_tables_rls.sql`).
 
+Workspace-scoped user preferences may also be stored server-side (for example tooltips/onboarding state via `/api/settings` backed by `public.workspace_user_settings`).
+
 ## Browser storage (non-authoritative)
 
 The browser stores:
 
-- **UI preferences** (filters/settings) under the Zustand persisted key `easy-risk-register-data`.
+- **UI state + cached preferences** (filters + cached settings) under the Zustand persisted key `easy-risk-register-data`.
 - **Supabase Auth session** (access token/refresh token) using the default `@supabase/supabase-js` session storage.
 
 Clearing browser storage will typically sign you out and reset local preferences, but it does not delete server-side risk data.

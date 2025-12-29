@@ -5,7 +5,7 @@ This guide covers privacy-related features and how they map to the current Supab
 ## Data location (default)
 
 - Risk register data is stored in Supabase Postgres (workspace-scoped with RLS).
-- The browser stores only non-authoritative UI state (filters/settings) plus the Supabase Auth session token.
+- The browser stores non-authoritative UI state (filters + cached preferences) plus the Supabase Auth session token. Some preferences (e.g. tooltips/onboarding) may be synced server-side per workspace/user.
 
 ## Local encryption (current)
 

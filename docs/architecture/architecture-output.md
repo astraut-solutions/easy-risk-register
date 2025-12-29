@@ -5,7 +5,7 @@ This document is a short, implementation-aligned overview. For the full set of d
 ## Summary
 
 - **Runtime**: browser frontend + serverless APIs (`/api/*`)
-- **Data**: stored in Supabase Postgres (workspace-scoped with RLS); the browser stores only non-authoritative UI state and auth tokens
+- **Data**: stored in Supabase Postgres (workspace-scoped with RLS); the browser stores non-authoritative UI state and auth tokens (with some preferences optionally synced to the workspace, e.g. tooltips/onboarding)
 - **Security**: CSP + input sanitization + RLS-driven authorization; optional local encryption for persisted UI state
 
 ## Current Technology Stack

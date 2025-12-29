@@ -33,7 +33,7 @@ It enables users to:
 
 - Vite + React + TypeScript (`easy-risk-register-frontend/`)
 - Uses Supabase Auth in the browser and calls `/api/*`
-- Persists only non-authoritative UI state (filters/settings) locally
+- Persists non-authoritative UI state locally (filters + cached preferences), with some preferences optionally synced to the workspace (e.g. tooltips/onboarding)
 
 **Backend**
 

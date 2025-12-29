@@ -9,14 +9,15 @@ This document describes the architecture that is currently implemented in this r
 - React + TypeScript + Vite (`easy-risk-register-frontend/`)
 - Authenticates via Supabase Auth (`@supabase/supabase-js`)
 - Calls same-origin serverless APIs under `/api/*` (or `VITE_API_BASE_URL` when configured)
-- Persists only non-authoritative UI state (filters/settings) locally
+- Persists non-authoritative UI state locally (e.g. filters + cached preferences) with workspace-synced preferences where available (e.g. tooltips/onboarding via `/api/settings`)
 
 ### Serverless APIs
 
 - Vercel serverless functions (`api/`)
 - Require an end-user Supabase JWT (`Authorization: Bearer ...`)
-- Resolve a request-scoped `workspaceId` (optional `x-workspace-id`, otherwise “Personal” workspace fallback)
+- Resolve a request-scoped `workspaceId` (optional `x-workspace-id`, otherwise "Personal" workspace fallback)
 - Call Supabase using the **anon key + user JWT**, so **RLS policies** remain the primary enforcement
+- Workspace-scoped settings endpoints (e.g. `/api/settings`) store per-user preferences server-side with local fallback
 
 See `docs/guides/security/auth-workspace-scoping-baseline.md`.
 

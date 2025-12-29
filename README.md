@@ -21,7 +21,7 @@ A lightweight, privacy-first risk management application for small and medium-si
 
 Easy Risk Register addresses a critical market gap where SMBs currently rely on outdated methods like Excel spreadsheets or informal processes for risk management, while enterprise-grade tools remain too complex and costly for their needs. The application offers:
 
-- **Privacy-first approach**: Data is stored in your Supabase project (workspace-scoped with RLS); the browser stores only non-authoritative UI state plus the Supabase session token
+- **Privacy-first approach**: Data is stored in your Supabase project (workspace-scoped with RLS); the browser stores non-authoritative UI state plus the Supabase session token (with some preferences optionally synced to your workspace, e.g. tooltips/onboarding)
 - **Cross-industry applicability**: Universal solution suitable for various business types
 - **Cost-effective**: Simple architecture (Vercel + Supabase) with minimal operational overhead
 - **User-friendly**: Intuitive interface accessible to non-risk experts
@@ -48,7 +48,8 @@ A regional financial advisor firm manages risks including market volatility, cyb
 - CSV export (standard + audit pack) with CSV/Excel formula injection protection
 - PDF export via print-to-PDF (`report.html` viewer; popups must be allowed)
 - Per-risk optional fields stored in `public.risks.data` (jsonb): templates, evidence, playbooks, structured mitigation steps
-- Offline/unreachable behavior (MVP): block writes with explicit “not saved” messaging; optional read-only IndexedDB cache (bounded to last 7 days or 100 items) with “last updated” timestamp
+- Offline/unreachable behavior (MVP): block writes with explicit "not saved" messaging; optional read-only IndexedDB cache (bounded to last 7 days or 100 items) with "last updated" timestamp
+- Guided onboarding + tooltips: key field tooltips and a “first 3 steps” onboarding checklist; preference sync via `/api/settings` with local fallback
 - Sanitization and a strict Content Security Policy (CSP)
 
 UX notes:
@@ -66,7 +67,7 @@ The application uses a Supabase-backed architecture:
 - **Serverless APIs**: Vercel functions under `api/` (same-origin `/api/*`)
 - **Auth**: Supabase Auth in the browser; APIs require an end-user Bearer token
 - **Persistence**: Supabase Postgres with workspace scoping enforced via RLS
-- **Local persistence**: non-authoritative UI state (filters/settings) plus the Supabase session token
+- **Local persistence**: non-authoritative UI state (filters + cached preferences) plus the Supabase session token
 
 Optional integrations (time-series, threat intel, etc.) are designed to keep secrets off the client:
 - Never put API keys/tokens in `VITE_*` variables (anything prefixed with `VITE_` is bundled into the browser build).
@@ -330,3 +331,10 @@ Please ensure your code follows our [Code Style Guide](docs/guides/dev/code-styl
 
 ## Project Status
 - **Last Updated**: November 2025
+
+### Feature: Guided onboarding + educational tooltips
+- [x] [database] Add user/workspace settings (tooltips on/off, onboarding state)
+- [x] [backend] Add settings endpoints (workspace-scoped)
+- [x] [frontend] Add tooltips on key fields + "first 3 steps" onboarding checklist; allow disabling tooltips
+- [x] [deploy] Ensure external links (if any) are optional and do not block core use
+- [x] [verify] Accessibility check for tooltip triggers and keyboard-only flow

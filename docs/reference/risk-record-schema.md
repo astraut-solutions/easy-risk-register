@@ -5,7 +5,7 @@ This document describes the **current risk schema** as implemented in Supabase a
 ## Where data lives
 
 - **System of record**: Supabase Postgres (`public.risks`) with workspace scoping enforced by RLS.
-- **Client storage**: non-authoritative UI state only (filters/settings). Core risks are fetched from `/api/risks`.
+- **Client storage**: non-authoritative UI state (filters + cached preferences). Core risks are fetched from `/api/risks`; selected preferences (e.g. tooltips/onboarding) can be synced server-side via `/api/settings`.
 
 ## Core tables
 

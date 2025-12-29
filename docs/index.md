@@ -2,7 +2,7 @@
 
 Easy Risk Register is a privacy-first risk management app backed by **Supabase (Postgres)** and accessed via **serverless APIs** (`/api/*` on Vercel). It supports **audit evidence preparation for ISO 27001 / SOC 2** (it does not provide certification).
 
-Core risk register data is stored server-side (workspace-scoped with Supabase RLS). The browser stores only non-authoritative UI state (for example filters/settings) plus the Supabase session token.
+Core risk register data is stored server-side (workspace-scoped with Supabase RLS). The browser stores non-authoritative UI state (for example filters and cached preferences) plus the Supabase session token; selected preferences (e.g. tooltips/onboarding) also sync to the workspace when available.
 
 ## Start here
 
@@ -30,6 +30,13 @@ Core risk register data is stored server-side (workspace-scoped with Supabase RL
 
 - Maturity self-assessment feature: Built-in capability radar with numbered domain scoring (2-column layout)
 - Settings: Full-page view with customizable preferences for tooltips, reminders, visualizations, and encryption
+
+### Feature: Guided onboarding + educational tooltips
+- [x] [database] Add user/workspace settings (tooltips on/off, onboarding state)
+- [x] [backend] Add settings endpoints (workspace-scoped)
+- [x] [frontend] Add tooltips on key fields + "first 3 steps" onboarding checklist; allow disabling tooltips
+- [x] [deploy] Ensure external links (if any) are optional and do not block core use
+- [x] [verify] Accessibility check for tooltip triggers and keyboard-only flow
 
 ## Audit-ready and evidence
 
