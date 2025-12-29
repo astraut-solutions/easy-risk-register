@@ -770,7 +770,18 @@ export const riskService = {
   },
 
   /** Updates UI/app settings persisted locally */
-  updateSettings: (updates: Partial<AppSettings>) => useRiskStore.getState().updateSettings(updates),
+  updateSettings: (updates: Partial<AppSettings>) => {
+    useRiskStore.getState().updateSettings(updates)
+
+    const patch: Record<string, boolean> = {}
+    if (typeof updates.tooltipsEnabled === 'boolean') patch.tooltipsEnabled = updates.tooltipsEnabled
+    if (typeof updates.onboardingDismissed === 'boolean') patch.onboardingDismissed = updates.onboardingDismissed
+
+    if (Object.keys(patch).length === 0) return
+    void apiPatchJson('/api/settings', patch).catch(() => {
+      // Keep UX responsive: settings apply locally even if the backend is unavailable/offline.
+    })
+  },
 
   /** Updates reminder-specific settings */
   updateReminderSettings: (updates: Partial<ReminderSettings>) =>

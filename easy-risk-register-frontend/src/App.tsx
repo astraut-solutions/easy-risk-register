@@ -1073,7 +1073,7 @@ function App() {
                 <div>
                   <p className="mb-1 text-xs font-semibold uppercase text-text-low">Preferences</p>
                   <h2 className="text-2xl font-bold text-text-high">Settings</h2>
-                  <p className="mt-2 text-sm text-text-low">Settings are stored locally in your browser.</p>
+                  <p className="mt-2 text-sm text-text-low">Settings sync to your workspace (with local fallback).</p>
                 </div>
                 <Button
                   type="button"

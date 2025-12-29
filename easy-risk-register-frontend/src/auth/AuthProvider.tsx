@@ -4,11 +4,18 @@ import { useEffect } from 'react'
 import { getSupabaseClient } from '../lib/supabase'
 import { apiGetJson } from '../services/apiClient'
 import { useAuthStore } from '../stores/authStore'
+import { useRiskStore } from '../stores/riskStore'
 
 type ApiUsersResponse = {
   user: { id: string; email: string | null }
   workspaceId: string
   workspaceName?: string | null
+}
+
+type ApiSettingsResponse = {
+  tooltipsEnabled: boolean
+  onboardingDismissed: boolean
+  updatedAt?: string | null
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -72,6 +79,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           workspaceId: payload.workspaceId,
           workspaceName: payload.workspaceName ?? null,
         })
+
+        try {
+          const settings = await apiGetJson<ApiSettingsResponse>('/api/settings')
+          if (cancelled) return
+          if (typeof settings?.tooltipsEnabled === 'boolean' || typeof settings?.onboardingDismissed === 'boolean') {
+            useRiskStore.getState().updateSettings({
+              tooltipsEnabled: settings.tooltipsEnabled,
+              onboardingDismissed: settings.onboardingDismissed,
+            })
+          }
+        } catch {
+          // Settings fallback: local defaults/localStorage.
+        }
       })
       .catch(() => {
         if (cancelled) return

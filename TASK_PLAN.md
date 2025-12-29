@@ -132,9 +132,9 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 ### Feature: Guided onboarding + educational tooltips
 - [x] [database] Add user/workspace settings (tooltips on/off, onboarding state)
 - [x] [backend] Add settings endpoints (workspace-scoped)
-- [ ] [frontend] Add tooltips on key fields + "first 3 steps" onboarding checklist; allow disabling tooltips
-- [ ] [deploy] Ensure external links (if any) are optional and do not block core use
-- [ ] [verify] Accessibility check for tooltip triggers and keyboard-only flow
+- [x] [frontend] Add tooltips on key fields + "first 3 steps" onboarding checklist; allow disabling tooltips
+- [x] [deploy] Ensure external links (if any) are optional and do not block core use
+- [x] [verify] Accessibility check for tooltip triggers and keyboard-only flow
 
 ## Cycle 3 (Phase 3): Reporting, Trends, Reminders
 

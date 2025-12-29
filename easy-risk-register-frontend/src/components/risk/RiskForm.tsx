@@ -774,6 +774,11 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                 <Input
                   label="Owner team (optional)"
                   helperText="Helps routing and reporting."
+                  tooltip={
+                    showTooltips
+                      ? 'Use a team name to help triage and reporting (e.g. IT, Finance, Operations). Optional for small teams.'
+                      : undefined
+                  }
                   placeholder="Team (optional)"
                   {...register('ownerTeam')}
                 />
