@@ -177,7 +177,7 @@ Primary personas:
   - Edge case: If I edit a template-derived risk, it becomes an independent record (template stays unchanged).
 - **Priority**: P0 (high impact, low effort; accelerates onboarding and differentiation)
 - **Dependencies**: Category model, risk form
-- **Technical Constraints**: Templates must be bundled with the app (bundled JSON and/or user-customizable templates). Optional integrations may provide additional template packs.
+- **Technical Constraints**: Templates must be bundled with the app. MVP ships bundled-only templates (no user-customizable templates stored in the database); optional integrations may provide additional template packs.
 - **UX Considerations**: Template picker with preview; keep edits simple; include brief plain-language definitions
 
 #### 2.4.2 Compliance Checklists (NDB / Privacy Act assist)

@@ -99,18 +99,18 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [verify] Toggle offline in browser devtools: confirm writes are blocked and cached view (if enabled) is read-only
 
 ### Feature: Cycle 1 release readiness
-- [ ] [verify] Run frontend unit/integration tests (Vitest) and fix regressions
-- [ ] [verify] Run E2E smoke tests (Playwright) for sign-in, CRUD, matrix, and export flows (where present)
-- [ ] [verify] Run `npm run build` for `easy-risk-register-frontend/`
-- [ ] [deploy] Validate Vercel deploy with required Supabase env vars configured
+- [x] [verify] Run frontend unit/integration tests (Vitest) and fix regressions
+- [x] [verify] Run E2E smoke tests (Playwright) for sign-in, CRUD, matrix, and export flows (where present)
+- [x] [verify] Run `npm run build` for `easy-risk-register-frontend/`
+- [x] [deploy] Validate Vercel deploy with required Supabase env vars configured
 
 ## Cycle 2 (Phase 2): Cyber Templates & Compliance
 
 ### Feature: Cyber risk templates (bundled, offline-capable)
-- [ ] [database] Decide whether templates are bundled-only or also user-customizable (table + RLS if customizable)
-- [ ] [backend] If customizable: implement template CRUD APIs (workspace-scoped); otherwise no backend required
-- [ ] [frontend] Add template picker with preview; selecting a template pre-fills the risk form
-- [ ] [frontend] Ensure template-derived risks become independent records when edited
+- [x] [database] Decide whether templates are bundled-only or also user-customizable (table + RLS if customizable) — decision: bundled-only for MVP (no DB table/RLS)
+- [x] [backend] If customizable: implement template CRUD APIs (workspace-scoped); otherwise no backend required — bundled-only, so no backend required
+- [x] [frontend] Add template picker with preview; selecting a template pre-fills the risk form
+- [x] [frontend] Ensure template-derived risks become independent records when edited
 - [ ] [deploy] Ensure templates are bundled in build artifacts (no runtime dependency)
 - [ ] [verify] Create from template path end-to-end; ensure no network call required for bundled templates
 

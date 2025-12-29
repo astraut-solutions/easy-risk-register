@@ -1,4 +1,16 @@
-import type { ChecklistStatus, RiskChecklist, RiskInput, ThreatType } from '../types/risk'
+import type { ChecklistStatus, RiskChecklist, RiskInput, RiskStatus, ThreatType } from '../types/risk'
+
+function deepClone<T>(value: T): T {
+  if (typeof structuredClone === 'function') return structuredClone(value)
+  return JSON.parse(JSON.stringify(value)) as T
+}
+
+function generateLocalId(prefix: string): string {
+  const uuid =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : null
+  if (uuid) return `${prefix}${uuid}`
+  return `${prefix}${Math.random().toString(16).slice(2)}${Date.now().toString(16)}`
+}
 
 export const THREAT_TYPE_OPTIONS: Array<{ value: ThreatType; label: string }> = [
   { value: 'phishing', label: 'Phishing' },
@@ -118,6 +130,27 @@ export const CYBER_RISK_TEMPLATES: CyberRiskTemplate[] = [
     },
   },
 ]
+
+export function buildRiskDefaultsFromCyberTemplate(
+  template: CyberRiskTemplate,
+  nowIso: string,
+): Partial<RiskInput> & { status: RiskStatus } {
+  const clonedRisk = deepClone(template.risk ?? {})
+  const mitigationStepsRaw = Array.isArray(clonedRisk.mitigationSteps) ? clonedRisk.mitigationSteps : []
+
+  return {
+    ...clonedRisk,
+    threatType: template.threatType,
+    templateId: template.id,
+    status: 'open',
+    mitigationSteps: mitigationStepsRaw.map((step) => ({
+      ...step,
+      id: generateLocalId('mitigation_step_'),
+      createdAt: nowIso,
+      completedAt: undefined,
+    })),
+  }
+}
 
 export type ComplianceChecklistTemplate = {
   id: string

@@ -23,7 +23,8 @@ import { useToast } from './components/feedback/ToastProvider'
 import { apiFetch } from './services/apiClient'
 import { MetricsModal } from './components/feedback/MetricsModal'
 import { isAnalyticsEnabled, setAnalyticsEnabled, trackEvent } from './utils/analytics'
-import { CYBER_RISK_TEMPLATES } from './constants/cyber'
+import { buildRiskDefaultsFromCyberTemplate, CYBER_RISK_TEMPLATES } from './constants/cyber'
+import { CyberTemplatePickerModal } from './components/risk/CyberTemplatePickerModal'
 import { OnboardingCard } from './components/education/OnboardingCard'
 import { ReminderBanner } from './components/education/ReminderBanner'
 import {
@@ -117,6 +118,7 @@ function App() {
   const [riskDraft, setRiskDraft] = useState<Partial<RiskFormValues> | null>(null)
   const [createDefaults, setCreateDefaults] = useState<Partial<RiskFormValues> | null>(null)
   const [createTemplateId, setCreateTemplateId] = useState('')
+  const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false)
   const [pendingView, setPendingView] = useState<DashboardWorkspaceView | null>(null)
   const [returnView, setReturnView] = useState<DashboardWorkspaceView>('overview')
   const [isExportModalOpen, setIsExportModalOpen] = useState(false)
@@ -764,12 +766,7 @@ function App() {
       if (!confirmed) return
     }
 
-    setCreateDefaults({
-      ...selectedTemplate.risk,
-      threatType: selectedTemplate.threatType,
-      templateId: selectedTemplate.id,
-      status: 'open',
-    })
+    setCreateDefaults(buildRiskDefaultsFromCyberTemplate(selectedTemplate, new Date().toISOString()))
 
     clearRiskDraft()
     setRiskDraft(null)
@@ -1029,6 +1026,9 @@ function App() {
                           onClick={applySelectedTemplate}
                         >
                           Use template
+                        </Button>
+                        <Button type="button" variant="ghost" onClick={() => setIsTemplatePickerOpen(true)}>
+                          Browse & preview
                         </Button>
                         <Button
                           type="button"
@@ -1863,6 +1863,18 @@ function App() {
       <MetricsModal
         isOpen={isMetricsModalOpen}
         onClose={() => setIsMetricsModalOpen(false)}
+      />
+
+      <CyberTemplatePickerModal
+        isOpen={isTemplatePickerOpen}
+        onClose={() => setIsTemplatePickerOpen(false)}
+        templates={CYBER_RISK_TEMPLATES}
+        selectedTemplateId={createTemplateId}
+        onSelectTemplateId={setCreateTemplateId}
+        onApplySelected={() => {
+          applySelectedTemplate()
+          setIsTemplatePickerOpen(false)
+        }}
       />
 
       <EncryptionUnlockGate />

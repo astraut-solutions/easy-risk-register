@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest --run",
+    "test:e2e": "playwright test",
     "test:a11y": "echo 'Accessibility tests run in development mode via the AccessibilityTester component'"
   },
   "dependencies": {
