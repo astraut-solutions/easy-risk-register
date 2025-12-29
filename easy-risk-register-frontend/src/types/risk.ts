@@ -48,17 +48,23 @@ export interface RiskMitigationStep {
 
 export interface RiskChecklistItem {
   id: string
+  position?: number
   description: string
   createdAt: string // ISO
   completedAt?: string // ISO
+  completedBy?: string
 }
 
 export interface RiskChecklist {
   id: string
   templateId: string
   title: string
+  description?: string
+  status?: ChecklistStatus
   items: RiskChecklistItem[]
   attachedAt: string // ISO
+  startedAt?: string // ISO
+  completedAt?: string // ISO
 }
 
 export interface RiskPlaybookStep {

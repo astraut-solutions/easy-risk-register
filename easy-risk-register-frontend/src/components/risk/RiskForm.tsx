@@ -4,11 +4,12 @@ import { nanoid } from 'nanoid'
 
 import type { RiskInput, RiskStatus, ReviewCadence, RiskResponse } from '../../types/risk'
 import { calculateRiskScore, getRiskSeverity } from '../../utils/riskCalculations'
-import { Button, Input, Select, Textarea, Tooltip } from '../../design-system'
+import { Badge, Button, Input, Select, Textarea, Tooltip } from '../../design-system'
 import { cn } from '../../utils/cn'
 import { trackEvent } from '../../utils/analytics'
-import { THREAT_TYPE_OPTIONS } from '../../constants/cyber'
+import { COMPLIANCE_CHECKLIST_TEMPLATES, THREAT_TYPE_OPTIONS } from '../../constants/cyber'
 import { PLAYBOOK_TEMPLATES } from '../../constants/playbooks'
+import { selectRiskById, useRiskStore } from '../../stores/riskStore'
 
 export type RiskFormValues = RiskInput & { status: RiskStatus }
 
@@ -22,7 +23,11 @@ interface RiskFormProps {
   categories: string[]
   defaultValues?: Partial<RiskFormValues>
   mode?: 'create' | 'edit'
+  riskId?: string
   onSubmit: (values: RiskFormValues) => void | Promise<void>
+  onLoadChecklists?: (riskId: string) => void | Promise<void>
+  onAttachChecklistTemplate?: (riskId: string, templateId: string) => void | Promise<void>
+  onToggleChecklistItem?: (riskId: string, checklistId: string, itemId: string) => void | Promise<void>
   onAddCategory?: (category: string) => void
   onCancel?: () => void
   onSaveDraft?: (values: RiskFormValues) => void
@@ -45,7 +50,11 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
   categories,
   defaultValues,
   mode = 'create',
+  riskId,
   onSubmit,
+  onLoadChecklists,
+  onAttachChecklistTemplate,
+  onToggleChecklistItem,
   onAddCategory,
   onCancel,
   onSaveDraft,
@@ -57,6 +66,34 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
   showTooltips = true,
   className,
 }: RiskFormProps, ref) => {
+  const liveRisk = useRiskStore((state) => (riskId ? selectRiskById(riskId)(state) : undefined))
+
+  const [checklistsLoading, setChecklistsLoading] = useState(false)
+  const [checklistsError, setChecklistsError] = useState<string | null>(null)
+  const [checklistsTouched, setChecklistsTouched] = useState(false)
+  const [checklistActionPending, setChecklistActionPending] = useState(false)
+  const [selectedChecklistTemplateId, setSelectedChecklistTemplateId] = useState(
+    () => COMPLIANCE_CHECKLIST_TEMPLATES[0]?.id ?? '',
+  )
+
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(undefined, {
+        dateStyle: 'medium',
+      }),
+    [],
+  )
+
+  const formatMaybeDate = useCallback(
+    (value?: string) => {
+      if (!value) return '-'
+      const parsed = Date.parse(value)
+      if (Number.isNaN(parsed)) return '-'
+      return dateFormatter.format(new Date(parsed))
+    },
+    [dateFormatter],
+  )
+
   const {
     register,
     handleSubmit,
@@ -236,6 +273,29 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
     }
   }, [categories, defaultValues, reset])
 
+  useEffect(() => {
+    setChecklistsTouched(false)
+    setChecklistsError(null)
+  }, [riskId])
+
+  useEffect(() => {
+    if (mode !== 'edit') return
+    if (!riskId) return
+    if (!onLoadChecklists) return
+    if (checklistsTouched) return
+
+    setChecklistsLoading(true)
+    setChecklistsError(null)
+
+    Promise.resolve(onLoadChecklists(riskId))
+      .then(() => setChecklistsTouched(true))
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : 'Unable to load checklists.'
+        setChecklistsError(message)
+      })
+      .finally(() => setChecklistsLoading(false))
+  }, [checklistsTouched, mode, onLoadChecklists, riskId])
+
   const collectErrorPaths = (value: unknown, prefix = ''): string[] => {
     if (!value || typeof value !== 'object') return []
 
@@ -307,6 +367,51 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
       setPlaybookEnabled(false)
     }
   }, [categories, mode, onSubmit, playbookEnabled, reset])
+
+  const checklistSummary = useMemo(() => {
+    const checklists = liveRisk?.checklists ?? []
+    const items = checklists.flatMap((checklist) => checklist.items ?? [])
+    const completed = items.filter((item) => Boolean(item.completedAt)).length
+    return { completed, total: items.length }
+  }, [liveRisk?.checklists])
+
+  const handleAttachChecklist = useCallback(async () => {
+    if (!riskId) return
+    if (!onAttachChecklistTemplate) return
+    if (!selectedChecklistTemplateId) return
+
+    setChecklistActionPending(true)
+    setChecklistsError(null)
+
+    try {
+      await onAttachChecklistTemplate(riskId, selectedChecklistTemplateId)
+      setChecklistsTouched(true)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to attach checklist.'
+      setChecklistsError(message)
+    } finally {
+      setChecklistActionPending(false)
+    }
+  }, [onAttachChecklistTemplate, riskId, selectedChecklistTemplateId])
+
+  const handleToggleChecklistItem = useCallback(
+    async (checklistId: string, itemId: string) => {
+      if (!riskId) return
+      if (!onToggleChecklistItem) return
+
+      setChecklistActionPending(true)
+      setChecklistsError(null)
+      try {
+        await onToggleChecklistItem(riskId, checklistId, itemId)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unable to update checklist item.'
+        setChecklistsError(message)
+      } finally {
+        setChecklistActionPending(false)
+      }
+    },
+    [onToggleChecklistItem, riskId],
+  )
 
   const handleSaveDraft = () => {
     if (!onSaveDraft) return
@@ -1168,6 +1273,147 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                       </div>
                     </div>
                   </div>
+                )}
+              </div>
+            </details>
+
+            <details className="rounded-2xl bg-surface-secondary/10 p-4">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                Compliance checklist (optional)
+              </summary>
+
+              <div className="mt-3 space-y-3">
+                {mode !== 'edit' || !riskId ? (
+                  <p className="text-sm text-text-low">Save the risk first to attach a checklist.</p>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge tone="neutral">
+                          Status: {(liveRisk?.checklistStatus ?? 'not_started').replace('_', ' ')}
+                        </Badge>
+                        <span className="text-xs text-text-low">
+                          Overall progress: {checklistSummary.completed}/{checklistSummary.total}
+                        </span>
+                      </div>
+                      {checklistsLoading ? (
+                        <span className="text-xs text-text-low">Loading…</span>
+                      ) : null}
+                    </div>
+
+                    {checklistsError ? (
+                      <p className="text-sm text-status-danger">{checklistsError}</p>
+                    ) : null}
+
+                    {(liveRisk?.checklists ?? []).length ? (
+                      <div className="space-y-3">
+                        {(liveRisk?.checklists ?? []).map((checklist) => {
+                          const total = checklist.items.length
+                          const completed = checklist.items.filter((item) => Boolean(item.completedAt)).length
+                          const completedDates = checklist.items
+                            .map((item) => (item.completedAt ? Date.parse(item.completedAt) : NaN))
+                            .filter((ms) => Number.isFinite(ms))
+                          const derivedStartedAt =
+                            completedDates.length ? new Date(Math.min(...completedDates)).toISOString() : undefined
+                          const derivedCompletedAt =
+                            total > 0 && completed === total && completedDates.length
+                              ? new Date(Math.max(...completedDates)).toISOString()
+                              : undefined
+
+                          return (
+                            <div key={checklist.id} className="rounded-2xl border border-border-faint bg-surface-primary/40 p-3">
+                              <div className="flex flex-wrap items-start justify-between gap-2">
+                                <div>
+                                  <p className="text-sm font-semibold text-text-high">{checklist.title}</p>
+                                  {checklist.description ? (
+                                    <p className="mt-1 text-xs text-text-low">{checklist.description}</p>
+                                  ) : null}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {checklist.status ? (
+                                    <Badge tone="neutral" className="capitalize">
+                                      {checklist.status.replace('_', ' ')}
+                                    </Badge>
+                                  ) : null}
+                                  <Badge tone="neutral">
+                                    {completed}/{total}
+                                  </Badge>
+                                </div>
+                              </div>
+
+                              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                                <div className="text-xs text-text-low">Attached: {formatMaybeDate(checklist.attachedAt)}</div>
+                                <div className="text-xs text-text-low">Started: {formatMaybeDate(checklist.startedAt ?? derivedStartedAt)}</div>
+                                <div className="text-xs text-text-low">Completed: {formatMaybeDate(checklist.completedAt ?? derivedCompletedAt)}</div>
+                              </div>
+
+                              {checklist.items.length ? (
+                                <ul className="mt-3 space-y-2">
+                                  {checklist.items.map((item) => (
+                                    <li key={item.id} className="flex items-start gap-3 rounded-xl border border-border-faint bg-surface-secondary/10 p-2">
+                                      <input
+                                        type="checkbox"
+                                        checked={Boolean(item.completedAt)}
+                                        disabled={checklistActionPending}
+                                        onChange={() => handleToggleChecklistItem(checklist.id, item.id)}
+                                        className="mt-1 h-4 w-4"
+                                        aria-label={`Mark checklist item as ${item.completedAt ? 'not completed' : 'completed'}: ${item.description}`}
+                                      />
+                                      <div className="flex-1">
+                                        <p className="text-sm text-text-high">{item.description}</p>
+                                        <p className="mt-0.5 text-xs text-text-low">
+                                          {item.completedAt ? `Completed ${formatMaybeDate(item.completedAt)}` : 'Not completed'}
+                                        </p>
+                                      </div>
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="mt-2 text-sm text-text-low">No items found.</p>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-text-low">No checklist attached yet.</p>
+                    )}
+
+                    <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                      <label className="space-y-1">
+                        <span className="block text-xs font-semibold text-text-low">Attach checklist</span>
+                        <select
+                          className="rr-select w-full"
+                          value={selectedChecklistTemplateId}
+                          onChange={(event) => setSelectedChecklistTemplateId(event.target.value)}
+                          aria-label="Select checklist template"
+                        >
+                          {COMPLIANCE_CHECKLIST_TEMPLATES.map((template) => (
+                            <option key={template.id} value={template.id}>
+                              {template.title}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        disabled={
+                          !selectedChecklistTemplateId ||
+                          checklistActionPending ||
+                          (liveRisk?.checklists ?? []).some((entry) => entry.templateId === selectedChecklistTemplateId)
+                        }
+                        onClick={handleAttachChecklist}
+                      >
+                        Attach
+                      </Button>
+                    </div>
+
+                    <p className="text-xs text-text-low">
+                      Assistive only — not legal advice. Record what you did and when, then export reports as needed.
+                    </p>
+                  </>
                 )}
               </div>
             </details>

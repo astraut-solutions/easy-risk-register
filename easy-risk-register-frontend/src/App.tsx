@@ -1050,8 +1050,12 @@ function App() {
                   mode={editingRisk ? 'edit' : 'create'}
                   categories={categories}
                   defaultValues={editingRisk ?? createDefaults ?? riskDraft ?? undefined}
+                  riskId={editingRisk?.id}
                   onSubmit={handleSubmit}
                   onAddCategory={actions.addCategory}
+                  onLoadChecklists={actions.loadRiskChecklists}
+                  onAttachChecklistTemplate={actions.attachChecklistTemplate}
+                  onToggleChecklistItem={actions.toggleChecklistItem}
                   onCancel={() => requestNavigate(returnView)}
                   onSaveDraft={!editingRisk ? handleSaveDraft : undefined}
                   onDirtyChange={setIsRiskFormDirty}

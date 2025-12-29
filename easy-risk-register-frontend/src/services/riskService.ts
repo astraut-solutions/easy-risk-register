@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 
-import type { Risk, RiskFilters, RiskInput, RiskSeverity } from '../types/risk'
+import type { ChecklistStatus, Risk, RiskChecklist, RiskFilters, RiskInput, RiskSeverity } from '../types/risk'
 import { useRiskStore } from '../stores/riskStore'
 import type { CSVExportVariant } from '../stores/riskStore'
 import type { AppSettings, ReminderSettings } from '../stores/riskStore'
@@ -136,6 +136,7 @@ type ApiRisk = {
   status: Risk['status']
   threatType: Risk['threatType']
   mitigationPlan: string
+  checklistStatus?: ChecklistStatus
   creationDate: string
   lastModified: string
   data?: unknown
@@ -144,6 +145,39 @@ type ApiRisk = {
 type ApiRisksListResponse = {
   items: ApiRisk[]
   count: number | null
+}
+
+type ApiRiskChecklistItem = {
+  id: string
+  position: number
+  description: string
+  createdAt: string
+  completedAt?: string | null
+  completedBy?: string | null
+}
+
+type ApiRiskChecklist = {
+  id: string
+  templateId: string
+  title: string
+  description?: string
+  status?: ChecklistStatus
+  attachedAt: string
+  startedAt?: string | null
+  completedAt?: string | null
+  items: ApiRiskChecklistItem[]
+}
+
+type ApiRiskChecklistsListResponse = {
+  items: ApiRiskChecklist[]
+}
+
+type ApiChecklistItemPatchResponse = {
+  itemId: string
+  checklistId: string
+  completedAt: string | null
+  checklistStatus: ChecklistStatus
+  riskChecklistStatus: ChecklistStatus
 }
 
 function normalizeString(value: unknown, fallback = ''): string {
@@ -159,12 +193,54 @@ function normalizeObject(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>
 }
 
+function normalizeChecklistStatus(value: unknown): ChecklistStatus | null {
+  if (value === 'not_started' || value === 'in_progress' || value === 'done') return value
+  return null
+}
+
+function mapApiChecklistToRiskChecklist(apiChecklist: ApiRiskChecklist): RiskChecklist {
+  const status = normalizeChecklistStatus(apiChecklist.status) ?? undefined
+  return {
+    id: apiChecklist.id,
+    templateId: apiChecklist.templateId,
+    title: apiChecklist.title,
+    description: typeof apiChecklist.description === 'string' ? apiChecklist.description : undefined,
+    status,
+    attachedAt: apiChecklist.attachedAt,
+    startedAt: apiChecklist.startedAt ?? undefined,
+    completedAt: apiChecklist.completedAt ?? undefined,
+    items: Array.isArray(apiChecklist.items)
+      ? apiChecklist.items
+          .map((item) => ({
+            id: item.id,
+            position: Number(item.position),
+            description: item.description,
+            createdAt: item.createdAt,
+            completedAt: item.completedAt ?? undefined,
+            completedBy: item.completedBy ?? undefined,
+          }))
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+      : [],
+  }
+}
+
 function inflateRisk(apiRisk: ApiRisk): Risk {
   const data = normalizeObject(apiRisk.data)
   const severity =
     apiRisk.severity === 'low' || apiRisk.severity === 'medium' || apiRisk.severity === 'high'
       ? apiRisk.severity
       : getRiskSeverity(Number(apiRisk.riskScore))
+
+  const checklistStatus =
+    apiRisk.checklistStatus === 'not_started' ||
+    apiRisk.checklistStatus === 'in_progress' ||
+    apiRisk.checklistStatus === 'done'
+      ? apiRisk.checklistStatus
+      : data.checklistStatus === 'not_started' ||
+          data.checklistStatus === 'in_progress' ||
+          data.checklistStatus === 'done'
+        ? (data.checklistStatus as ChecklistStatus)
+        : 'not_started'
 
   return {
     id: apiRisk.id,
@@ -180,11 +256,8 @@ function inflateRisk(apiRisk: ApiRisk): Risk {
     status: apiRisk.status,
     mitigationPlan: apiRisk.mitigationPlan ?? '',
     mitigationSteps: Array.isArray(data.mitigationSteps) ? (data.mitigationSteps as any) : [],
-    checklists: Array.isArray(data.checklists) ? (data.checklists as any) : [],
-    checklistStatus:
-      data.checklistStatus === 'not_started' || data.checklistStatus === 'in_progress' || data.checklistStatus === 'done'
-        ? (data.checklistStatus as any)
-        : 'not_started',
+    checklists: [],
+    checklistStatus,
     playbook: data.playbook && typeof data.playbook === 'object' ? (data.playbook as any) : undefined,
     owner: normalizeString(data.owner, ''),
     ownerTeam: typeof data.ownerTeam === 'string' ? data.ownerTeam : undefined,
@@ -229,6 +302,8 @@ function extractRiskData(input: RiskInput): Record<string, unknown> {
     threatType: _threatType,
     status: _status,
     mitigationPlan: _mitigationPlan,
+    checklists: _checklists,
+    checklistStatus: _checklistStatus,
     ...rest
   } = input as any
 
@@ -535,6 +610,7 @@ export const riskService = {
 
     const apiRisk = await apiPatchJson<ApiRisk>(`/api/risks/${id}`, patch)
     const risk = inflateRisk(apiRisk)
+    risk.checklists = current.checklists
     useRiskStore.getState().upsertFromApi(risk)
 
     const maybeScoreChanged =
@@ -568,13 +644,106 @@ export const riskService = {
     useRiskStore.getState().removeFromApi(id)
   },
 
+  /** Loads checklists for a risk (used by the edit/details view). */
+  loadRiskChecklists: async (riskId: string): Promise<RiskChecklist[]> => {
+    const store = useRiskStore.getState()
+    const current = store.risks.find((risk) => risk.id === riskId)
+    if (!current) return []
+
+    const { status: authStatus } = useAuthStore.getState()
+    if (authStatus !== 'authenticated') return current.checklists
+
+    const cacheKey = `risk_checklists_${riskId}`
+    const cached = cacheUtil.get<RiskChecklist[]>(cacheKey)
+    if (cached) {
+      store.upsertFromApi({ ...current, checklists: cached })
+      return cached
+    }
+
+    const response = await apiGetJson<ApiRiskChecklistsListResponse>(`/api/risks/${riskId}/checklists`)
+    const checklists = (response?.items || []).map(mapApiChecklistToRiskChecklist)
+
+    cacheUtil.set(cacheKey, checklists, { ttl: 60 })
+    store.upsertFromApi({ ...current, checklists })
+    return checklists
+  },
+
   /** Attaches a compliance checklist template to a risk */
-  attachChecklistTemplate: (riskId: string, templateId: string) =>
-    useRiskStore.getState().attachChecklistTemplate(riskId, templateId),
+  attachChecklistTemplate: async (riskId: string, templateId: string) => {
+    const { status: authStatus } = useAuthStore.getState()
+    if (authStatus !== 'authenticated') {
+      return useRiskStore.getState().attachChecklistTemplate(riskId, templateId)
+    }
+
+    cacheUtil.delete(`risk_checklists_${riskId}`)
+
+    const apiChecklist = await apiPostJson<ApiRiskChecklist>(`/api/risks/${riskId}/checklists`, { templateId })
+    const checklist = mapApiChecklistToRiskChecklist(apiChecklist)
+
+    const store = useRiskStore.getState()
+    const current = store.risks.find((risk) => risk.id === riskId)
+    if (current) {
+      const checklists = current.checklists.some((entry) => entry.id === checklist.id)
+        ? current.checklists
+        : [...current.checklists, checklist]
+      store.upsertFromApi({ ...current, checklists })
+    }
+
+    // Refresh risk-level checklistStatus (rollup is computed server-side).
+    try {
+      const apiRisk = await apiGetJson<ApiRisk>(`/api/risks/${riskId}`)
+      const inflated = inflateRisk(apiRisk)
+      const preserve = store.risks.find((risk) => risk.id === riskId)?.checklists ?? []
+      inflated.checklists = preserve
+      store.upsertFromApi(inflated)
+    } catch {
+      // best-effort
+    }
+
+    return checklist
+  },
 
   /** Toggles a checklist item's completion state */
-  toggleChecklistItem: (riskId: string, checklistId: string, itemId: string) =>
-    useRiskStore.getState().toggleChecklistItem(riskId, checklistId, itemId),
+  toggleChecklistItem: async (riskId: string, checklistId: string, itemId: string) => {
+    const { status: authStatus } = useAuthStore.getState()
+    if (authStatus !== 'authenticated') {
+      return useRiskStore.getState().toggleChecklistItem(riskId, checklistId, itemId)
+    }
+
+    const store = useRiskStore.getState()
+    const current = store.risks.find((risk) => risk.id === riskId)
+    if (!current) return
+
+    const checklist = current.checklists.find((entry) => entry.id === checklistId) ?? null
+    const item = checklist?.items.find((entry) => entry.id === itemId) ?? null
+    if (!checklist || !item) return
+
+    const completed = !item.completedAt
+
+    const result = await apiPatchJson<ApiChecklistItemPatchResponse>(
+      `/api/risks/${riskId}/checklists/items/${itemId}`,
+      { completed },
+    )
+
+    cacheUtil.delete(`risk_checklists_${riskId}`)
+
+    const checklists = current.checklists.map((entry) => {
+      if (entry.id !== checklistId) return entry
+      return {
+        ...entry,
+        status: result.checklistStatus,
+        items: entry.items.map((existing) =>
+          existing.id === itemId ? { ...existing, completedAt: result.completedAt ?? undefined } : existing,
+        ),
+      }
+    })
+
+    store.upsertFromApi({
+      ...current,
+      checklists,
+      checklistStatus: result.riskChecklistStatus,
+    })
+  },
 
   /** Updates the current risk filtering criteria */
   setFilters: (updates: Partial<RiskFilters>) => {
@@ -647,8 +816,6 @@ export const useRiskManagement = () => {
   const createMaturityAssessment = useRiskStore((state) => state.createMaturityAssessment)
   const updateMaturityDomain = useRiskStore((state) => state.updateMaturityDomain)
   const deleteMaturityAssessment = useRiskStore((state) => state.deleteMaturityAssessment)
-  const attachChecklistTemplate = useRiskStore((state) => state.attachChecklistTemplate)
-  const toggleChecklistItem = useRiskStore((state) => state.toggleChecklistItem)
   const addCategory = useRiskStore((state) => state.addCategory)
   const setFilters = useRiskStore((state) => state.setFilters)
   const exportToCSV = useRiskStore((state) => state.exportToCSV)
@@ -663,8 +830,9 @@ export const useRiskManagement = () => {
       addRisk: riskService.create,
       updateRisk: riskService.update,
       deleteRisk: riskService.remove,
-      attachChecklistTemplate,
-      toggleChecklistItem,
+      loadRiskChecklists: riskService.loadRiskChecklists,
+      attachChecklistTemplate: riskService.attachChecklistTemplate,
+      toggleChecklistItem: riskService.toggleChecklistItem,
       addCategory,
       setFilters,
       exportToCSV,
@@ -677,13 +845,11 @@ export const useRiskManagement = () => {
       deleteMaturityAssessment,
     }),
     [
-      attachChecklistTemplate,
       addCategory,
       exportToCSV,
       importFromCSV,
       seedDemoData,
       setFilters,
-      toggleChecklistItem,
       updateReminderSettings,
       updateSettings,
       createMaturityAssessment,

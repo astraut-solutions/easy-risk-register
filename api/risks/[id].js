@@ -86,6 +86,7 @@ function mapRiskRow(row, { thresholds }) {
     status: row.status,
     threatType: row.threat_type,
     mitigationPlan: row.mitigation_plan,
+    checklistStatus: row.checklist_status ?? 'not_started',
     data: row.data ?? {},
     creationDate: row.created_at,
     lastModified: row.updated_at,
@@ -121,7 +122,7 @@ module.exports = async function handler(req, res) {
         const { data, error } = await supabase
           .from('risks')
           .select(
-            'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, data, created_at, updated_at',
+            'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, checklist_status, data, created_at, updated_at',
           )
           .eq('id', riskId)
           .eq('workspace_id', workspaceId)
@@ -251,7 +252,7 @@ module.exports = async function handler(req, res) {
           .eq('id', riskId)
           .eq('workspace_id', workspaceId)
           .select(
-            'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, data, created_at, updated_at',
+            'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, checklist_status, data, created_at, updated_at',
           )
           .maybeSingle()
 
