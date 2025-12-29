@@ -130,8 +130,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
  - [x] [verify] Filter combinations behave consistently across views
 
 ### Feature: Guided onboarding + educational tooltips
-- [ ] [database] Add user/workspace settings (tooltips on/off, onboarding state)
-- [ ] [backend] Add settings endpoints (workspace-scoped)
+- [x] [database] Add user/workspace settings (tooltips on/off, onboarding state)
+- [x] [backend] Add settings endpoints (workspace-scoped)
 - [ ] [frontend] Add tooltips on key fields + "first 3 steps" onboarding checklist; allow disabling tooltips
 - [ ] [deploy] Ensure external links (if any) are optional and do not block core use
 - [ ] [verify] Accessibility check for tooltip triggers and keyboard-only flow
