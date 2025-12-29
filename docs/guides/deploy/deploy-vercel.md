@@ -138,3 +138,23 @@ Confirm the UI and API agree on severity boundaries by creating risks with these
 - Serverless env (for `vercel dev`): `/.env.local` in the repo root
 
 For more on keeping secrets out of the browser build, see `docs/guides/deploy/serverless-integrations.md`.
+
+## Offline behavior (expectations)
+
+Easy Risk Register is **online-first**: Supabase/Postgres is the system of record and core operations require connectivity.
+
+- **Writes while offline are blocked**: create/update/delete/import actions are prevented client-side and show explicit “not saved” messaging.
+- **Reads while offline degrade**: the UI shows a clear “Read-only mode” banner and displays either live data (when online) or cached data (if available).
+- **Backend unreachable**: if `/api/*` returns a temporary-unavailable response, the UI enters read-only mode and offers a retry.
+
+### Optional read-only cache (privacy + storage)
+
+The app maintains an optional **read-only** browser cache for degraded viewing when offline/unreachable:
+
+- **Storage**: IndexedDB (per-browser, per-device).
+- **Bounds**: up to **100 risks** per workspace, restricted to items updated in the last **7 days** (whichever is smaller).
+- **Freshness**: the UI shows a “Last updated” timestamp when cached data is shown.
+- **Non-authoritative**: cached data is never treated as saved; writes remain blocked until connectivity returns.
+- **Encryption interaction**: if in-browser encryption is enabled, cached data is stored encrypted; if the vault is locked, caching may be skipped and cached data may not be readable.
+
+If your deployment has strict “no local storage of risk data” expectations, treat this cache as a feature to disable/avoid and document that users should not rely on offline access.

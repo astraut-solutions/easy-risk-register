@@ -46,6 +46,7 @@ A regional financial advisor firm manages risks including market volatility, cyb
 - CSV export (standard + audit pack) with CSV/Excel formula injection protection
 - PDF export via print-to-PDF (`report.html` viewer; popups must be allowed)
 - Per-risk optional fields stored in `public.risks.data` (jsonb): templates, checklists, evidence, playbooks, structured mitigation steps
+- Offline/unreachable behavior (MVP): block writes with explicit “not saved” messaging; optional read-only IndexedDB cache (bounded to last 7 days or 100 items) with “last updated” timestamp
 - Sanitization and a strict Content Security Policy (CSP)
 
 UX notes:
@@ -252,7 +253,8 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | | [Testing Guide](docs/guides/dev/testing.md) | How to run and write tests |
 | | [Development Workflow](docs/guides/dev/development-workflow.md) | Standard development process and commands |
 | | [Code Style Guide](docs/guides/dev/code-style.md) | Coding standards and best practices |
-| **Verification** | [Matrix + filters perf/a11y verification](docs/verification/matrix-filters-performance-a11y.md) | Validate “up to 1000 risks” performance + matrix/filters accessibility |
+| **Verification** | [Matrix + filters perf/a11y verification](docs/verification/matrix-filters-performance-a11y.md) | Validate "up to 1000 risks" performance + matrix/filters accessibility |
+| | [Offline / read-only verification](docs/verification/offline-readonly-cache.md) | Validate offline/unreachable behavior and bounded read-only cache |
 | | [Audit-ready workflow](docs/guides/product/audit-ready-workflow.md) | Owners, reviews, evidence, and audit pack exports |
 | | [PDF exports](docs/guides/product/pdf-exports.md) | Print-to-PDF reports + troubleshooting |
 | | [Evidence guidance](docs/guides/product/evidence-guidance.md) | What counts as evidence and how to capture it |

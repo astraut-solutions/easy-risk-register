@@ -16,6 +16,8 @@ Core risk register data is stored server-side (workspace-scoped with Supabase RL
 ## Verification
 
 - Matrix + filters performance and accessibility quick pass: `docs/verification/matrix-filters-performance-a11y.md`
+- Offline expectations (deploy + privacy): `docs/guides/deploy/deploy-vercel.md#offline-behavior-expectations`
+- Offline / read-only mode and cache: `docs/verification/offline-readonly-cache.md`
 
 ## Cyber templates and checklists
 

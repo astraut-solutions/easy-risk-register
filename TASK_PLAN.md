@@ -95,8 +95,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [backend] Ensure APIs return clear error shapes for offline/unreachable cases
 - [x] [frontend] Block writes while offline; show explicit "not saved" messaging (no silent failures)
 - [x] [frontend] Optional: implement bounded read-only cache (last 7 days or 100 items) with "last updated" timestamp
-- [ ] [deploy] Document offline expectations and any caching limits (privacy + storage)
-- [ ] [verify] Toggle offline in browser devtools: confirm writes are blocked and cached view (if enabled) is read-only
+- [x] [deploy] Document offline expectations and any caching limits (privacy + storage)
+- [x] [verify] Toggle offline in browser devtools: confirm writes are blocked and cached view (if enabled) is read-only
 
 ### Feature: Cycle 1 release readiness
 - [ ] [verify] Run frontend unit/integration tests (Vitest) and fix regressions

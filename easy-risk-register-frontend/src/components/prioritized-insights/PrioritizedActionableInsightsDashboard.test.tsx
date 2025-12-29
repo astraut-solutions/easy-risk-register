@@ -1,10 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { PrioritizedActionableInsightsDashboard } from './PrioritizedActionableInsightsDashboard'
+import { ToastProvider } from '../feedback/ToastProvider'
 
 describe('PrioritizedActionableInsightsDashboard', () => {
   it('renders without crashing', () => {
-    render(<PrioritizedActionableInsightsDashboard />)
+    render(
+      <ToastProvider>
+        <PrioritizedActionableInsightsDashboard />
+      </ToastProvider>,
+    )
     expect(screen.getByText('Immediate Attention Alerts')).toBeInTheDocument()
     expect(
       screen.getByText('Risk Prioritization by Financial Impact')
@@ -18,7 +23,11 @@ describe('PrioritizedActionableInsightsDashboard', () => {
   })
 
   it('applies custom className when provided', () => {
-    render(<PrioritizedActionableInsightsDashboard className="custom-class" />)
+    render(
+      <ToastProvider>
+        <PrioritizedActionableInsightsDashboard className="custom-class" />
+      </ToastProvider>,
+    )
     const container = screen.getByTestId('prioritized-insights-container')
     expect(container).toHaveClass('custom-class')
   })
