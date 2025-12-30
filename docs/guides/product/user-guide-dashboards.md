@@ -160,7 +160,7 @@ The **Risk Table** tab displays all risks in a spreadsheet-like view for quick s
 - **Impact**: 1 (Very Low) to 5 (Very High)
 - **Risk Score**: Calculated probability × impact (1–25)
 - **Status**: Open, Mitigated, Closed, Accepted
-- **Actions**: Edit, delete, or attach checklists
+- **Actions**: Icon buttons for edit/view and delete (checklists are managed inside the risk editor)
 
 ### Filtering & Sorting
 

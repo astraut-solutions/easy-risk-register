@@ -79,7 +79,7 @@ export const RiskTable = ({
             <TableHead role="columnheader">Due</TableHead>
             <TableHead role="columnheader">Status</TableHead>
             <TableHead role="columnheader">Last updated</TableHead>
-            <TableHead role="columnheader" className="text-right">Actions</TableHead>
+            <TableHead role="columnheader" className="text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -135,16 +135,31 @@ export const RiskTable = ({
               <TableCell role="cell" aria-label={`Last updated: ${dateFormatter.format(new Date(risk.lastModified))}`}>
                 {dateFormatter.format(new Date(risk.lastModified))}
               </TableCell>
-              <TableCell className="text-right" role="cell">
-                <div className="flex flex-wrap justify-end gap-2" role="group" aria-label={`Actions for risk ${risk.title}`}>
+              <TableCell className="text-center" role="cell">
+                <div className="flex items-center justify-center gap-2" role="group" aria-label={`Actions for risk ${risk.title}`}>
                   <Button
                     type="button"
                     size="sm"
-                    variant="ghost"
+                    variant="secondary"
                     onClick={() => onEdit(risk)}
                     aria-label={`View or edit risk: ${risk.title}`}
+                    className="h-9 w-9 p-0"
                   >
-                    View/Edit
+                    <span className="sr-only">View/Edit</span>
+                    <svg
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.8}
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M12.5 3.5l4 4L7 17H3v-4L12.5 3.5z"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   </Button>
                   <Button
                     type="button"
@@ -152,8 +167,27 @@ export const RiskTable = ({
                     variant="destructive"
                     onClick={() => onDelete(risk.id)}
                     aria-label={`Delete risk: ${risk.title}`}
+                    className="h-9 w-9 p-0"
                   >
-                    Delete
+                    <span className="sr-only">Delete</span>
+                    <svg
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.8}
+                      aria-hidden="true"
+                    >
+                      <path d="M4.5 6.5h11" strokeLinecap="round" />
+                      <path d="M8 6.5v-2h4v2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path
+                        d="M6.5 6.5l.7 10h5.6l.7-10"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path d="M8.5 9v5" strokeLinecap="round" />
+                      <path d="M11.5 9v5" strokeLinecap="round" />
+                    </svg>
                   </Button>
                 </div>
               </TableCell>

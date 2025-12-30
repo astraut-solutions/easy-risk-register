@@ -19,7 +19,7 @@ export const SectionHeader = ({
   ...props
 }: SectionHeaderProps) => (
   <header
-    className={cn('flex flex-col gap-4 text-text-mid md:flex-row md:items-end', className)}
+    className={cn('flex flex-col gap-4 text-text-mid md:flex-row md:items-center', className)}
     {...props}
   >
     <div className="flex-1 space-y-3">
@@ -33,7 +33,7 @@ export const SectionHeader = ({
         {description && <p className="mt-2 max-w-3xl text-base text-text-low">{description}</p>}
       </div>
     </div>
-    {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+    {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
   </header>
 )
 
