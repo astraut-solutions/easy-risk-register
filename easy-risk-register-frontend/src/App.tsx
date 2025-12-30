@@ -1542,7 +1542,7 @@ function App() {
                   <div className="mt-4 rounded-2xl border border-border-faint bg-surface-secondary/10 p-4">
                     <p className="text-sm font-semibold text-text-high">Maturity self-assessment</p>
                     <p className="mt-1 text-xs text-text-low">
-                      Optional and offline-only. This is a self-assessment to support planning and reporting—it's not a certification.
+                      Optional. Saved to your workspace for tracking over time. Self-assessment only-it does not represent certification, compliance, or legal advice.
                     </p>
 
                     <label className="mt-3 flex items-start gap-3 text-sm text-text-low">

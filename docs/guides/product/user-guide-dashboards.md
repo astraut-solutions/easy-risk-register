@@ -85,6 +85,8 @@ Shows how your risk signal changes over time (last 30 days).
 
 The **Maturity Radar** tab is for organizations that want to self-assess their cyber security maturity against a known framework.
 
+> Self-assessment only. This is assistive and does not represent certification, compliance, or legal advice.
+
 ### What Is It?
 
 A **radar chart** that visually shows your maturity score across key domains (e.g., ACSC Essential Eight or NIST CSF).
@@ -116,9 +118,9 @@ A **radar chart** that visually shows your maturity score across key domains (e.
 ### How to Use It
 
 **Create an assessment**:
-1. Click **New Assessment** button
+1. Click **New assessment**
 2. Choose your framework (ACSC or NIST)
-3. You'll see a form with all domains
+3. You'll see the radar plus a table of domains
 
 **Score each domain**:
 - Score: **0** = Not implemented
@@ -127,12 +129,10 @@ A **radar chart** that visually shows your maturity score across key domains (e.
 - Score: **3** = Optimized/proactive
 - Score: **4** = Advanced/automated
 
-Optional: Add **notes** for each domain (e.g., "MFA enabled for 80% of users")
-
 **View the radar**:
 - As you score domains, the radar chart updates in real time
 - Each domain is a "spoke" of the radar; longer spokes = higher maturity
-- Compare two assessments visually to spot gaps
+- Use the assessment selector to view older snapshots
 
 **Multiple assessments**:
 - Create multiple assessments over time (e.g., quarterly)
@@ -141,7 +141,7 @@ Optional: Add **notes** for each domain (e.g., "MFA enabled for 80% of users")
 
 ### Tips for Assessments
 
-- **Be honest**: This is a self-assessment, not a compliance audit. Accuracy helps you identify real gaps.
+- **Be honest**: This is a self-assessment (not a compliance audit). Accuracy helps you identify real gaps.
 - **Update quarterly**: Schedule maturity reviews when you update your risk register
 - **Use for planning**: Domains with low scores are good candidates for improvement projects
 - **Export for audits**: Include the radar chart in audit reports (with the "Self-Assessment" label)

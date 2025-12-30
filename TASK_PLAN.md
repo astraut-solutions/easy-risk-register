@@ -187,8 +187,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [database] Add maturity assessment tables (framework preset, domain scores, timestamps)
 - [x] [backend] Implement assessment CRUD APIs + query for latest/series
 - [x] [frontend] Implement radar chart + table fallback; export as PNG and include in PDFs
-- [ ] [deploy] Ensure presets and copy avoid implying certification/compliance guarantees
-- [ ] [verify] Accessibility check + export correctness
+- [x] [deploy] Ensure presets and copy avoid implying certification/compliance guarantees
+- [x] [verify] Accessibility check + export correctness
 
 ### Feature: Audit trail (append-only, role-based access)
 - [ ] [database] Add `audit_events` append-only table + retention baseline (90 days) + RLS by role

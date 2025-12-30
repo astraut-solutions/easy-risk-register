@@ -17,6 +17,7 @@ Core risk register data is stored server-side (workspace-scoped with Supabase RL
 
 - Matrix + filters performance and accessibility quick pass: `docs/verification/matrix-filters-performance-a11y.md`
 - PDF exports (content + filters + charts + CSV regression): `docs/verification/pdf-exports.md`
+- Maturity assessments (accessibility + exports): `docs/verification/maturity-assessments.md`
 - Reminders (notifications + in-app fallback): `docs/verification/reminders.md`
 - End-to-end encryption (threat model + recovery): `docs/verification/e2ee-threat-model-and-recovery.md`
 - Offline expectations (deploy + privacy): `docs/guides/deploy/deploy-vercel.md#offline-behavior-expectations`
@@ -32,7 +33,7 @@ Core risk register data is stored server-side (workspace-scoped with Supabase RL
 
 ## Maturity and Settings
 
-- Maturity self-assessment feature: Built-in capability radar with numbered domain scoring (2-column layout)
+- Maturity self-assessment feature: Built-in capability radar with numbered domain scoring (self-assessment only; not certification)
 - Settings: Full-page view with customizable preferences for tooltips, reminders, visualizations, and encryption
 
 ### Feature: Guided onboarding + educational tooltips
