@@ -143,8 +143,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [backend] Record snapshots on create/update; add query endpoints for overall and per-risk trends
 - [x] [backend] Migrate off Influx-based time-series if present (use Supabase as system of record)
 - [x] [frontend] Add trend views (overall exposure + per-risk history) with clear "what changed" UX
-- [ ] [deploy] Remove/replace time-series env vars that are no longer needed (if applicable)
-- [ ] [verify] Performance check on 1000 risks; retention bounds enforced
+- [x] [deploy] Remove/replace time-series env vars that are no longer needed (if applicable)
+- [x] [verify] Performance check on 1000 risks; retention bounds enforced
 
 ### Feature: Dashboard charts + PNG export
 - [ ] [database] No change (depends on risk + history tables)

@@ -16,14 +16,16 @@ export type IntegrationCatalogItem = {
 }
 
 export const integrationCatalog = (): IntegrationCatalogItem[] => [
+  // Note: score history is stored server-side in Supabase and is part of the core product.
+  // The "timeseries" entry is kept only as a backwards-compatible integration row.
   {
     id: 'timeseries',
-    name: 'Time-series history',
-    flagEnvVar: 'VITE_ENABLE_TIMESERIES',
-    enabled: import.meta.env.VITE_ENABLE_TIMESERIES === 'true',
-    dataLeavesDevice: true,
+    name: 'Risk score history',
+    flagEnvVar: '(built-in)',
+    enabled: true,
+    dataLeavesDevice: false,
     disclosure:
-      'When enabled, this app sends time-series snapshots (risk score, probability, impact, timestamps, and optional category/status) from your browser to your configured serverless API endpoints (`/api/timeseries/*`).',
+      'Risk score history is stored in your Supabase database and used for trend views. No extra third-party time-series integration is required.',
     docsPath: 'docs/guides/deploy/serverless-integrations.md',
   },
   {

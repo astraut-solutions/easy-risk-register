@@ -20,15 +20,6 @@ export interface TimeSeriesQueryOptions {
   limit?: number
 }
 
-type TimeSeriesFeatureFlags = {
-  enabled: boolean
-}
-
-const getTimeSeriesFlags = (): TimeSeriesFeatureFlags => ({
-  // Score history is now stored server-side; default to enabled unless explicitly disabled.
-  enabled: import.meta.env.VITE_ENABLE_TIMESERIES !== 'false',
-})
-
 export class TimeSeriesService {
   async writeSnapshot(_risk: Risk): Promise<void> {
     // Deprecated: snapshots are captured server-side on risk create/update.
@@ -36,8 +27,6 @@ export class TimeSeriesService {
   }
 
   async query(_options: TimeSeriesQueryOptions = {}): Promise<RiskTrendData[]> {
-    const flags = getTimeSeriesFlags()
-    if (!flags.enabled) return []
     if (!useAuthStore.getState().accessToken) return []
 
     const params = new URLSearchParams()

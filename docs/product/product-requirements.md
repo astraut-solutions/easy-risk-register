@@ -379,10 +379,10 @@ Optional integration data flows (when enabled) may include:
 - Storing time-series snapshots in an external database for long-term trend analysis (recommended: Supabase/Postgres)
 
 **Initial backend scope (recommended)**
-- Time-series trends via backend endpoints:
-  - `POST /api/timeseries/write` (ingest risk score snapshots)
-  - `GET /api/timeseries/query` (read trend points)
-- Data is stored in Supabase in a simple append-only table (e.g., `risk_trends`) keyed by `risk_id` and `timestamp`.
+- Risk score history (trends) via backend endpoints:
+  - `GET /api/trends` (overall trend points)
+  - `GET /api/risks/:id/trends` (per-risk trend points)
+- Data is stored in Supabase in a bounded snapshots table (e.g., `risk_score_snapshots`) with retention enforcement.
 
 ### 5.4 Security Architecture
 - By default, risk register data is stored server-side (Supabase/Postgres) with authentication and least-privilege authorization (e.g., RLS)

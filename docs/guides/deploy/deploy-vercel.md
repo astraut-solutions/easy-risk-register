@@ -23,8 +23,8 @@ Required for Supabase browser auth:
 
 Common optional vars:
 
-- `VITE_API_BASE_URL` — leave blank for same-origin (`/api/...`) on Vercel; set only when pointing at a separate API host.
-- Feature flags (see `easy-risk-register-frontend/.env.example`), e.g. `VITE_ENABLE_TIMESERIES`.
+- `VITE_API_BASE_URL` - leave blank for same-origin (`/api/...`) on Vercel; set only when pointing at a separate API host.
+- Feature flags (see `easy-risk-register-frontend/.env.example`).
 
 Never put secrets in `VITE_*` variables.
 

@@ -69,7 +69,7 @@ The application uses a Supabase-backed architecture:
 - **Persistence**: Supabase Postgres with workspace scoping enforced via RLS
 - **Local persistence**: non-authoritative UI state (filters + cached preferences) plus the Supabase session token
 
-Optional integrations (time-series, threat intel, etc.) are designed to keep secrets off the client:
+Optional integrations (threat intel, etc.) are designed to keep secrets off the client:
 - Never put API keys/tokens in `VITE_*` variables (anything prefixed with `VITE_` is bundled into the browser build).
 - Use serverless APIs (Vercel functions under `api/`) for any calls that require credentials.
 

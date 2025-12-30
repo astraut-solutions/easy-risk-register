@@ -21,7 +21,6 @@ In Vite, any environment variable prefixed with `VITE_` is bundled into the fron
 
 Integrations are feature-flagged and **off by default**. See `easy-risk-register-frontend/.env.example` for the current list, including:
 
-- `VITE_ENABLE_TIMESERIES`
 - `VITE_ENABLE_GRAPH_DB`
 - `VITE_ENABLE_REALTIME`
 - `VITE_ENABLE_SIEM`
@@ -37,7 +36,9 @@ All `/api/*` routes require an **end-user Supabase JWT** (Bearer token):
 - `POST /api/audit`
 - `POST /api/data-protection` (encrypt/decrypt)
 - `GET /api/risks` (list risks; supports query params like `status`, `category`, `q`, `threatType`, `checklistStatus`, sorting/pagination)
-- `GET/POST /api/timeseries/*`
+- `GET /api/trends` (overall trend points)
+- `GET /api/risks/:id/trends` (per-risk trend points)
+- `GET /api/timeseries/query` (compat endpoint; reads from snapshots)
 - `GET /api/risks/:id/checklists` (list per-risk checklist instances + items)
 - `POST /api/risks/:id/checklists` (attach a checklist template to a risk)
 - `PATCH /api/risks/:id/checklists/items/:itemId` (complete/uncomplete a checklist item)
@@ -54,10 +55,9 @@ Server-side environment variables:
 - `SUPABASE_JWT_SECRET` (optional; enables local JWT verification, otherwise the API verifies via Supabase Auth)
 - `ENCRYPTION_KEY` (required in production; used by `/api/data-protection`)
 
-## Time-series (Supabase Postgres)
+## Risk score history (Supabase Postgres)
 
-Time-series snapshots are stored in Supabase Postgres in `public.risk_trends`:
-- `workspace_id` (uuid), `risk_id` (text), `probability` (int), `impact` (int), `risk_score` (int), `timestamp` (bigint), `category` (text), `status` (text)
+Risk score snapshots are stored in Supabase Postgres in `public.risk_score_snapshots` and are captured **server-side** on risk create/update (no browser-side ingest is required).
 
 ### Docker Compose (dev only)
 
@@ -117,7 +117,7 @@ Server-side environment variables:
 
 - `docker exec -i easy-risk-register-supabase-db-1 psql -U postgres -d postgres < supabase/init/001_roles_and_schema.sql`
 - `docker exec -i easy-risk-register-supabase-db-1 psql -U postgres -d postgres < supabase/init/002_workspaces_core_tables_rls.sql`
-- `docker exec -i easy-risk-register-supabase-db-1 psql -U postgres -d postgres < supabase/init/003_risk_trends_workspace_rls.sql`
+- `docker exec -i easy-risk-register-supabase-db-1 psql -U postgres -d postgres < supabase/init/008_risk_score_snapshots.sql`
 
 Notes:
 
@@ -132,4 +132,8 @@ Notes:
 - From repo root: `vercel dev`
 
 5) Sanity check in browser:
-- Use a client that can set headers (Bearer token required), e.g. `curl -H "Authorization: Bearer <jwt>" "http://localhost:3000/api/timeseries/query?limit=1"`
+- Use a client that can set headers (Bearer token required), e.g. `curl -H "Authorization: Bearer <jwt>" "http://localhost:3000/api/trends?limit=5"`
+
+6) Optional verification (1000 risks + retention bounds):
+- Set `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (or `SUPABASE_SERVICE_KEY`) in your shell
+- Run `npm run verify:score-history`

@@ -21,8 +21,8 @@ begin
   if not exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = 'risks') then
     missing := array_append(missing, 'public.risks');
   end if;
-  if not exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = 'risk_trends') then
-    missing := array_append(missing, 'public.risk_trends');
+  if not exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = 'risk_score_snapshots') then
+    missing := array_append(missing, 'public.risk_score_snapshots');
   end if;
 
   if coalesce(array_length(missing, 1), 0) > 0 then
@@ -143,8 +143,18 @@ begin
   end if;
 
   -- risk_trends columns (time-series)
-  if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='risk_trends' and column_name='workspace_id') then
-    col_missing := array_append(col_missing, 'risk_trends.workspace_id');
+  -- risk_score_snapshots columns (bounded trend history)
+  if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='risk_score_snapshots' and column_name='workspace_id') then
+    col_missing := array_append(col_missing, 'risk_score_snapshots.workspace_id');
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='risk_score_snapshots' and column_name='risk_id') then
+    col_missing := array_append(col_missing, 'risk_score_snapshots.risk_id');
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='risk_score_snapshots' and column_name='risk_score') then
+    col_missing := array_append(col_missing, 'risk_score_snapshots.risk_score');
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='risk_score_snapshots' and column_name='created_at') then
+    col_missing := array_append(col_missing, 'risk_score_snapshots.created_at');
   end if;
 
   if coalesce(array_length(col_missing, 1), 0) > 0 then
@@ -212,9 +222,9 @@ begin
     select 1
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname='public' and c.relname='risk_trends' and c.relrowsecurity and c.relforcerowsecurity
+    where n.nspname='public' and c.relname='risk_score_snapshots' and c.relrowsecurity and c.relforcerowsecurity
   ) then
-    rls_missing := array_append(rls_missing, 'risk_trends');
+    rls_missing := array_append(rls_missing, 'risk_score_snapshots');
   end if;
 
   if coalesce(array_length(rls_missing, 1), 0) > 0 then
@@ -239,8 +249,8 @@ begin
   if not exists (select 1 from pg_policies where schemaname='public' and tablename='risks' and policyname='risks_select_member') then
     policy_missing := array_append(policy_missing, 'risks.risks_select_member');
   end if;
-  if not exists (select 1 from pg_policies where schemaname='public' and tablename='risk_trends' and policyname='risk_trends_select_member') then
-    policy_missing := array_append(policy_missing, 'risk_trends.risk_trends_select_member');
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='risk_score_snapshots' and policyname='risk_score_snapshots_select_member') then
+    policy_missing := array_append(policy_missing, 'risk_score_snapshots.risk_score_snapshots_select_member');
   end if;
 
   if coalesce(array_length(policy_missing, 1), 0) > 0 then
@@ -307,6 +317,83 @@ values (
   'other',
   '{}'::jsonb
 );
+
+-- Snapshot should be captured on insert.
+select (
+  select count(*)
+  from public.risk_score_snapshots
+  where workspace_id = (:'test_workspace_id')::uuid
+) >= 1 as snapshot_insert_ok
+\gset
+\if :snapshot_insert_ok
+\else
+\echo 'Snapshot capture failed: expected at least 1 snapshot row after risk insert'
+\quit 1
+\endif
+
+-- Retention bound: repeatedly change probability; ensure we never exceed 20 snapshots.
+do $$
+declare
+  v_risk_id uuid;
+  v_count int;
+begin
+  select id into v_risk_id
+  from public.risks
+  where workspace_id = (:'test_workspace_id')::uuid
+  limit 1;
+
+  for i in 1..25 loop
+    update public.risks
+    set probability = ((i % 5) + 1)
+    where id = v_risk_id
+      and workspace_id = (:'test_workspace_id')::uuid;
+  end loop;
+
+  select count(*)::int into v_count
+  from public.risk_score_snapshots
+  where workspace_id = (:'test_workspace_id')::uuid
+    and risk_id = v_risk_id;
+
+  if v_count > 20 then
+    raise exception 'Retention bound failed: expected <=20 snapshots per risk, got %', v_count;
+  end if;
+end $$;
+
+-- Age bound (best-effort): inserting an old snapshot should be cleaned up by the retention trigger.
+do $$
+declare
+  v_risk_id uuid;
+begin
+  select id into v_risk_id
+  from public.risks
+  where workspace_id = (:'test_workspace_id')::uuid
+  limit 1;
+
+  insert into public.risk_score_snapshots (
+    workspace_id, risk_id, probability, impact, risk_score, category, status, created_at, created_by
+  )
+  values (
+    (:'test_workspace_id')::uuid,
+    v_risk_id,
+    1,
+    1,
+    1,
+    'Test Category',
+    'open',
+    now() - interval '120 days',
+    null
+  );
+
+  if exists (
+    select 1
+    from public.risk_score_snapshots
+    where workspace_id = (:'test_workspace_id')::uuid
+      and risk_id = v_risk_id
+      and created_at < now() - interval '90 days'
+  ) then
+    raise exception 'Retention age bound failed: found snapshots older than 90 days for risk %', v_risk_id;
+  end if;
+end $$;
 
 reset role;
 select 'behavioral_smoke_ok' as result;

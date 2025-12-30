@@ -170,12 +170,6 @@ const ExecutiveOverviewDashboard: React.FC<ExecutiveOverviewDashboardProps> = ({
   }, [getTrendData, serverAvgScoreByDate]);
 
   useEffect(() => {
-    const enabled = import.meta.env.VITE_ENABLE_TIMESERIES === 'true';
-    if (!enabled) {
-      setServerAvgScoreByDate(null);
-      return;
-    }
-
     const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
     const now = new Date();
     const start = new Date(now);
