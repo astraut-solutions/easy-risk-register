@@ -146,6 +146,34 @@ Then set `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_KEY` in `.env` (do not commit
 
 Then open [http://localhost:5173](http://localhost:5173).
 
+#### Seed Demo Users + Data (local Supabase)
+
+If you want demo users and sample data in the UI, use the built-in seed script (creates users in Supabase Auth + seeds workspaces/risks/checklists/playbooks/maturity data).
+
+1. Ensure your root `.env` has real local keys (do not commit):
+   ```bash
+   cp .env.example .env
+   node scripts/generate-local-supabase-keys.mjs
+   ```
+   Paste the printed values into `.env` as `SUPABASE_JWT_SECRET`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_KEY`, then restart the compose stack.
+
+2. Start the full local stack (DB + gateway/auth/rest/storage + API dev server + frontend + Studio):
+   ```bash
+   docker compose --profile development up -d --build supabase-db supabase-rest supabase-auth supabase-storage supabase-gateway supabase-meta supabase-studio api-dev frontend-dev
+   ```
+
+3. Seed demo users and data (PowerShell):
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts/seed-demo.ps1 -EmailSuffix "demo1" -Password "DemoPassword123!"
+   ```
+
+Log in with:
+- `demo.owner.demo1@example.com`
+- `demo.admin.demo1@example.com`
+- `demo.member.demo1@example.com`
+
+Note: the app currently defaults to each user’s “Personal” workspace; the seeder populates each user’s personal workspace so data appears immediately after login.
+
 Troubleshooting:
 - `502 Bad Gateway` from `/api/*` with `Supabase query failed: JWSError JWSInvalidSignature` or `role "" does not exist`: restart the dev stack and clear site data for `http://localhost:5173` (old tokens won't validate after JWT secret changes).
 - `Port 5173 is already in use`: stop the existing Vite process/container, or change the port mapping for `frontend-dev` in `docker-compose.yml`.
