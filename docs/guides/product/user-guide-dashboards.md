@@ -255,12 +255,13 @@ All views (matrix, dashboard, table) share the **same filters**. When you filter
 ### Visualization Settings
 
 **Enable/Disable Score History**:
-- If enabled, snapshots of risk scores are stored over time (needed for trend charts)
-- If disabled, trend charts are unavailable (but frees up storage space)
+- If enabled, trend charts and “what changed” views use stored score snapshots.
+- If disabled, trend charts are hidden.
 
 **History Retention**:
-- **Keep last N days**: Automatically removes snapshots older than X days (default: 365)
-- **Keep last N snapshots per risk**: Keeps only the N most recent snapshots per risk (default: 50)
+- History is bounded and enforced server-side in Supabase:
+  - Keep at most **90 days** of snapshots per risk
+  - Keep at most **20 snapshots** per risk
 
 **Default Trend View**:
 - Choose whether trend charts show overall organization exposure or recently changed risks

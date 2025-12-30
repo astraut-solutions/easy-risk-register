@@ -43,6 +43,7 @@ A regional financial advisor firm manages risks including market volatility, cyb
 - Risk CRUD via APIs (`/api/risks`, `/api/categories`) with validation and consistent error handling
 - Cyber risk templates: bundled-only template picker with preview (no template network calls); applying a template pre-fills the New risk form and edits remain independent of the template
 - Compliance checklists (privacy incident assist): attach a checklist to a risk, track completion timestamps, and filter by checklist status (assistive guidance only; not legal advice)
+- Risk score history snapshots for trends (captured server-side; bounded retention: 20 snapshots per risk or 90 days)
 - Automatic risk scoring (probability × impact; score 1-25) with severity labels (defaults: Low 1-8, Medium 9-15, High 16-25) and an interactive 5×5 matrix + table views (click/keyboard drill-down)
 - Server-side filtering/sorting/pagination via `/api/risks` (supports status/category/threat type/checklist status filters; avoids client-only filtering; supports up to 1000 risks per workspace snapshot for the MVP matrix/table)
 - CSV export (standard + audit pack) with CSV/Excel formula injection protection

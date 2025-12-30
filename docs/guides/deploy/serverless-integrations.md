@@ -107,7 +107,7 @@ Server-side environment variables:
 - **Recommended for core app**: run the frontend only (`npm run dev`) and keep integrations disabled.
 - **To develop serverless APIs locally**: use Vercel CLI (`vercel dev`) so `/api/*` routes are available locally.
 
-### Local test checklist (Supabase + `/api/timeseries/*`)
+### Local test checklist (Supabase + `/api/trends`)
 
 1) Start the local Supabase stack (Docker Compose):
 - From the repo root: `docker-compose --profile development up -d supabase-studio`
@@ -133,6 +133,9 @@ Notes:
 
 5) Sanity check in browser:
 - Use a client that can set headers (Bearer token required), e.g. `curl -H "Authorization: Bearer <jwt>" "http://localhost:3000/api/trends?limit=5"`
+
+Notes:
+- `GET /api/timeseries/query` is kept as a backwards-compatible endpoint and reads from the same snapshots data.
 
 6) Optional verification (1000 risks + retention bounds):
 - Set `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (or `SUPABASE_SERVICE_KEY`) in your shell
