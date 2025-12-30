@@ -24,6 +24,12 @@ begin
   if not exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = 'risk_score_snapshots') then
     missing := array_append(missing, 'public.risk_score_snapshots');
   end if;
+  if not exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = 'workspace_user_settings') then
+    missing := array_append(missing, 'public.workspace_user_settings');
+  end if;
+  if not exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = 'workspace_reminder_settings') then
+    missing := array_append(missing, 'public.workspace_reminder_settings');
+  end if;
 
   if coalesce(array_length(missing, 1), 0) > 0 then
     raise exception 'Missing required table(s): %', array_to_string(missing, ', ');
@@ -141,6 +147,37 @@ begin
   if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='risks' and column_name='updated_at') then
     col_missing := array_append(col_missing, 'risks.updated_at');
   end if;
+  if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='risks' and column_name='last_reviewed_at') then
+    col_missing := array_append(col_missing, 'risks.last_reviewed_at');
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='risks' and column_name='next_review_at') then
+    col_missing := array_append(col_missing, 'risks.next_review_at');
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='risks' and column_name='review_interval_days') then
+    col_missing := array_append(col_missing, 'risks.review_interval_days');
+  end if;
+
+  -- workspace_user_settings columns (per-user reminder opt-in + snooze)
+  if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='workspace_user_settings' and column_name='reminders_enabled') then
+    col_missing := array_append(col_missing, 'workspace_user_settings.reminders_enabled');
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='workspace_user_settings' and column_name='reminders_snoozed_until') then
+    col_missing := array_append(col_missing, 'workspace_user_settings.reminders_snoozed_until');
+  end if;
+
+  -- workspace_reminder_settings columns (workspace defaults/cadence)
+  if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='workspace_reminder_settings' and column_name='reminders_enabled') then
+    col_missing := array_append(col_missing, 'workspace_reminder_settings.reminders_enabled');
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='workspace_reminder_settings' and column_name='review_interval_days') then
+    col_missing := array_append(col_missing, 'workspace_reminder_settings.review_interval_days');
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='workspace_reminder_settings' and column_name='due_soon_days') then
+    col_missing := array_append(col_missing, 'workspace_reminder_settings.due_soon_days');
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='workspace_reminder_settings' and column_name='max_due_items') then
+    col_missing := array_append(col_missing, 'workspace_reminder_settings.max_due_items');
+  end if;
 
   -- risk_trends columns (time-series)
   -- risk_score_snapshots columns (bounded trend history)
@@ -226,6 +263,22 @@ begin
   ) then
     rls_missing := array_append(rls_missing, 'risk_score_snapshots');
   end if;
+  if not exists (
+    select 1
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname='public' and c.relname='workspace_user_settings' and c.relrowsecurity and c.relforcerowsecurity
+  ) then
+    rls_missing := array_append(rls_missing, 'workspace_user_settings');
+  end if;
+  if not exists (
+    select 1
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname='public' and c.relname='workspace_reminder_settings' and c.relrowsecurity and c.relforcerowsecurity
+  ) then
+    rls_missing := array_append(rls_missing, 'workspace_reminder_settings');
+  end if;
 
   if coalesce(array_length(rls_missing, 1), 0) > 0 then
     raise exception 'RLS must be enabled+forced for: %', array_to_string(rls_missing, ', ');
@@ -251,6 +304,12 @@ begin
   end if;
   if not exists (select 1 from pg_policies where schemaname='public' and tablename='risk_score_snapshots' and policyname='risk_score_snapshots_select_member') then
     policy_missing := array_append(policy_missing, 'risk_score_snapshots.risk_score_snapshots_select_member');
+  end if;
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='workspace_user_settings' and policyname='workspace_user_settings_select_self') then
+    policy_missing := array_append(policy_missing, 'workspace_user_settings.workspace_user_settings_select_self');
+  end if;
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='workspace_reminder_settings' and policyname='workspace_reminder_settings_select_member') then
+    policy_missing := array_append(policy_missing, 'workspace_reminder_settings.workspace_reminder_settings_select_member');
   end if;
 
   if coalesce(array_length(policy_missing, 1), 0) > 0 then

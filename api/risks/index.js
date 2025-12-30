@@ -102,6 +102,27 @@ function parseCategoryFilter(value) {
   return { value: normalized }
 }
 
+function parseOptionalIsoTimestampOrNull(value) {
+  if (value === undefined) return { value: undefined }
+  if (value === null) return { value: null }
+  if (typeof value !== 'string') return { error: 'Expected ISO timestamp string or null' }
+
+  const trimmed = value.trim()
+  if (!trimmed) return { error: 'Expected ISO timestamp string or null' }
+
+  const date = new Date(trimmed)
+  if (Number.isNaN(date.getTime())) return { error: 'Invalid timestamp' }
+  return { value: date.toISOString() }
+}
+
+function parseOptionalIntOrNull(value, { min, max }) {
+  if (value === undefined) return { value: undefined }
+  if (value === null) return { value: null }
+  const num = clampInt(value, { min, max, fallback: NaN })
+  if (!Number.isFinite(num)) return { error: `Expected integer ${min}-${max} or null` }
+  return { value: num }
+}
+
 function parseProbabilityImpactFilter(value) {
   if (value === undefined || value === null) return { value: null }
   if (typeof value !== 'string' && typeof value !== 'number') return { error: 'Invalid value' }
@@ -139,6 +160,9 @@ function mapRiskRow(row, { thresholds }) {
     mitigationPlan: row.mitigation_plan,
     checklistStatus: row.checklist_status ?? 'not_started',
     data: row.data ?? {},
+    lastReviewedAt: row.last_reviewed_at ?? null,
+    nextReviewAt: row.next_review_at ?? null,
+    reviewIntervalDays: row.review_interval_days ?? null,
     creationDate: row.created_at,
     lastModified: row.updated_at,
   }
@@ -210,7 +234,7 @@ module.exports = async function handler(req, res) {
         let query = supabase
           .from('risks')
           .select(
-            'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, checklist_status, data, created_at, updated_at',
+            'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, checklist_status, data, last_reviewed_at, next_review_at, review_interval_days, created_at, updated_at',
             { count: 'exact' },
           )
           .eq('workspace_id', workspaceId)
@@ -285,22 +309,37 @@ module.exports = async function handler(req, res) {
         const payloadData =
           body.data && typeof body.data === 'object' && !Array.isArray(body.data) ? body.data : {}
 
+        const reviewIntervalDays = parseOptionalIntOrNull(body.reviewIntervalDays, { min: 1, max: 365 })
+        if (reviewIntervalDays.error) return res.status(400).json({ error: 'Invalid reviewIntervalDays' })
+
+        const lastReviewedAt = parseOptionalIsoTimestampOrNull(body.lastReviewedAt)
+        if (lastReviewedAt.error) return res.status(400).json({ error: 'Invalid lastReviewedAt' })
+
+        const nextReviewAt = parseOptionalIsoTimestampOrNull(body.nextReviewAt)
+        if (nextReviewAt.error) return res.status(400).json({ error: 'Invalid nextReviewAt' })
+
+        const insertRow = {
+          workspace_id: workspaceId,
+          title,
+          description,
+          probability,
+          impact,
+          category,
+          status,
+          threat_type: threatType,
+          mitigation_plan: mitigationPlan,
+          data: payloadData,
+        }
+
+        if (reviewIntervalDays.value !== undefined) insertRow.review_interval_days = reviewIntervalDays.value
+        if (lastReviewedAt.value !== undefined) insertRow.last_reviewed_at = lastReviewedAt.value
+        if (nextReviewAt.value !== undefined) insertRow.next_review_at = nextReviewAt.value
+
         const { data: createdRow, error } = await supabase
           .from('risks')
-          .insert({
-            workspace_id: workspaceId,
-            title,
-            description,
-            probability,
-            impact,
-            category,
-            status,
-            threat_type: threatType,
-            mitigation_plan: mitigationPlan,
-            data: payloadData,
-          })
+          .insert(insertRow)
           .select(
-            'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, checklist_status, data, created_at, updated_at',
+            'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, checklist_status, data, last_reviewed_at, next_review_at, review_interval_days, created_at, updated_at',
           )
           .single()
 

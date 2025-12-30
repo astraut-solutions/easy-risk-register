@@ -60,6 +60,27 @@ function parseThreatType(value) {
   return allowed.has(v) ? v : null
 }
 
+function parseOptionalIsoTimestampOrNull(value) {
+  if (value === undefined) return { value: undefined }
+  if (value === null) return { value: null }
+  if (typeof value !== 'string') return { error: 'Expected ISO timestamp string or null' }
+
+  const trimmed = value.trim()
+  if (!trimmed) return { error: 'Expected ISO timestamp string or null' }
+
+  const date = new Date(trimmed)
+  if (Number.isNaN(date.getTime())) return { error: 'Invalid timestamp' }
+  return { value: date.toISOString() }
+}
+
+function parseOptionalIntOrNull(value, { min, max }) {
+  if (value === undefined) return { value: undefined }
+  if (value === null) return { value: null }
+  const num = clampInt(value, { min, max, fallback: NaN })
+  if (!Number.isFinite(num)) return { error: `Expected integer ${min}-${max} or null` }
+  return { value: num }
+}
+
 async function readJsonBody(req) {
   if (req.body && typeof req.body === 'object') return req.body
 
@@ -88,6 +109,9 @@ function mapRiskRow(row, { thresholds }) {
     mitigationPlan: row.mitigation_plan,
     checklistStatus: row.checklist_status ?? 'not_started',
     data: row.data ?? {},
+    lastReviewedAt: row.last_reviewed_at ?? null,
+    nextReviewAt: row.next_review_at ?? null,
+    reviewIntervalDays: row.review_interval_days ?? null,
     creationDate: row.created_at,
     lastModified: row.updated_at,
   }
@@ -122,7 +146,7 @@ module.exports = async function handler(req, res) {
         const { data, error } = await supabase
           .from('risks')
           .select(
-            'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, checklist_status, data, created_at, updated_at',
+            'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, checklist_status, data, last_reviewed_at, next_review_at, review_interval_days, created_at, updated_at',
           )
           .eq('id', riskId)
           .eq('workspace_id', workspaceId)
@@ -242,6 +266,24 @@ module.exports = async function handler(req, res) {
           updates.data = body.data
         }
 
+        if (body.reviewIntervalDays !== undefined) {
+          const reviewIntervalDays = parseOptionalIntOrNull(body.reviewIntervalDays, { min: 1, max: 365 })
+          if (reviewIntervalDays.error) return res.status(400).json({ error: 'Invalid reviewIntervalDays' })
+          updates.review_interval_days = reviewIntervalDays.value
+        }
+
+        if (body.lastReviewedAt !== undefined) {
+          const lastReviewedAt = parseOptionalIsoTimestampOrNull(body.lastReviewedAt)
+          if (lastReviewedAt.error) return res.status(400).json({ error: 'Invalid lastReviewedAt' })
+          updates.last_reviewed_at = lastReviewedAt.value
+        }
+
+        if (body.nextReviewAt !== undefined) {
+          const nextReviewAt = parseOptionalIsoTimestampOrNull(body.nextReviewAt)
+          if (nextReviewAt.error) return res.status(400).json({ error: 'Invalid nextReviewAt' })
+          updates.next_review_at = nextReviewAt.value
+        }
+
         if (Object.keys(updates).length === 0) {
           return res.status(400).json({ error: 'No updates provided' })
         }
@@ -252,7 +294,7 @@ module.exports = async function handler(req, res) {
           .eq('id', riskId)
           .eq('workspace_id', workspaceId)
           .select(
-            'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, checklist_status, data, created_at, updated_at',
+            'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, checklist_status, data, last_reviewed_at, next_review_at, review_interval_days, created_at, updated_at',
           )
           .maybeSingle()
 

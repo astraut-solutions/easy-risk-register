@@ -21,10 +21,25 @@ function parseOptionalBoolean(value) {
   return { error: 'Expected boolean' }
 }
 
+function parseOptionalIsoTimestampOrNull(value) {
+  if (value === undefined) return { value: undefined }
+  if (value === null) return { value: null }
+  if (typeof value !== 'string') return { error: 'Expected ISO timestamp string or null' }
+
+  const trimmed = value.trim()
+  if (!trimmed) return { error: 'Expected ISO timestamp string or null' }
+
+  const date = new Date(trimmed)
+  if (Number.isNaN(date.getTime())) return { error: 'Invalid timestamp' }
+  return { value: date.toISOString() }
+}
+
 function mapSettingsRow(row) {
   return {
     tooltipsEnabled: Boolean(row.tooltips_enabled),
     onboardingDismissed: Boolean(row.onboarding_dismissed),
+    remindersEnabled: Boolean(row.reminders_enabled),
+    remindersSnoozedUntil: row.reminders_snoozed_until ?? null,
     updatedAt: row.updated_at ?? null,
   }
 }
@@ -59,7 +74,7 @@ module.exports = async function handler(req, res) {
 
         const { data, error } = await supabase
           .from('workspace_user_settings')
-          .select('tooltips_enabled, onboarding_dismissed, updated_at')
+          .select('tooltips_enabled, onboarding_dismissed, reminders_enabled, reminders_snoozed_until, updated_at')
           .eq('workspace_id', workspaceId)
           .eq('user_id', user.id)
           .maybeSingle()
@@ -102,9 +117,31 @@ module.exports = async function handler(req, res) {
           })
         }
 
+        const remindersEnabled = parseOptionalBoolean(body.remindersEnabled)
+        if (remindersEnabled.error) {
+          return sendApiError(req, res, {
+            status: 400,
+            code: 'BAD_REQUEST',
+            message: 'Invalid remindersEnabled',
+            details: { field: 'remindersEnabled' },
+          })
+        }
+
+        const remindersSnoozedUntil = parseOptionalIsoTimestampOrNull(body.remindersSnoozedUntil)
+        if (remindersSnoozedUntil.error) {
+          return sendApiError(req, res, {
+            status: 400,
+            code: 'BAD_REQUEST',
+            message: 'Invalid remindersSnoozedUntil',
+            details: { field: 'remindersSnoozedUntil' },
+          })
+        }
+
         const updates = {}
         if (tooltipsEnabled.value !== undefined) updates.tooltips_enabled = tooltipsEnabled.value
         if (onboardingDismissed.value !== undefined) updates.onboarding_dismissed = onboardingDismissed.value
+        if (remindersEnabled.value !== undefined) updates.reminders_enabled = remindersEnabled.value
+        if (remindersSnoozedUntil.value !== undefined) updates.reminders_snoozed_until = remindersSnoozedUntil.value
 
         if (Object.keys(updates).length === 0) {
           return sendApiError(req, res, { status: 400, code: 'BAD_REQUEST', message: 'No updates provided' })
@@ -118,7 +155,7 @@ module.exports = async function handler(req, res) {
           .update(updates)
           .eq('workspace_id', workspaceId)
           .eq('user_id', user.id)
-          .select('tooltips_enabled, onboarding_dismissed, updated_at')
+          .select('tooltips_enabled, onboarding_dismissed, reminders_enabled, reminders_snoozed_until, updated_at')
           .maybeSingle()
 
         if (error) {
@@ -150,4 +187,3 @@ module.exports = async function handler(req, res) {
     })
   }
 }
-
