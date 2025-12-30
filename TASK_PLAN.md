@@ -200,8 +200,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 ## Cycle 5 (Phase 5): User Validation and Iteration
 
 ### Feature: Usability validation loop
-- [ ] [docs] Prepare interview scripts and success-metric instrumentation plan (time-to-first-risk, export adoption)
-- [ ] [frontend] Add lightweight UX instrumentation (privacy-respecting; can be local-only if needed)
+- [x] [docs] Prepare interview scripts and success-metric instrumentation plan (time-to-first-risk, export adoption)
+- [x] [frontend] Add lightweight UX instrumentation (privacy-respecting; can be local-only if needed)
 - [ ] [verify] Run 5-10 SME interviews/tests; triage issues; feed into next task plan revision
 
 

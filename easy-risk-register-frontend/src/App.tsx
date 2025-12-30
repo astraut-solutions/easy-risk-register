@@ -166,6 +166,8 @@ function App() {
     }
   }, [])
 
+  const lastViewRef = useRef<DashboardView | null>(null)
+
   useEffect(() => {
     if (typeof window === 'undefined') return
     const handleOnline = () => setIsOnline(true)
@@ -177,6 +179,19 @@ function App() {
       window.removeEventListener('offline', handleOffline)
     }
   }, [])
+
+  useEffect(() => {
+    const from = lastViewRef.current
+    if (from === null) {
+      lastViewRef.current = activeView
+      trackEvent('view_change', { from: null, to: activeView })
+      return
+    }
+
+    if (from === activeView) return
+    lastViewRef.current = activeView
+    trackEvent('view_change', { from, to: activeView })
+  }, [activeView])
 
   useEffect(() => {
     void syncFromApi().catch((error: unknown) => {
@@ -439,6 +454,8 @@ function App() {
     formModalDidSubmitRef.current = true
     const durationMs =
       formModalOpenedAtRef.current === null ? null : Date.now() - formModalOpenedAtRef.current
+    const isCreate = !editingRisk
+    const fromTemplate = Boolean(values.templateId)
 
     try {
       if (editingRisk) {
@@ -451,6 +468,7 @@ function App() {
           description: 'Your changes are saved.',
           variant: 'success',
         })
+        trackEvent('risk_updated', { view: activeView })
       } else {
         await actions.addRisk(values)
         clearRiskDraft()
@@ -462,6 +480,7 @@ function App() {
           description: 'Your new risk is now visible in the workspace.',
           variant: 'success',
         })
+        trackEvent('risk_created', { view: activeView, fromTemplate, wasDraft: formModalOpenedFromDraftRef.current })
       }
     } catch (error) {
       toast.notify({
@@ -473,7 +492,7 @@ function App() {
     }
 
     trackEvent('risk_modal_submit', {
-      mode: editingRisk ? 'edit' : 'create',
+      mode: isCreate ? 'create' : 'edit',
       durationMs,
       wasDraft: formModalOpenedFromDraftRef.current,
       view: activeView,
@@ -514,6 +533,7 @@ function App() {
         description: 'The risk has been removed from the workspace.',
         variant: 'success',
       })
+      trackEvent('risk_deleted', { view: activeView })
 
       if (editingRisk?.id === deleteConfirm.id) {
         setEditingRisk(null)
@@ -639,8 +659,23 @@ function App() {
         blob,
         filename: filename || `risk-register-${new Date().toISOString().split('T')[0]}.pdf`,
       })
+      trackEvent('export_pdf_download', {
+        kind: 'risk_register',
+        outcome: 'success',
+        scope: pdfRegisterScope,
+        filterMeta: {
+          hasSearch: Boolean(filters.search.trim()),
+          category: filters.category !== 'all',
+          status: filters.status !== 'all',
+          threatType: filters.threatType !== 'all',
+          checklistStatus: filters.checklistStatus !== 'all',
+          severity: filters.severity !== 'all',
+          matrix: Boolean(matrixSelection),
+        },
+      })
       setIsPdfExportModalOpen(false)
     } catch (error) {
+      trackEvent('export_pdf_download', { kind: 'risk_register', outcome: 'error' })
       toast.notify({
         title: 'Unable to export PDF',
         description: describeApiError(error),
@@ -666,6 +701,7 @@ function App() {
 
     const opened = openReportWindow(html, 'Risk register report')
     if (!opened) {
+      trackEvent('export_print_view_open', { kind: 'risk_register', outcome: 'blocked_popup' })
       toast.notify({
         title: 'Unable to open report',
         description: 'Your browser blocked the popup. Allow popups and try again.',
@@ -673,6 +709,7 @@ function App() {
       })
       return
     }
+    trackEvent('export_print_view_open', { kind: 'risk_register', outcome: 'success', scope: pdfRegisterScope })
     setIsPdfExportModalOpen(false)
   }
 
@@ -697,8 +734,10 @@ function App() {
         blob,
         filename: filename || `privacy-incident-${risk.id}-${new Date().toISOString().split('T')[0]}.pdf`,
       })
+      trackEvent('export_pdf_download', { kind: 'privacy_incident', outcome: 'success' })
       setIsPdfExportModalOpen(false)
     } catch (error) {
+      trackEvent('export_pdf_download', { kind: 'privacy_incident', outcome: 'error' })
       toast.notify({
         title: 'Unable to export PDF',
         description: describeApiError(error),
@@ -723,6 +762,7 @@ function App() {
 
       const opened = openReportWindow(html, 'Privacy incident checklist report')
       if (!opened) {
+        trackEvent('export_print_view_open', { kind: 'privacy_incident', outcome: 'blocked_popup' })
         toast.notify({
           title: 'Unable to open report',
           description: 'Your browser blocked the popup. Allow popups and try again.',
@@ -730,6 +770,7 @@ function App() {
         })
         return
       }
+      trackEvent('export_print_view_open', { kind: 'privacy_incident', outcome: 'success' })
       setIsPdfExportModalOpen(false)
     } catch (error) {
       toast.notify({
@@ -788,6 +829,11 @@ function App() {
     document.body.removeChild(link)
     window.setTimeout(() => URL.revokeObjectURL(url), 250)
     setIsExportModalOpen(false)
+    trackEvent('export_csv', {
+      variant: exportVariant,
+      count: visibleRisks.length,
+      hasMatrixSelection: Boolean(matrixSelection),
+    })
   }
 
   const resetImportState = () => {
@@ -831,6 +877,12 @@ function App() {
           rowCount: rowsRaw.length,
           parseErrors,
         })
+
+        trackEvent('import_csv_parsed', {
+          rowCount: rowsRaw.length,
+          headerCount: headers.length,
+          parseErrorCount: parseErrors.length,
+        })
       }
     }
     reader.readAsText(file)
@@ -858,6 +910,7 @@ function App() {
     setIsImporting(true)
     setImportApiResult(null)
     setImportApiError(null)
+    trackEvent('import_csv_submit', { rowCount: importPreview?.rowCount ?? null })
 
     try {
       const res = await apiFetch('/api/imports/risks.csv', {
@@ -895,6 +948,7 @@ function App() {
           description: message,
           variant: 'danger',
         })
+        trackEvent('import_csv_result', { outcome: 'error', status: res.status })
         return
       }
 
@@ -908,10 +962,16 @@ function App() {
         description: `Imported ${result.imported ?? 0} risk${result.imported === 1 ? '' : 's'}.`,
         variant: 'success',
       })
+      trackEvent('import_csv_result', {
+        outcome: 'success',
+        imported: result.imported ?? null,
+        skipped: result.skipped ?? null,
+      })
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Import failed. Please try again.'
       setImportApiError(message)
       toast.notify({ title: 'CSV import failed', description: message, variant: 'danger' })
+      trackEvent('import_csv_result', { outcome: 'error' })
     } finally {
       setIsImporting(false)
     }
@@ -1064,6 +1124,7 @@ function App() {
                   onClick={() => {
                     resetImportState()
                     setIsImportModalOpen(true)
+                    trackEvent('import_csv_open', { source: 'topbar' })
                     window.setTimeout(() => fileInputRef.current?.click(), 0)
                   }}
                   aria-label="Import CSV file"
@@ -1076,6 +1137,7 @@ function App() {
                     variant="ghost"
                     onClick={() => {
                       setAnalyticsEnabled(true)
+                      trackEvent('analytics_enabled', { source: 'topbar_metrics_button' })
                       setIsMetricsModalOpen(true)
                     }}
                     aria-label="Open metrics and feedback"

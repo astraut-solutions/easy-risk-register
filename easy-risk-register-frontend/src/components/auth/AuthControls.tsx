@@ -4,6 +4,7 @@ import { getSupabaseClient, getSupabaseEnv } from '../../lib/supabase'
 import { useAuthStore } from '../../stores/authStore'
 import { Badge, Button, Input, Modal } from '../../design-system'
 import { useToast } from '../feedback/ToastProvider'
+import { trackEvent } from '../../utils/analytics'
 
 type AuthMode = 'sign_in' | 'sign_up'
 
@@ -59,6 +60,7 @@ export function AuthControls() {
           return
         }
 
+        trackEvent('auth_sign_in_success', { method: 'password' })
         toast.notify({ title: 'Signed in', variant: 'success' })
         closeModal()
         return
@@ -75,6 +77,7 @@ export function AuthControls() {
       }
 
       const signedIn = Boolean(signUpData?.session?.access_token)
+      trackEvent('auth_sign_up_success', { method: 'password', signedIn })
       toast.notify(
         signedIn
           ? { title: 'Account created', description: 'You are now signed in.', variant: 'success' }
@@ -95,6 +98,7 @@ export function AuthControls() {
     if (!supabase) return
 
     await supabase.auth.signOut()
+    trackEvent('auth_sign_out')
     toast.notify({ title: 'Signed out', variant: 'info' })
   }
 
@@ -119,7 +123,10 @@ export function AuthControls() {
         type="button"
         size="sm"
         variant="secondary"
-        onClick={() => setIsModalOpen(true)}
+        onClick={() => {
+          setIsModalOpen(true)
+          trackEvent('auth_modal_open', { mode: 'sign_in' })
+        }}
         disabled={!supabaseConfigured}
       >
         Sign in

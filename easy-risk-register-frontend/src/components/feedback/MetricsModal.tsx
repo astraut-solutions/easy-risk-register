@@ -36,10 +36,22 @@ export const MetricsModal = ({ isOpen, onClose }: MetricsModalProps) => {
       return {
         summary: {
           totalEvents: 0,
+          sessions: 0,
+          sessionsWithCreatedRisk: 0,
+          firstSessionCompletionRate: null,
+          createdRisks: 0,
+          updatedRisks: 0,
+          deletedRisks: 0,
+          templateApplies: 0,
+          templateAdoptionRate: null,
+          exportsCsv: 0,
+          exportsPdf: 0,
+          exportsPng: 0,
           submits: 0,
           abandons: 0,
           medianTimeToCreateMs: null,
           medianTimeToAbandonMs: null,
+          medianTimeToFirstRiskMs: null,
           medianValidationErrorsPerAttempt: null,
         },
         events: [],
@@ -102,6 +114,14 @@ export const MetricsModal = ({ isOpen, onClose }: MetricsModalProps) => {
               </dd>
             </div>
             <div>
+              <dt className="text-xs font-semibold text-text-low">Median time-to-first-risk</dt>
+              <dd className="mt-1 text-sm text-text-high">
+                {payload.summary.medianTimeToFirstRiskMs === null
+                  ? '-'
+                  : `${Math.round(payload.summary.medianTimeToFirstRiskMs / 1000)}s`}
+              </dd>
+            </div>
+            <div>
               <dt className="text-xs font-semibold text-text-low">Median validation errors</dt>
               <dd className="mt-1 text-sm text-text-high">
                 {payload.summary.medianValidationErrorsPerAttempt ?? '-'}
@@ -110,6 +130,28 @@ export const MetricsModal = ({ isOpen, onClose }: MetricsModalProps) => {
             <div>
               <dt className="text-xs font-semibold text-text-low">Events captured</dt>
               <dd className="mt-1 text-sm text-text-high">{payload.summary.totalEvents}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold text-text-low">Sessions with a created risk</dt>
+              <dd className="mt-1 text-sm text-text-high">
+                {payload.summary.sessions === 0
+                  ? '-'
+                  : `${payload.summary.sessionsWithCreatedRisk}/${payload.summary.sessions} (${payload.summary.firstSessionCompletionRate ?? 0}%)`}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold text-text-low">Template adoption</dt>
+              <dd className="mt-1 text-sm text-text-high">
+                {payload.summary.createdRisks === 0
+                  ? '-'
+                  : `${payload.summary.templateAdoptionRate ?? 0}% (${payload.summary.templateApplies} template applies)`}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold text-text-low">Exports (CSV / PDF / PNG)</dt>
+              <dd className="mt-1 text-sm text-text-high">
+                {payload.summary.exportsCsv} / {payload.summary.exportsPdf} / {payload.summary.exportsPng}
+              </dd>
             </div>
           </dl>
         </div>

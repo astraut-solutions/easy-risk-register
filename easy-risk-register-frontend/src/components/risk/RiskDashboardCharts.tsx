@@ -7,6 +7,7 @@ import { Button, Select } from '../../design-system'
 import { ensureChartJsRegistered } from '../charts/chartjs'
 import { buildDashboardChartsReportHtml, openReportWindow } from '../../utils/reports'
 import { getRiskSeverity } from '../../utils/riskCalculations'
+import { trackEvent } from '../../utils/analytics'
 
 type DrillDownTarget = { filters: Partial<RiskFilters>; label: string }
 
@@ -174,6 +175,7 @@ export const RiskDashboardCharts = ({
       `easy-risk-register__dashboard__${key}__${timestampSlug()}.png`,
     )
     downloadPng({ dataUrl, filename })
+    trackEvent('export_png', { kind: 'dashboard_charts', chart: key })
   }
 
   const severityCounts = useMemo(() => {
@@ -385,9 +387,11 @@ export const RiskDashboardCharts = ({
 
     const opened = openReportWindow(html, 'Dashboard charts report')
     if (!opened) {
+      trackEvent('export_print_view_open', { kind: 'dashboard_charts', outcome: 'blocked_popup' })
       // ignore: App already shows a toast for blocked popups in other flows; keep consistent minimal behavior here.
       return
     }
+    trackEvent('export_print_view_open', { kind: 'dashboard_charts', outcome: 'success' })
   }, [
     categoryTableRows,
     filters,

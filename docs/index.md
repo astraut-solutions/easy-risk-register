@@ -19,6 +19,7 @@ Core risk register data is stored server-side (workspace-scoped with Supabase RL
 - PDF exports (content + filters + charts + CSV regression): `docs/verification/pdf-exports.md`
 - Maturity assessments (accessibility + exports): `docs/verification/maturity-assessments.md`
 - Reminders (notifications + in-app fallback): `docs/verification/reminders.md`
+- Usability validation loop (5–10 SME sessions): `docs/verification/usability-validation-loop.md`
 - End-to-end encryption (threat model + recovery): `docs/verification/e2ee-threat-model-and-recovery.md`
 - Audit trail (role access + export): `docs/verification/audit-trail.md`
 - Offline expectations (deploy + privacy): `docs/guides/deploy/deploy-vercel.md#offline-behavior-expectations`

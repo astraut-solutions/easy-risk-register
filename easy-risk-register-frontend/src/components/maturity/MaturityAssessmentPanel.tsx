@@ -6,6 +6,7 @@ import { Button, Select } from '../../design-system'
 import { ensureChartJsRegistered } from '../charts/chartjs'
 import { buildMaturityAssessmentReportHtml, openReportWindow } from '../../utils/reports'
 import { useToast } from '../feedback/ToastProvider'
+import { trackEvent } from '../../utils/analytics'
 
 const scoreOptions = [
   { value: 0, label: '0 - Not started' },
@@ -149,6 +150,7 @@ export const MaturityAssessmentPanel = ({
     } catch {
       // ignore
     }
+    trackEvent('export_png', { kind: 'maturity_radar' })
   }, [])
 
   const exportPdf = useCallback(() => {
@@ -164,7 +166,11 @@ export const MaturityAssessmentPanel = ({
       disclaimer:
         'Self-assessment only. This is assistive and does not represent certification, compliance, or legal advice.',
     })
-    openReportWindow(html, 'Maturity self-assessment report')
+    const opened = openReportWindow(html, 'Maturity self-assessment report')
+    trackEvent('export_print_view_open', {
+      kind: 'maturity_radar',
+      outcome: opened ? 'success' : 'blocked_popup',
+    })
   }, [selected])
 
   useEffect(() => {
