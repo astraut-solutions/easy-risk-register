@@ -162,7 +162,7 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 ### Feature: Automated reminders (notifications + in-app fallback)
 - [x] [database] Add reminder settings + risk metadata needed to schedule prompts (workspace-scoped)
 - [x] [backend] Define reminder computation logic (what is "due") and expose via API; avoid background jobs in MVP
-- [ ] [frontend] Implement opt-in reminders; Notification API prompt; fallback in-app banners + snooze/disable
+- [x] [frontend] Implement opt-in reminders; Notification API prompt; fallback in-app banners + snooze/disable
 - [ ] [deploy] Document browser permission behavior and supported environments
 - [ ] [verify] Denied permission path shows in-app reminders; cadence respects settings
 

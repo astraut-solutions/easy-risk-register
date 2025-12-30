@@ -30,6 +30,7 @@ export interface ReminderSettings {
   enabled: boolean
   frequency: ReminderFrequency
   preferNotifications: boolean
+  snoozedUntil?: string | null
   lastTriggeredAt?: string
 }
 
@@ -53,6 +54,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     enabled: false,
     frequency: 'weekly',
     preferNotifications: false,
+    snoozedUntil: null,
     lastTriggeredAt: undefined,
   },
   visualizations: {
@@ -247,6 +249,10 @@ const normalizeSettings = (value: unknown): AppSettings => {
       remindersRaw && typeof remindersRaw.preferNotifications === 'boolean'
         ? remindersRaw.preferNotifications
         : DEFAULT_SETTINGS.reminders.preferNotifications,
+    snoozedUntil:
+      remindersRaw && (typeof remindersRaw.snoozedUntil === 'string' || remindersRaw.snoozedUntil === null)
+        ? normalizeISODateOrNull(remindersRaw.snoozedUntil)
+        : DEFAULT_SETTINGS.reminders.snoozedUntil,
     lastTriggeredAt:
       remindersRaw && typeof remindersRaw.lastTriggeredAt === 'string'
         ? normalizeISODateOrUndefined(remindersRaw.lastTriggeredAt)
@@ -275,6 +281,12 @@ const normalizeSettings = (value: unknown): AppSettings => {
   }
 
   return { tooltipsEnabled, onboardingDismissed, reminders, visualizations }
+}
+
+const normalizeISODateOrNull = (value: string | null): string | null => {
+  if (value === null) return null
+  const normalized = normalizeISODateOrUndefined(value)
+  return normalized ?? null
 }
 
 const normalizeThreatType = (value: unknown): Risk['threatType'] =>

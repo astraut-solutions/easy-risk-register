@@ -4,10 +4,11 @@ export interface ReminderBannerProps {
   overdue: number
   dueSoon: number
   onView: () => void
-  onDismiss: () => void
+  onSnooze: (days: number) => void
+  onDisable: () => void
 }
 
-export const ReminderBanner = ({ overdue, dueSoon, onView, onDismiss }: ReminderBannerProps) => {
+export const ReminderBanner = ({ overdue, dueSoon, onView, onSnooze, onDisable }: ReminderBannerProps) => {
   const message =
     overdue > 0
       ? `${overdue} risk${overdue === 1 ? '' : 's'} overdue for due/review dates.`
@@ -28,8 +29,14 @@ export const ReminderBanner = ({ overdue, dueSoon, onView, onDismiss }: Reminder
           <Button size="sm" variant="secondary" onClick={onView} aria-label="View risks">
             View risks
           </Button>
-          <Button size="sm" variant="ghost" onClick={onDismiss} aria-label="Dismiss reminder">
-            Dismiss
+          <Button size="sm" variant="ghost" onClick={() => onSnooze(1)} aria-label="Snooze reminders for 1 day">
+            Snooze 1 day
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => onSnooze(7)} aria-label="Snooze reminders for 7 days">
+            Snooze 1 week
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onDisable} aria-label="Disable reminders">
+            Disable
           </Button>
         </div>
       </div>

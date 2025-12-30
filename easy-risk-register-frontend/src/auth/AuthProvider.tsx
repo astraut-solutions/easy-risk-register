@@ -15,6 +15,8 @@ type ApiUsersResponse = {
 type ApiSettingsResponse = {
   tooltipsEnabled: boolean
   onboardingDismissed: boolean
+  remindersEnabled?: boolean
+  remindersSnoozedUntil?: string | null
   updatedAt?: string | null
 }
 
@@ -83,10 +85,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const settings = await apiGetJson<ApiSettingsResponse>('/api/settings')
           if (cancelled) return
-          if (typeof settings?.tooltipsEnabled === 'boolean' || typeof settings?.onboardingDismissed === 'boolean') {
+          if (
+            typeof settings?.tooltipsEnabled === 'boolean' ||
+            typeof settings?.onboardingDismissed === 'boolean' ||
+            typeof settings?.remindersEnabled === 'boolean' ||
+            settings?.remindersSnoozedUntil !== undefined
+          ) {
             useRiskStore.getState().updateSettings({
               tooltipsEnabled: settings.tooltipsEnabled,
               onboardingDismissed: settings.onboardingDismissed,
+              reminders: {
+                ...useRiskStore.getState().settings.reminders,
+                enabled: typeof settings.remindersEnabled === 'boolean' ? settings.remindersEnabled : useRiskStore.getState().settings.reminders.enabled,
+                snoozedUntil:
+                  settings.remindersSnoozedUntil === undefined ? useRiskStore.getState().settings.reminders.snoozedUntil : settings.remindersSnoozedUntil,
+              },
             })
           }
         } catch {

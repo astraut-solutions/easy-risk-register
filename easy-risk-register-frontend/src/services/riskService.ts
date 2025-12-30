@@ -336,6 +336,32 @@ function parseIsoTimestamp(value: unknown): number | null {
   return Number.isFinite(ms) ? ms : null
 }
 
+function reviewCadenceToIntervalDays(cadence: RiskInput['reviewCadence']): number | null {
+  switch (cadence) {
+    case 'weekly':
+      return 7
+    case 'monthly':
+      return 30
+    case 'quarterly':
+      return 90
+    case 'semiannual':
+      return 182
+    case 'annual':
+      return 365
+    case 'ad-hoc':
+    default:
+      return null
+  }
+}
+
+function computeNextReviewAtIso(input: Pick<RiskInput, 'dueDate' | 'reviewDate'>): string | null {
+  const dueMs = parseIsoTimestamp(input.dueDate)
+  const reviewMs = parseIsoTimestamp(input.reviewDate)
+  const candidates = [dueMs, reviewMs].filter((value): value is number => value !== null)
+  if (candidates.length === 0) return null
+  return new Date(Math.min(...candidates)).toISOString()
+}
+
 function buildBoundedOfflineCache(risks: Risk[]) {
   const now = Date.now()
   const cutoff = now - 7 * 24 * 60 * 60 * 1000
@@ -523,6 +549,9 @@ export const riskService = {
     cacheUtil.delete('allRisks')
     cacheUtil.delete('risk_stats')
 
+    const nextReviewAt = computeNextReviewAtIso(input)
+    const reviewIntervalDays = reviewCadenceToIntervalDays(input.reviewCadence)
+
     const payload = {
       title: (input as any).title,
       description: input.description,
@@ -533,6 +562,8 @@ export const riskService = {
       threatType: input.threatType,
       mitigationPlan: input.mitigationPlan,
       data: extractRiskData(input),
+      ...(nextReviewAt ? { nextReviewAt } : {}),
+      ...(typeof reviewIntervalDays === 'number' ? { reviewIntervalDays } : {}),
     }
 
     const apiRisk = await apiPostJson<ApiRisk>('/api/risks', payload)
@@ -596,6 +627,9 @@ export const riskService = {
       ...(updates as any),
     }
 
+    const nextReviewAt = computeNextReviewAtIso(merged)
+    const reviewIntervalDays = reviewCadenceToIntervalDays(merged.reviewCadence)
+
     const patch = {
       title: (updates as any).title,
       description: updates.description,
@@ -606,6 +640,8 @@ export const riskService = {
       threatType: updates.threatType,
       mitigationPlan: updates.mitigationPlan,
       data: extractRiskData(merged),
+      nextReviewAt,
+      reviewIntervalDays,
     }
 
     const apiRisk = await apiPatchJson<ApiRisk>(`/api/risks/${id}`, patch)
@@ -784,8 +820,20 @@ export const riskService = {
   },
 
   /** Updates reminder-specific settings */
-  updateReminderSettings: (updates: Partial<ReminderSettings>) =>
-    useRiskStore.getState().updateReminderSettings(updates),
+  updateReminderSettings: (updates: Partial<ReminderSettings>) => {
+    useRiskStore.getState().updateReminderSettings(updates)
+
+    const patch: Record<string, unknown> = {}
+    if (typeof updates.enabled === 'boolean') patch.remindersEnabled = updates.enabled
+    if (Object.prototype.hasOwnProperty.call(updates, 'snoozedUntil')) {
+      patch.remindersSnoozedUntil = updates.snoozedUntil ?? null
+    }
+
+    if (Object.keys(patch).length === 0) return
+    void apiPatchJson('/api/settings', patch).catch(() => {
+      // Keep UX responsive: settings apply locally even if the backend is unavailable/offline.
+    })
+  },
 
   /** Get cached statistics */
   getStats: () => {
@@ -833,7 +881,6 @@ export const useRiskManagement = () => {
   const importFromCSV = useRiskStore((state) => state.importFromCSV)
   const seedDemoData = useRiskStore((state) => state.seedDemoData)
   const updateSettings = useRiskStore((state) => state.updateSettings)
-  const updateReminderSettings = useRiskStore((state) => state.updateReminderSettings)
 
   const actions = useMemo(
     () => ({
@@ -850,7 +897,7 @@ export const useRiskManagement = () => {
       importFromCSV,
       seedDemoData,
       updateSettings,
-      updateReminderSettings,
+      updateReminderSettings: riskService.updateReminderSettings,
       createMaturityAssessment,
       updateMaturityDomain,
       deleteMaturityAssessment,
@@ -861,7 +908,6 @@ export const useRiskManagement = () => {
       importFromCSV,
       seedDemoData,
       setFilters,
-      updateReminderSettings,
       updateSettings,
       createMaturityAssessment,
       deleteMaturityAssessment,

@@ -228,6 +228,14 @@ function App() {
     }
 
     const nowMs = Date.now()
+    const snoozedUntilMs = settings.reminders.snoozedUntil
+      ? Date.parse(settings.reminders.snoozedUntil)
+      : NaN
+    if (Number.isFinite(snoozedUntilMs) && snoozedUntilMs > nowMs) {
+      setReminderSummary(null)
+      return
+    }
+
     const lastTriggeredMs = settings.reminders.lastTriggeredAt
       ? Date.parse(settings.reminders.lastTriggeredAt)
       : NaN
@@ -237,35 +245,58 @@ function App() {
       return
     }
 
-    const summary = computeReminderSummary(allRisks, nowMs)
-    if (summary.overdue === 0 && summary.dueSoon === 0) return
+    const sendNotification = (overdue: number, dueSoon: number) => {
+      if (!settings.reminders.preferNotifications) return false
+      if (typeof window === 'undefined' || !('Notification' in window)) return false
+      if (window.Notification?.permission !== 'granted') return false
 
-    let sentNotification = false
-    if (
-      settings.reminders.preferNotifications &&
-      typeof window !== 'undefined' &&
-      'Notification' in window &&
-      window.Notification?.permission === 'granted'
-    ) {
       try {
         const message =
-          summary.overdue > 0
-            ? `${summary.overdue} risk${summary.overdue === 1 ? '' : 's'} overdue.`
-            : `${summary.dueSoon} risk${summary.dueSoon === 1 ? '' : 's'} due within 7 days.`
-        new window.Notification('Easy Risk Register reminder', {
-          body: message,
-        })
-        sentNotification = true
+          overdue > 0
+            ? `${overdue} risk${overdue === 1 ? '' : 's'} overdue.`
+            : `${dueSoon} risk${dueSoon === 1 ? '' : 's'} due within 7 days.`
+
+        new window.Notification('Easy Risk Register reminder', { body: message })
+        return true
       } catch {
-        sentNotification = false
+        return false
       }
     }
 
-    actions.updateReminderSettings({ lastTriggeredAt: new Date(nowMs).toISOString() })
+    const hydrateFromApi = async () => {
+      try {
+        const res = await apiFetch('/api/reminders', { method: 'GET' })
+        if (!res.ok) {
+          const fallback = computeReminderSummary(allRisks, nowMs)
+          if (fallback.overdue === 0 && fallback.dueSoon === 0) return { overdue: 0, dueSoon: 0 }
+          return { overdue: fallback.overdue, dueSoon: fallback.dueSoon }
+        }
 
-    if (!sentNotification) {
-      setReminderSummary({ overdue: summary.overdue, dueSoon: summary.dueSoon })
+        const data = (await res.json().catch(() => null)) as any
+        const remindersEnabled = Boolean(data?.remindersEnabled)
+        if (!remindersEnabled) return { overdue: 0, dueSoon: 0 }
+
+        const counts = data?.counts
+        const overdue = Number(counts?.due ?? 0)
+        const dueSoon = Number(counts?.dueSoon ?? 0)
+        return { overdue: Number.isFinite(overdue) ? overdue : 0, dueSoon: Number.isFinite(dueSoon) ? dueSoon : 0 }
+      } catch {
+        const fallback = computeReminderSummary(allRisks, nowMs)
+        return { overdue: fallback.overdue, dueSoon: fallback.dueSoon }
+      }
     }
+
+    void hydrateFromApi().then(({ overdue, dueSoon }) => {
+      if (overdue === 0 && dueSoon === 0) return
+
+      const sentNotification = sendNotification(overdue, dueSoon)
+      actions.updateReminderSettings({ lastTriggeredAt: new Date(nowMs).toISOString() })
+
+      if (!sentNotification) {
+        setReminderSummary({ overdue, dueSoon })
+      }
+    })
+
   }, [
     actions,
     allRisks,
@@ -273,6 +304,7 @@ function App() {
     settings.reminders.frequency,
     settings.reminders.lastTriggeredAt,
     settings.reminders.preferNotifications,
+    settings.reminders.snoozedUntil,
   ])
 
   useEffect(() => {
@@ -1062,7 +1094,25 @@ function App() {
                 setReminderSummary(null)
                 setActiveView('table')
               }}
-              onDismiss={() => setReminderSummary(null)}
+              onSnooze={(days) => {
+                const until = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+                setReminderSummary(null)
+                actions.updateReminderSettings({ snoozedUntil: until })
+                toast.notify({
+                  title: 'Reminders snoozed',
+                  description: `Snoozed for ${days === 1 ? '1 day' : `${days} days`}.`,
+                  variant: 'info',
+                })
+              }}
+              onDisable={() => {
+                setReminderSummary(null)
+                actions.updateReminderSettings({ enabled: false, snoozedUntil: null })
+                toast.notify({
+                  title: 'Reminders disabled',
+                  description: 'You can re-enable reminders in Settings.',
+                  variant: 'info',
+                })
+              }}
             />
           ) : null}
 
@@ -1226,7 +1276,12 @@ function App() {
                     <input
                       type="checkbox"
                       checked={settings.reminders.enabled}
-                      onChange={(event) => actions.updateReminderSettings({ enabled: event.target.checked })}
+                      onChange={(event) =>
+                        actions.updateReminderSettings({
+                          enabled: event.target.checked,
+                          ...(event.target.checked ? {} : { snoozedUntil: null }),
+                        })
+                      }
                       className="mt-1"
                     />
                     <span>Enable reminders for due/review dates</span>
@@ -1258,6 +1313,56 @@ function App() {
                     />
                     <span>Use desktop notifications when allowed (falls back to in-app banners)</span>
                   </label>
+
+                  {settings.reminders.enabled ? (
+                    <div className="grid gap-2 rounded-2xl border border-border-faint bg-surface-secondary/10 p-3 text-sm text-text-low">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span>
+                          Snooze until:{' '}
+                          <span className="font-semibold text-text-high">
+                            {settings.reminders.snoozedUntil && Number.isFinite(Date.parse(settings.reminders.snoozedUntil))
+                              ? new Date(settings.reminders.snoozedUntil).toLocaleString()
+                              : 'Not snoozed'}
+                          </span>
+                        </span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              actions.updateReminderSettings({
+                                snoozedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                              })
+                            }
+                          >
+                            Snooze 1 day
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              actions.updateReminderSettings({
+                                snoozedUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                              })
+                            }
+                          >
+                            Snooze 1 week
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => actions.updateReminderSettings({ snoozedUntil: null })}
+                            disabled={!settings.reminders.snoozedUntil}
+                          >
+                            Clear snooze
+                          </Button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-text-low">
+                        Snooze temporarily hides reminder banners and suppresses reminder notifications.
+                      </p>
+                    </div>
+                  ) : null}
 
                   {'Notification' in window ? (
                     <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border-faint bg-surface-secondary/10 p-3 text-sm text-text-low">
