@@ -177,8 +177,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [verify] Threat model review + recovery-flow validation (passphrase loss, rotation)
 
 ### Feature: Incident response planner (playbooks per risk)
-- [ ] [database] Add playbook templates + per-risk playbook instances (editable)
-- [ ] [backend] Implement playbook CRUD APIs (workspace-scoped)
+- [x] [database] Add playbook templates + per-risk playbook instances (editable)
+- [x] [backend] Implement playbook CRUD APIs (workspace-scoped)
 - [ ] [frontend] Add playbook UI on risk details and include in relevant PDF exports
 - [ ] [deploy] Document "assistive, not legal advice" constraints
 - [ ] [verify] Playbooks remain editable and template updates don't overwrite existing risk playbooks
