@@ -13,9 +13,21 @@ The app includes optional passphrase-based encryption for the **local persisted 
 
 For details, see `docs/architecture/secure-data-storage.md`.
 
-## End-to-end encryption (planned)
+## End-to-end encryption (selected fields)
 
-End-to-end encryption for selected sensitive fields (client-side encrypt before sending to Supabase; no server-side recovery) is tracked in `TASK_PLAN.md` under Phase 4.
+Easy Risk Register supports optional end-to-end encryption (E2EE) for selected sensitive risk fields (client-side encrypt before sending to Supabase; **no server-side recovery**).
+
+Key points:
+
+- Encrypts `description` and `mitigationPlan` only; list/filter fields remain plaintext for UX.
+- Encryption keys are derived client-side (PBKDF2 + AES-GCM) and are not stored server-side.
+- E2EE setup is **per device/browser** and must be unlocked per session to view/edit encrypted fields.
+- **No recovery**: losing the passphrase means encrypted fields are unrecoverable.
+
+See:
+
+- Architecture: `docs/architecture/end-to-end-encryption.md`
+- Verification (threat model + recovery flows): `docs/verification/e2ee-threat-model-and-recovery.md`
 
 ## Incident response playbooks (current UI)
 

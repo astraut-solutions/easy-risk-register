@@ -54,6 +54,7 @@ A regional financial advisor firm manages risks including market volatility, cyb
 - Automated reminders: due/review prompts via in-app banners with optional desktop notifications (no push/background jobs)
 - Offline/unreachable behavior (MVP): block writes with explicit "not saved" messaging; optional read-only IndexedDB cache (bounded to last 7 days or 100 items) with "last updated" timestamp
 - Guided onboarding + tooltips: key field tooltips and a "first 3 steps" onboarding checklist; preference sync via `/api/settings` with local fallback
+- Optional end-to-end encryption (selected fields): passphrase-based client-side encryption for `description` and `mitigationPlan` (ciphertext stored in DB; no server-side recovery)
 - Sanitization and a strict Content Security Policy (CSP)
 
 UX notes:
@@ -312,6 +313,7 @@ This project is licensed under the MIT License - see the [LICENSE](docs/LICENSE)
 
 We take security seriously. For information about our security measures, see our [security documentation](docs/SECURITY.md).
 For details on how persisted client-side state is encrypted, see [Secure Data Storage](docs/architecture/secure-data-storage.md).
+For end-to-end encryption (selected fields), see [End-to-end encryption](docs/architecture/end-to-end-encryption.md) and the [E2EE verification checklist](docs/verification/e2ee-threat-model-and-recovery.md).
 
 ### Automated Security Scanning
 
@@ -358,3 +360,11 @@ Please ensure your code follows our [Code Style Guide](docs/guides/dev/code-styl
 - [x] [frontend] Implement opt-in reminders; Notification API prompt; fallback in-app banners + snooze/disable
 - [x] [deploy] Document browser permission behavior and supported environments
 - [x] [verify] Denied permission path shows in-app reminders; cadence respects settings
+
+### Feature: End-to-end encryption (selected fields)
+- [x] [arch] Confirm crypto posture (PBKDF2 + AES-GCM, no server-side recovery) and define sensitive fields
+- [x] [database] Ensure encrypted fields can be stored (ciphertext + metadata) without breaking search/list UX
+- [x] [backend] Ensure APIs treat encrypted fields as opaque (no plaintext logging); enforce payload limits
+- [x] [frontend] Implement passphrase flow (enable/disable/rotate) and client-side encrypt/decrypt via Web Crypto
+- [x] [deploy] Document limitations (no recovery), and ensure logs/telemetry don't capture plaintext
+- [x] [verify] Threat model review + recovery-flow validation (passphrase loss, rotation)

@@ -45,10 +45,10 @@ export const runAllTests = async () => {
   console.log('✅ Testing Risk Translation Service...');
   try {
     const translated = RiskTranslationService.translateRiskToBusinessLanguage(testRiskData);
-    console.log('   Translated Risk:', translated.substring(0, 100) + '...');
+    console.log('   Translated Risk length:', translated.length);
     
     const executiveSummary = RiskTranslationService.generateExecutiveSummary([testRiskData]);
-    console.log('   Executive Summary:', executiveSummary.substring(0, 100) + '...');
+    console.log('   Executive Summary length:', executiveSummary.length);
     
     console.log('   ✓ Risk Translation Service tests passed\n');
   } catch (error) {
@@ -111,7 +111,7 @@ export const runAllTests = async () => {
     console.log('   Communication Recommendations Count:', recommendations.length);
     
     const slackMessage = ExecutiveCommunicationService.generateSlackMessage(testRiskData);
-    console.log('   Slack Message Sample:', slackMessage.substring(0, 50) + '...');
+    console.log('   Slack Message length:', slackMessage.length);
     
     const simulationResults = ScenarioModelingService.runMonteCarloSimulation(testRiskData, 50);
     const communicationPlan = ExecutiveCommunicationService.generateCommunicationPlan(testRiskData, simulationResults);

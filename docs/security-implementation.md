@@ -114,6 +114,21 @@ The optional encrypted storage feature is a defense-in-depth measure for data at
 
 For full details, see `docs/architecture/secure-data-storage.md`.
 
+## End-to-end encryption (selected fields)
+
+Easy Risk Register optionally supports end-to-end encryption for selected risk fields (`description`, `mitigationPlan`).
+
+- **Crypto posture**: PBKDF2 (SHA-256) + AES-GCM; no server-side recovery.
+- **Server role**: stores ciphertext + metadata only; does not decrypt.
+- **Operational constraint**: if a passphrase is lost, encrypted fields are unrecoverable (unless decrypted elsewhere before loss).
+
+See `docs/architecture/end-to-end-encryption.md` for details and limitations.
+
+## Logging / telemetry safety
+
+- Serverless APIs log request/response metadata only and must not log request bodies for risk endpoints.
+- Client-side analytics events are stored locally and sanitized to avoid capturing plaintext fields or secrets.
+
 ## Security Testing
 
 Security-relevant behaviors are covered by tests under `easy-risk-register-frontend/test/`, including sanitization and CSV validation utilities.

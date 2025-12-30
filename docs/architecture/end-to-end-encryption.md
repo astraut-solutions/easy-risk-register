@@ -29,3 +29,15 @@ All other fields required for normal list/filter UX remain plaintext (e.g., `tit
 - `/api/risks` and `/api/risks/:id` accept and return `encryptedFields` and treat it as opaque.
 - Request bodies are size-limited to reduce DoS risk; encrypted payloads are additionally bounded at the `encryptedFields` level.
 
+## Limitations (deployment notes)
+
+- **No recovery**: if a passphrase is lost, there is no backdoor or admin recovery. Encrypted fields are effectively unrecoverable.
+- **Per-device setup**: passphrases are not synced. Each browser/device must be configured and unlocked to view/edit encrypted fields.
+- **Search/filter**: encrypted fields cannot be searched or filtered server-side; UX should rely on plaintext fields (`title`, `category`, status, score).
+- **Exports**: PDF/CSV exports can only include decrypted plaintext when the current device/session is unlocked.
+- **Partial visibility**: list views may show placeholders (“Encrypted (locked)”) when E2EE is enabled but not unlocked.
+
+## Logs and telemetry
+
+- Serverless APIs must not log request bodies for endpoints that may contain plaintext, and must treat `encryptedFields` as opaque.
+- Client-side analytics/telemetry must not persist or print plaintext for encrypted fields (or passphrases). Events should be sanitized/redacted before storage/logging.

@@ -71,13 +71,15 @@ export const trackEvent = (name: AnalyticsEventName, props?: Record<string, unkn
   if (typeof window === 'undefined') return
   if (!isAnalyticsEnabled()) return
 
+  const safeProps = props ? sanitizeAnalyticsProps(props) : undefined
+
   const events = readEvents()
-  events.push({ name, at: nowIso(), ...(props ? { props } : {}) })
+  events.push({ name, at: nowIso(), ...(safeProps ? { props: safeProps } : {}) })
   writeEvents(events)
 
   try {
     // Keep this quiet by default; enabled only via localStorage flag.
-    console.debug('[analytics]', name, props ?? {})
+    console.debug('[analytics]', name, safeProps ?? {})
   } catch {
     // ignore
   }
@@ -92,6 +94,39 @@ export const clearAnalyticsEvents = () => {
   } catch {
     // ignore
   }
+}
+
+const SENSITIVE_KEY_RE = /(passphrase|password|secret|token|authorization|encryptedfields|description|mitigationplan|body)/i
+
+const sanitizeAnalyticsValue = (value: unknown, depth: number): unknown => {
+  if (depth <= 0) return '[redacted]'
+
+  if (typeof value === 'string') {
+    if (value.length > 200) return '[redacted]'
+    return value
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean' || value === null) return value
+
+  if (Array.isArray(value)) return value.slice(0, 50).map((item) => sanitizeAnalyticsValue(item, depth - 1))
+
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+      if (SENSITIVE_KEY_RE.test(key)) {
+        out[key] = '[redacted]'
+        continue
+      }
+      out[key] = sanitizeAnalyticsValue(child, depth - 1)
+    }
+    return out
+  }
+
+  return String(value)
+}
+
+export const sanitizeAnalyticsProps = (props: Record<string, unknown>): Record<string, unknown> => {
+  return sanitizeAnalyticsValue(props, 4) as Record<string, unknown>
 }
 
 const median = (values: number[]) => {

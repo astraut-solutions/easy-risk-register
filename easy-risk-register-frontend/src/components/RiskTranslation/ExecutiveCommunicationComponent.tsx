@@ -79,7 +79,7 @@ const ExecutiveCommunicationComponent: React.FC<ExecutiveCommunicationComponentP
     const summary = ExecutiveCommunicationService.generateShareableSummary(riskData, platform);
     message.success(`Shareable content for ${platform} copied to clipboard!`);
     // In a real implementation, this would share to the platform
-    console.log(`Sharing to ${platform}:`, summary);
+    console.debug(`Sharing to ${platform} (redacted)`);
   };
 
   const columns = [

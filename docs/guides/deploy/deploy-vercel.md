@@ -148,6 +148,18 @@ After deploying (or when running locally), validate the end-to-end persistence p
 4) Delete the risk, refresh, confirm it is gone.
 5) Sign in on another device/profile and confirm the same risks are visible (same user/workspace).
 
+### End-to-end encryption checks (manual, optional)
+
+If you enable end-to-end encryption (E2EE) for selected fields:
+
+1) Enable E2EE in Settings and set a passphrase.
+2) Refresh and confirm the UI shows encrypted placeholders until you unlock.
+3) Unlock with the passphrase and confirm `description` / `mitigationPlan` are readable.
+4) Rotate passphrase and confirm the old passphrase no longer unlocks.
+5) Validate the no-recovery posture: incorrect passphrase cannot recover encrypted fields.
+
+See `docs/architecture/end-to-end-encryption.md` and `docs/verification/e2ee-threat-model-and-recovery.md`.
+
 ### Scoring boundary checks (manual)
 
 Confirm the UI and API agree on severity boundaries by creating risks with these probability/impact pairs:
