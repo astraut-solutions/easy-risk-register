@@ -1,11 +1,25 @@
-# PDF exports (Print to PDF)
+# PDF exports
 
-Easy Risk Register generates PDF exports by opening a **print-friendly report view** and relying on your browser's built-in **Print / Save as PDF** flow. The PDF rendering itself is client-side (no server-side PDF generation), but the report content is sourced from the current dataset (fetched via `/api/*`).
+Easy Risk Register supports two PDF export paths:
+
+1) **Server-side PDF endpoints** (`/api/exports/*.pdf`) for direct downloads.
+2) **Print to PDF** via a print-friendly report view in the browser.
 
 ## Available PDF reports
 
 - **Risk register report**: current view (filters + matrix selection) or all risks, includes generated time, applied filters, and a severity legend.
 - **Privacy incident / checklist report**: per-risk checklist summary with completion timestamps (requires the privacy incident checklist to be attached to that risk).
+
+## Server-side endpoints (direct download)
+
+When deployed on Vercel, serverless endpoints are available under `/api/*` and return `application/pdf` downloads.
+
+- Risk register (filtered): `GET /api/exports/risks.pdf`
+  - Uses the same filters as `GET /api/risks` (for example `status`, `category`, `q`, `threatType`, `checklistStatus`, `probability`, `impact`, `minScore`, `maxScore`).
+- Privacy incident / checklist report: `GET /api/exports/privacy-incident.pdf?riskId=<uuid>`
+  - Optional: `checklistTemplateId` (defaults to `checklist_privacy_incident_ndb_v1`).
+
+Both endpoints require `Authorization: Bearer <supabase-jwt>` and are workspace-scoped (`x-workspace-id` header or personal-workspace fallback).
 
 ## How to export
 

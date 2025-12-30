@@ -18,7 +18,7 @@ import { DEFAULT_FILTERS, computeRiskStats, getRiskSeverity } from './utils/risk
 import { Button, Input, Modal, SectionHeader, Select } from './design-system'
 import { cn } from './utils/cn'
 import { useToast } from './components/feedback/ToastProvider'
-import { apiFetch } from './services/apiClient'
+import { apiFetch, apiGetBlob, type ApiError } from './services/apiClient'
 import { MetricsModal } from './components/feedback/MetricsModal'
 import { isAnalyticsEnabled, setAnalyticsEnabled, trackEvent } from './utils/analytics'
 import { buildRiskDefaultsFromCyberTemplate, CYBER_RISK_TEMPLATES } from './constants/cyber'
@@ -138,6 +138,7 @@ function App() {
   const [isPdfExportModalOpen, setIsPdfExportModalOpen] = useState(false)
   const [pdfRegisterScope, setPdfRegisterScope] = useState<'filtered' | 'all'>('filtered')
   const [selectedPrivacyRiskId, setSelectedPrivacyRiskId] = useState('')
+  const [isPdfDownloading, setIsPdfDownloading] = useState(false)
   const [isMetricsModalOpen, setIsMetricsModalOpen] = useState(false)
   const [reminderSummary, setReminderSummary] = useState<{
     overdue: number
@@ -147,6 +148,7 @@ function App() {
     typeof navigator === 'undefined' ? true : navigator.onLine,
   )
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const dashboardPdfExporterRef = useRef<null | (() => void)>(null)
   const formModalOpenedAtRef = useRef<number | null>(null)
   const formModalModeRef = useRef<'create' | 'edit' | null>(null)
   const formModalOpenedFromDraftRef = useRef(false)
@@ -524,10 +526,80 @@ function App() {
     setIsPdfExportModalOpen(true)
   }
 
-  const handleDownloadRegisterPdf = () => {
+  const downloadBlob = (opts: { blob: Blob; filename: string }) => {
+    const url = URL.createObjectURL(opts.blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = opts.filename
+    link.style.display = 'none'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.setTimeout(() => URL.revokeObjectURL(url), 250)
+  }
+
+  const describeApiError = (error: unknown): string => {
+    if (!error || typeof error !== 'object') return 'Unexpected error'
+    const err = error as Partial<ApiError>
+    const message = typeof err.message === 'string' && err.message.trim() ? err.message.trim() : 'Unexpected error'
+    return err.requestId ? `${message} (requestId: ${err.requestId})` : message
+  }
+
+  const buildRisksPdfPath = () => {
+    const params = new URLSearchParams()
+
+    if (pdfRegisterScope === 'filtered') {
+      if (filters.search.trim()) params.set('q', filters.search.trim().slice(0, 200))
+      if (filters.category !== 'all') params.set('category', filters.category)
+      if (filters.status !== 'all') params.set('status', filters.status)
+      if (filters.threatType !== 'all') params.set('threatType', filters.threatType)
+      if (filters.checklistStatus !== 'all') params.set('checklistStatus', filters.checklistStatus)
+
+      if (filters.severity !== 'all') {
+        if (filters.severity === 'low') params.set('maxScore', '8')
+        if (filters.severity === 'medium') {
+          params.set('minScore', '9')
+          params.set('maxScore', '15')
+        }
+        if (filters.severity === 'high') params.set('minScore', '16')
+      }
+
+      if (matrixSelection) {
+        params.set('probability', String(matrixSelection.probability))
+        params.set('impact', String(matrixSelection.impact))
+      }
+    }
+
+    const query = params.toString()
+    return query ? `/api/exports/risks.pdf?${query}` : '/api/exports/risks.pdf'
+  }
+
+  const handleDownloadRegisterPdf = async () => {
+    if (isPdfDownloading) return
+    setIsPdfDownloading(true)
+    try {
+      const path = buildRisksPdfPath()
+      const { blob, filename } = await apiGetBlob(path)
+      downloadBlob({
+        blob,
+        filename: filename || `risk-register-${new Date().toISOString().split('T')[0]}.pdf`,
+      })
+      setIsPdfExportModalOpen(false)
+    } catch (error) {
+      toast.notify({
+        title: 'Unable to export PDF',
+        description: describeApiError(error),
+        variant: 'warning',
+      })
+    } finally {
+      setIsPdfDownloading(false)
+    }
+  }
+
+  const handleOpenRegisterPrintView = () => {
     const generatedAtIso = new Date().toISOString()
     const matrixFilterLabel = matrixSelection
-      ? `Likelihood ${matrixSelection.probability} × Impact ${matrixSelection.impact}`
+      ? `Likelihood ${matrixSelection.probability} x Impact ${matrixSelection.impact}`
       : undefined
     const reportRisks = pdfRegisterScope === 'all' ? allRisks : visibleRisks
     const html = buildRiskRegisterReportHtml({
@@ -540,22 +612,16 @@ function App() {
     const opened = openReportWindow(html, 'Risk register report')
     if (!opened) {
       toast.notify({
-        title: 'Unable to open PDF export',
+        title: 'Unable to open report',
         description: 'Your browser blocked the popup. Allow popups and try again.',
         variant: 'warning',
       })
       return
     }
-
-    toast.notify({
-      title: 'Report opened',
-      description: 'If the print dialog does not open, press Ctrl+P / Cmd+P to “Save as PDF”.',
-      variant: 'info',
-    })
     setIsPdfExportModalOpen(false)
   }
 
-  const handleDownloadPrivacyPdf = () => {
+  const handleDownloadPrivacyPdf = async () => {
     const risk = allRisks.find((item) => item.id === selectedPrivacyRiskId)
     if (!risk) {
       toast.notify({
@@ -566,6 +632,32 @@ function App() {
       return
     }
 
+    if (isPdfDownloading) return
+    setIsPdfDownloading(true)
+    try {
+      const { blob, filename } = await apiGetBlob(
+        `/api/exports/privacy-incident.pdf?riskId=${encodeURIComponent(risk.id)}`,
+      )
+      downloadBlob({
+        blob,
+        filename: filename || `privacy-incident-${risk.id}-${new Date().toISOString().split('T')[0]}.pdf`,
+      })
+      setIsPdfExportModalOpen(false)
+    } catch (error) {
+      toast.notify({
+        title: 'Unable to export PDF',
+        description: describeApiError(error),
+        variant: 'warning',
+      })
+    } finally {
+      setIsPdfDownloading(false)
+    }
+  }
+
+  const handleOpenPrivacyPrintView = () => {
+    const risk = allRisks.find((item) => item.id === selectedPrivacyRiskId)
+    if (!risk) return
+
     const html = buildPrivacyIncidentChecklistReportHtml({
       risk,
       generatedAtIso: new Date().toISOString(),
@@ -574,18 +666,29 @@ function App() {
     const opened = openReportWindow(html, 'Privacy incident checklist report')
     if (!opened) {
       toast.notify({
-        title: 'Unable to open PDF export',
+        title: 'Unable to open report',
         description: 'Your browser blocked the popup. Allow popups and try again.',
         variant: 'warning',
       })
       return
     }
+    setIsPdfExportModalOpen(false)
+  }
+
+  const handleExportDashboardPdf = () => {
+    const exporter = dashboardPdfExporterRef.current
+    if (exporter) {
+      exporter()
+      setIsPdfExportModalOpen(false)
+      return
+    }
 
     toast.notify({
-      title: 'Report opened',
-      description: 'If the print dialog does not open, press Ctrl+P / Cmd+P to “Save as PDF”.',
+      title: 'Dashboard charts export',
+      description: 'Open Dashboard charts and click “Export dashboard PDF” to include chart images.',
       variant: 'info',
     })
+    requestNavigate('dashboard')
     setIsPdfExportModalOpen(false)
   }
 
@@ -1481,6 +1584,9 @@ function App() {
                       }
                       historyEnabled={settings.visualizations.scoreHistoryEnabled}
                       defaultTrendMode={settings.visualizations.defaultTrendMode}
+                      registerPdfExporter={(exporter) => {
+                        dashboardPdfExporterRef.current = exporter
+                      }}
                       onDrillDown={({ filters: drillFilters }) => {
                         actions.setFilters({ ...filters, ...drillFilters })
                         requestNavigate('table')
@@ -1808,7 +1914,7 @@ function App() {
         onClose={() => setIsPdfExportModalOpen(false)}
         title="Export PDF"
         eyebrow="Reporting"
-        description="Exports open a print-friendly report. In the print dialog, choose “Save as PDF”."
+        description="Downloads PDFs for your current workspace. Dashboard charts exports include chart images via a print-friendly report."
         size="md"
       >
         <div className="space-y-6">
@@ -1840,9 +1946,22 @@ function App() {
                 <span className="text-sm text-text-low">All risks (ignores filters)</span>
               </label>
             </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button variant="ghost" onClick={handleOpenRegisterPrintView} disabled={isPdfDownloading}>
+                Open print view
+              </Button>
+              <Button variant="secondary" onClick={handleDownloadRegisterPdf} disabled={isPdfDownloading}>
+                Download register PDF
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-3 border-t border-border-faint pt-5">
+            <p className="text-sm font-semibold text-text-high">Dashboard charts</p>
+            <p className="text-xs text-text-low">Exports the current charts selection with embedded chart images.</p>
             <div className="flex justify-end">
-              <Button variant="secondary" onClick={handleDownloadRegisterPdf}>
-                Export register PDF
+              <Button variant="secondary" onClick={handleExportDashboardPdf}>
+                Export dashboard PDF
               </Button>
             </div>
           </div>
@@ -1859,13 +1978,20 @@ function App() {
               onChange={setSelectedPrivacyRiskId}
               placeholder="Choose a risk"
             />
-            <div className="flex justify-end">
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                variant="ghost"
+                onClick={handleOpenPrivacyPrintView}
+                disabled={!selectedPrivacyRiskId || isPdfDownloading}
+              >
+                Open print view
+              </Button>
               <Button
                 variant="secondary"
                 onClick={handleDownloadPrivacyPdf}
-                disabled={!selectedPrivacyRiskId}
+                disabled={!selectedPrivacyRiskId || isPdfDownloading}
               >
-                Export checklist PDF
+                Download checklist PDF
               </Button>
             </div>
             {!privacyIncidentRisks.length ? (

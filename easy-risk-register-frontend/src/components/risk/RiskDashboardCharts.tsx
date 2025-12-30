@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Bar, Line, getElementAtEvent } from 'react-chartjs-2'
 
 import type { Risk, RiskFilters, RiskSeverity } from '../../types/risk'
@@ -81,6 +81,7 @@ export interface RiskDashboardChartsProps {
   historyEnabled: boolean
   defaultTrendMode: TrendDefaultMode
   onDrillDown: (target: DrillDownTarget) => void
+  registerPdfExporter?: (exporter: (() => void) | null) => void
 }
 
 export const RiskDashboardCharts = ({
@@ -91,6 +92,7 @@ export const RiskDashboardCharts = ({
   historyEnabled,
   defaultTrendMode,
   onDrillDown,
+  registerPdfExporter,
 }: RiskDashboardChartsProps) => {
   ensureChartJsRegistered()
 
@@ -172,51 +174,6 @@ export const RiskDashboardCharts = ({
       `easy-risk-register__dashboard__${key}__${timestampSlug()}.png`,
     )
     downloadPng({ dataUrl, filename })
-  }
-
-  const exportDashboardPdf = () => {
-    const generatedAtIso = new Date().toISOString()
-    const severityPng =
-      severityChartRef.current && typeof severityChartRef.current.toBase64Image === 'function'
-        ? severityChartRef.current.toBase64Image('image/png', 1)
-        : null
-    const categoriesPng =
-      categoryChartRef.current && typeof categoryChartRef.current.toBase64Image === 'function'
-        ? categoryChartRef.current.toBase64Image('image/png', 1)
-        : null
-    const trendPng =
-      trendChartRef.current && typeof trendChartRef.current.toBase64Image === 'function'
-        ? trendChartRef.current.toBase64Image('image/png', 1)
-        : null
-
-    const html = buildDashboardChartsReportHtml({
-      generatedAtIso,
-      filters,
-      matrixFilterLabel,
-      charts: {
-        severity: { title: 'Risk distribution by severity', pngDataUrl: severityPng, rows: severityTableRows },
-        categories: { title: 'Risk distribution by category (stacked)', pngDataUrl: categoriesPng, rows: categoryTableRows },
-        trend: {
-          title:
-            trendMode === 'recent_changes'
-              ? 'Trend: score updates per day (last 30 days)'
-              : 'Trend: average score (last 30 days)',
-          pngDataUrl: trendPng,
-          rows: trendMode === 'overall_exposure' ? trendTableRows : undefined,
-          note: !historyEnabled
-            ? 'Trend charts are disabled. Enable score history in Settings to capture snapshots.'
-            : !trendLineData
-              ? 'No snapshots available for the current selection yet.'
-              : undefined,
-        },
-      },
-    })
-
-    const opened = openReportWindow(html, 'Dashboard charts report')
-    if (!opened) {
-      // ignore: App already shows a toast for blocked popups in other flows; keep consistent minimal behavior here.
-      return
-    }
   }
 
   const severityCounts = useMemo(() => {
@@ -383,6 +340,69 @@ export const RiskDashboardCharts = ({
   const drillDownButtons = useMemo(() => {
     return [] as DrillDownTarget[]
   }, [])
+
+  const exportDashboardPdf = useCallback(() => {
+    const generatedAtIso = new Date().toISOString()
+    const severityPng =
+      severityChartRef.current && typeof severityChartRef.current.toBase64Image === 'function'
+        ? severityChartRef.current.toBase64Image('image/png', 1)
+        : null
+    const categoriesPng =
+      categoryChartRef.current && typeof categoryChartRef.current.toBase64Image === 'function'
+        ? categoryChartRef.current.toBase64Image('image/png', 1)
+        : null
+    const trendPng =
+      trendChartRef.current && typeof trendChartRef.current.toBase64Image === 'function'
+        ? trendChartRef.current.toBase64Image('image/png', 1)
+        : null
+
+    const html = buildDashboardChartsReportHtml({
+      generatedAtIso,
+      filters,
+      matrixFilterLabel,
+      charts: {
+        severity: { title: 'Risk distribution by severity', pngDataUrl: severityPng, rows: severityTableRows },
+        categories: {
+          title: 'Risk distribution by category (stacked)',
+          pngDataUrl: categoriesPng,
+          rows: categoryTableRows,
+        },
+        trend: {
+          title:
+            trendMode === 'recent_changes'
+              ? 'Trend: score updates per day (last 30 days)'
+              : 'Trend: average score (last 30 days)',
+          pngDataUrl: trendPng,
+          rows: trendMode === 'overall_exposure' ? trendTableRows : undefined,
+          note: !historyEnabled
+            ? 'Trend charts are disabled. Enable score history in Settings to capture snapshots.'
+            : !trendLineData
+              ? 'No snapshots available for the current selection yet.'
+              : undefined,
+        },
+      },
+    })
+
+    const opened = openReportWindow(html, 'Dashboard charts report')
+    if (!opened) {
+      // ignore: App already shows a toast for blocked popups in other flows; keep consistent minimal behavior here.
+      return
+    }
+  }, [
+    categoryTableRows,
+    filters,
+    historyEnabled,
+    matrixFilterLabel,
+    severityTableRows,
+    trendLineData,
+    trendMode,
+    trendTableRows,
+  ])
+
+  useEffect(() => {
+    registerPdfExporter?.(exportDashboardPdf)
+    return () => registerPdfExporter?.(null)
+  }, [exportDashboardPdf, registerPdfExporter])
 
   const renderDataTable = (rows: ChartTableRow[], valueLabel: string) => (
     <div className="mt-4 overflow-x-auto rounded-lg border border-border-faint bg-surface-secondary/10 p-4">

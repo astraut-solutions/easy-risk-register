@@ -122,6 +122,47 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   }
 }
 
+function parseContentDispositionFilename(headerValue: string | null): string | null {
+  if (!headerValue) return null
+  const value = headerValue.trim()
+  if (!value) return null
+
+  // RFC 5987: filename*=UTF-8''encoded
+  const starMatch = value.match(/filename\*\s*=\s*([^;]+)/i)
+  if (starMatch) {
+    const raw = starMatch[1]?.trim()
+    if (raw) {
+      const cleaned = raw.replace(/^UTF-8''/i, '').replace(/^"+|"+$/g, '')
+      try {
+        return decodeURIComponent(cleaned)
+      } catch {
+        return cleaned
+      }
+    }
+  }
+
+  const match = value.match(/filename\s*=\s*([^;]+)/i)
+  if (!match) return null
+
+  const raw = match[1]?.trim()
+  if (!raw) return null
+  return raw.replace(/^"+|"+$/g, '')
+}
+
+export async function apiGetBlob(
+  path: string,
+): Promise<{ blob: Blob; filename: string | null; contentType: string | null }> {
+  const res = await apiFetch(path, { method: 'GET' })
+  if (!res.ok) {
+    throw await parseApiErrorResponse(res)
+  }
+
+  const blob = await res.blob()
+  const filename = parseContentDispositionFilename(res.headers.get('content-disposition'))
+  const contentType = res.headers.get('content-type')
+  return { blob, filename, contentType }
+}
+
 export async function apiGetJson<T>(path: string): Promise<T> {
   const res = await apiFetch(path, { method: 'GET' })
   if (!res.ok) {

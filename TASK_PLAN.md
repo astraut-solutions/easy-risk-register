@@ -147,7 +147,6 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [verify] Performance check on 1000 risks; retention bounds enforced
 
 ### Feature: Dashboard charts + PNG export
-- [ ] [database] No change (depends on risk + history tables)
 - [x] [backend] Add aggregated endpoints as needed (or compute client-side with bounded payloads)
 - [x] [frontend] Implement 2-3 default charts (distribution + trends) with drill-down + accessible table equivalents
 - [x] [frontend] Implement PNG export (default 1080p) for charts
@@ -155,9 +154,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [verify] Chart drill-down matches filters/matrix semantics; "DB unreachable" state is clear
 
 ### Feature: PDF exports (register + incident/checklist)
-- [ ] [database] No change (uses existing data)
-- [ ] [backend] Implement PDF generation endpoints for risk register (filtered) and incident/checklist template exports
-- [ ] [frontend] Add export UI for PDF (include charts where enabled)
+- [x] [backend] Implement PDF generation endpoints for risk register (filtered) and incident/checklist template exports
+- [x] [frontend] Add export UI for PDF (include charts where enabled)
 - [ ] [deploy] Confirm Vercel serverless limits are respected (PDF generation time/size) and document constraints
 - [ ] [verify] Export validation (content correctness, filters, charts inclusion) + regression check on CSV export
 
