@@ -151,6 +151,7 @@ function App() {
   )
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const dashboardPdfExporterRef = useRef<null | (() => void)>(null)
+  const maturityPdfExporterRef = useRef<null | (() => void)>(null)
   const formModalOpenedAtRef = useRef<number | null>(null)
   const formModalModeRef = useRef<'create' | 'edit' | null>(null)
   const formModalOpenedFromDraftRef = useRef(false)
@@ -186,6 +187,16 @@ function App() {
       })
     })
   }, [authStatus, syncFromApi, toast, workspaceId])
+
+  useEffect(() => {
+    if (authStatus !== 'authenticated') return
+    if (!settings.visualizations.maturityEnabled) return
+    if (activeView !== 'maturity') return
+
+    void actions.loadMaturityAssessments?.().catch(() => {
+      // best-effort: the panel will show empty state if unavailable
+    })
+  }, [activeView, actions, authStatus, settings.visualizations.maturityEnabled])
 
   const loadRiskDraft = () => {
     try {
@@ -743,6 +754,23 @@ function App() {
       variant: 'info',
     })
     requestNavigate('dashboard')
+    setIsPdfExportModalOpen(false)
+  }
+
+  const handleExportMaturityPdf = () => {
+    const exporter = maturityPdfExporterRef.current
+    if (exporter) {
+      exporter()
+      setIsPdfExportModalOpen(false)
+      return
+    }
+
+    toast.notify({
+      title: 'Maturity export',
+      description: 'Open Maturity radar and click "Export PDF" to include the current chart image.',
+      variant: 'info',
+    })
+    requestNavigate('maturity')
     setIsPdfExportModalOpen(false)
   }
 
@@ -1738,6 +1766,9 @@ function App() {
                       onCreate={actions.createMaturityAssessment}
                       onUpdateDomain={actions.updateMaturityDomain}
                       onDelete={actions.deleteMaturityAssessment}
+                      registerPdfExporter={(exporter) => {
+                        maturityPdfExporterRef.current = exporter
+                      }}
                     />
                   </Suspense>
                 </div>
@@ -2091,6 +2122,16 @@ function App() {
             <div className="flex justify-end">
               <Button variant="secondary" onClick={handleExportDashboardPdf}>
                 Export dashboard PDF
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-3 border-t border-border-faint pt-5">
+            <p className="text-sm font-semibold text-text-high">Maturity self-assessment</p>
+            <p className="text-xs text-text-low">Exports the selected maturity assessment with an embedded radar chart image.</p>
+            <div className="flex justify-end">
+              <Button variant="secondary" onClick={handleExportMaturityPdf}>
+                Export maturity PDF
               </Button>
             </div>
           </div>

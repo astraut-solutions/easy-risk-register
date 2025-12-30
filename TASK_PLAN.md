@@ -184,9 +184,9 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [verify] Playbooks remain editable and template updates don't overwrite existing risk playbooks
 
 ### Feature: Maturity radar (ACSC/NIST self-assessment)
-- [ ] [database] Add maturity assessment tables (framework preset, domain scores, timestamps)
-- [ ] [backend] Implement assessment CRUD APIs + query for latest/series
-- [ ] [frontend] Implement radar chart + table fallback; export as PNG and include in PDFs
+- [x] [database] Add maturity assessment tables (framework preset, domain scores, timestamps)
+- [x] [backend] Implement assessment CRUD APIs + query for latest/series
+- [x] [frontend] Implement radar chart + table fallback; export as PNG and include in PDFs
 - [ ] [deploy] Ensure presets and copy avoid implying certification/compliance guarantees
 - [ ] [verify] Accessibility check + export correctness
 

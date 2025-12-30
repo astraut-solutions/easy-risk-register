@@ -12,6 +12,8 @@ import { getRiskSeverity } from '../utils/riskCalculations'
 import { loadWorkspaceOfflineCache, saveWorkspaceOfflineCache } from '../utils/offlineCache'
 import { getE2eeSessionKey, getE2eeStatus, getE2eeKdfConfig } from '../utils/e2eeManager'
 import { buildRiskEncryptedFieldsV1, decryptRiskEncryptedFieldsV1, normalizeRiskEncryptedFieldsV1 } from '../utils/e2eeRiskFields'
+import { MATURITY_PRESETS } from '../constants/maturity'
+import { MATURITY_FRAMEWORK_ID_BY_PRESET, frameworkIdToPreset } from '../utils/maturity'
 
 /**
  * Cache Utility for frequently accessed data
@@ -150,6 +152,30 @@ type ApiRisksListResponse = {
   count: number | null
 }
 
+type ApiMaturityAssessmentListItem = {
+  id: string
+  frameworkId: string
+  assessedAt: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+type ApiMaturityAssessmentDetail = {
+  id: string
+  frameworkId: string
+  assessedAt: string
+  createdAt: string
+  updatedAt: string
+  domains: Array<{
+    id: string
+    key: string
+    title: string
+    description?: string
+    position: number
+    score: number | null
+  }>
+}
+
 type ApiRiskChecklistItem = {
   id: string
   position: number
@@ -199,6 +225,69 @@ function normalizeObject(value: unknown): Record<string, unknown> {
 function normalizeChecklistStatus(value: unknown): ChecklistStatus | null {
   if (value === 'not_started' || value === 'in_progress' || value === 'done') return value
   return null
+}
+
+function safeTimestampMs(value: string | null | undefined): number | null {
+  if (!value) return null
+  const ms = Date.parse(value)
+  return Number.isFinite(ms) ? ms : null
+}
+
+function mapApiMaturityAssessmentToStore(assessment: ApiMaturityAssessmentDetail) {
+  const preset = frameworkIdToPreset(assessment.frameworkId)
+  if (!preset) return null
+
+  const createdAt =
+    safeTimestampMs(assessment.assessedAt) ?? safeTimestampMs(assessment.createdAt) ?? Date.now()
+  const updatedAt = safeTimestampMs(assessment.updatedAt) ?? createdAt
+
+  return {
+    id: assessment.id,
+    frameworkKey: preset,
+    frameworkName: MATURITY_PRESETS[preset].frameworkName,
+    domains: (assessment.domains || [])
+      .slice()
+      .sort((a, b) => Number(a.position) - Number(b.position))
+      .map((domain) => ({
+        key: domain.key,
+        name: domain.title,
+        score: typeof domain.score === 'number' && Number.isFinite(domain.score) ? domain.score : 0,
+      })),
+    createdAt,
+    updatedAt,
+  }
+}
+
+async function fetchMaturityAssessmentsFromApi() {
+  const list = await apiGetJson<{ items: ApiMaturityAssessmentListItem[] }>('/api/maturity-assessments?limit=200')
+  const ids = (list?.items || []).map((item) => item.id).filter(Boolean)
+
+  const details = await Promise.all(
+    ids.map((id) => apiGetJson<ApiMaturityAssessmentDetail>(`/api/maturity-assessments/${id}`)),
+  )
+
+  return details
+    .map((entry) => mapApiMaturityAssessmentToStore(entry))
+    .filter((entry): entry is NonNullable<ReturnType<typeof mapApiMaturityAssessmentToStore>> => Boolean(entry))
+}
+
+function buildScoresPayloadFromDomains(domains: Array<{ key: string; score: number }>) {
+  const scores: Record<string, number> = {}
+  for (const domain of domains || []) {
+    const key = typeof domain.key === 'string' ? domain.key.trim() : ''
+    if (!key) continue
+    const score = typeof domain.score === 'number' && Number.isFinite(domain.score) ? domain.score : 0
+    scores[key] = Math.max(0, Math.min(Math.floor(score), 4))
+  }
+  return scores
+}
+
+function buildZeroScoresForPreset(preset: keyof typeof MATURITY_PRESETS) {
+  const scores: Record<string, number> = {}
+  for (const domain of MATURITY_PRESETS[preset].domains) {
+    scores[domain.key] = 0
+  }
+  return scores
 }
 
 function mapApiChecklistToRiskChecklist(apiChecklist: ApiRiskChecklist): RiskChecklist {
@@ -443,9 +532,12 @@ export const riskService = {
     store.setReadOnlyState({ readOnly: false, reason: null })
 
     try {
-      const [categories, risksResponse] = await Promise.all([
+      const maturityEnabled = Boolean(store.settings.visualizations.maturityEnabled)
+
+      const [categories, risksResponse, maturityAssessments] = await Promise.all([
         apiGetJson<ApiCategory[]>('/api/categories'),
         apiGetJson<ApiRisksListResponse>('/api/risks?limit=1000&sort=updated_at&order=desc'),
+        maturityEnabled ? fetchMaturityAssessmentsFromApi().catch(() => []) : Promise.resolve([]),
       ])
 
       const categoryNames = Array.from(
@@ -465,6 +557,7 @@ export const riskService = {
       const lastSyncedAt = new Date().toISOString()
 
       store.replaceFromApi({ risks, categories: categoryNames })
+      store.replaceMaturityAssessmentsFromApi(maturityAssessments)
       store.setDataSyncState({
         status: 'ready',
         error: null,
@@ -521,6 +614,85 @@ export const riskService = {
       store.setDataSyncState({ status: 'error', error: formatApiError(error) })
       throw error
     }
+  },
+
+  loadMaturityAssessments: async () => {
+    const { status: authStatus } = useAuthStore.getState()
+    if (authStatus !== 'authenticated') return
+
+    const store = useRiskStore.getState()
+    const maturityEnabled = Boolean(store.settings.visualizations.maturityEnabled)
+    if (!maturityEnabled) {
+      store.replaceMaturityAssessmentsFromApi([])
+      return
+    }
+
+    const assessments = await fetchMaturityAssessmentsFromApi()
+    store.replaceMaturityAssessmentsFromApi(assessments)
+  },
+
+  createMaturityAssessment: async (preset?: import('../types/visualization').MaturityFrameworkPreset) => {
+    const store = useRiskStore.getState()
+    const key = preset ?? store.settings.visualizations.maturityFrameworkPreset
+
+    const { status: authStatus } = useAuthStore.getState()
+    if (authStatus !== 'authenticated') {
+      return store.createMaturityAssessment(key)
+    }
+
+    const frameworkId = MATURITY_FRAMEWORK_ID_BY_PRESET[key]
+    const scores = buildZeroScoresForPreset(key)
+
+    const created = await apiPostJson<ApiMaturityAssessmentDetail>('/api/maturity-assessments', {
+      frameworkId,
+      assessedAt: new Date().toISOString(),
+      scores,
+    })
+
+    const mapped = mapApiMaturityAssessmentToStore(created)
+    if (!mapped) throw new Error('Unable to create maturity assessment')
+    store.upsertMaturityAssessmentFromApi(mapped)
+    return mapped
+  },
+
+  updateMaturityDomain: async (assessmentId: string, domainKey: string, updates: { score?: number }) => {
+    const store = useRiskStore.getState()
+    const { status: authStatus } = useAuthStore.getState()
+    if (authStatus !== 'authenticated') {
+      store.updateMaturityDomain(assessmentId, domainKey, updates as any)
+      return
+    }
+
+    const current = store.maturityAssessments.find((entry) => entry.id === assessmentId) ?? null
+    if (!current) throw new Error('Assessment not found')
+
+    const nextDomains = current.domains.map((domain) =>
+      domain.key === domainKey && typeof updates.score === 'number'
+        ? { ...domain, score: Math.max(0, Math.min(Math.floor(updates.score), 4)) }
+        : domain,
+    )
+
+    const scores = buildScoresPayloadFromDomains(nextDomains)
+
+    const updated = await apiPatchJson<ApiMaturityAssessmentDetail>(`/api/maturity-assessments/${assessmentId}`, {
+      scores,
+    })
+
+    const mapped = mapApiMaturityAssessmentToStore(updated)
+    if (!mapped) throw new Error('Unable to update maturity assessment')
+    store.upsertMaturityAssessmentFromApi(mapped)
+  },
+
+  deleteMaturityAssessment: async (assessmentId: string) => {
+    const store = useRiskStore.getState()
+    const { status: authStatus } = useAuthStore.getState()
+    if (authStatus !== 'authenticated') {
+      store.deleteMaturityAssessment(assessmentId)
+      return
+    }
+
+    await apiDelete(`/api/maturity-assessments/${assessmentId}`)
+    store.removeMaturityAssessmentFromApi(assessmentId)
   },
 
   /** Returns the currently filtered list of risks */
@@ -953,9 +1125,6 @@ export const useRiskManagement = () => {
   const dataLastSyncedAt = useRiskStore((state) => state.dataLastSyncedAt)
   const readOnlyMode = useRiskStore((state) => state.readOnlyMode)
   const readOnlyReason = useRiskStore((state) => state.readOnlyReason)
-  const createMaturityAssessment = useRiskStore((state) => state.createMaturityAssessment)
-  const updateMaturityDomain = useRiskStore((state) => state.updateMaturityDomain)
-  const deleteMaturityAssessment = useRiskStore((state) => state.deleteMaturityAssessment)
   const addCategory = useRiskStore((state) => state.addCategory)
   const setFilters = useRiskStore((state) => state.setFilters)
   const exportToCSV = useRiskStore((state) => state.exportToCSV)
@@ -979,9 +1148,10 @@ export const useRiskManagement = () => {
       seedDemoData,
       updateSettings,
       updateReminderSettings: riskService.updateReminderSettings,
-      createMaturityAssessment,
-      updateMaturityDomain,
-      deleteMaturityAssessment,
+      loadMaturityAssessments: riskService.loadMaturityAssessments,
+      createMaturityAssessment: riskService.createMaturityAssessment,
+      updateMaturityDomain: riskService.updateMaturityDomain,
+      deleteMaturityAssessment: riskService.deleteMaturityAssessment,
     }),
     [
       addCategory,
@@ -990,9 +1160,6 @@ export const useRiskManagement = () => {
       seedDemoData,
       setFilters,
       updateSettings,
-      createMaturityAssessment,
-      deleteMaturityAssessment,
-      updateMaturityDomain,
     ],
   )
 

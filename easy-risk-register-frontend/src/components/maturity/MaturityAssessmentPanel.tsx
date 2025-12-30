@@ -1,17 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Radar } from 'react-chartjs-2'
 
 import type { MaturityAssessment, MaturityFrameworkPreset } from '../../types/visualization'
-import { Button, Select, Textarea } from '../../design-system'
+import { Button, Select } from '../../design-system'
 import { ensureChartJsRegistered } from '../charts/chartjs'
 import { buildMaturityAssessmentReportHtml, openReportWindow } from '../../utils/reports'
+import { useToast } from '../feedback/ToastProvider'
 
 const scoreOptions = [
-  { value: 0, label: '0 — Not started' },
-  { value: 1, label: '1 — Initial' },
-  { value: 2, label: '2 — Developing' },
-  { value: 3, label: '3 — Defined' },
-  { value: 4, label: '4 — Managed' },
+  { value: 0, label: '0 - Not started' },
+  { value: 1, label: '1 - Initial' },
+  { value: 2, label: '2 - Developing' },
+  { value: 3, label: '3 - Defined' },
+  { value: 4, label: '4 - Managed' },
 ]
 
 const presetLabel: Record<MaturityFrameworkPreset, string> = {
@@ -33,9 +34,10 @@ export interface MaturityAssessmentPanelProps {
     maturityFrameworkPreset: MaturityFrameworkPreset
   }
   assessments: MaturityAssessment[]
-  onCreate: (preset?: MaturityFrameworkPreset) => MaturityAssessment
-  onUpdateDomain: (assessmentId: string, domainKey: string, updates: { score?: number; notes?: string }) => void
-  onDelete: (assessmentId: string) => void
+  onCreate: (preset?: MaturityFrameworkPreset) => Promise<MaturityAssessment>
+  onUpdateDomain: (assessmentId: string, domainKey: string, updates: { score?: number }) => Promise<void>
+  onDelete: (assessmentId: string) => Promise<void>
+  registerPdfExporter?: (exporter: (() => void) | null) => void
 }
 
 export const MaturityAssessmentPanel = ({
@@ -44,18 +46,34 @@ export const MaturityAssessmentPanel = ({
   onCreate,
   onUpdateDomain,
   onDelete,
+  registerPdfExporter,
 }: MaturityAssessmentPanelProps) => {
   ensureChartJsRegistered()
+  const toast = useToast()
 
   const [selectedId, setSelectedId] = useState<string>(() => assessments[0]?.id ?? '')
   const [createPreset, setCreatePreset] = useState<MaturityFrameworkPreset>(
     settings.maturityFrameworkPreset,
   )
+  const [isCreating, setIsCreating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [updatingDomainKey, setUpdatingDomainKey] = useState<string | null>(null)
+  const [showTableFallback, setShowTableFallback] = useState(true)
   const radarRef = useRef<any>(null)
 
   useEffect(() => {
     setCreatePreset(settings.maturityFrameworkPreset)
   }, [settings.maturityFrameworkPreset])
+
+  useEffect(() => {
+    if (!assessments.length) {
+      setSelectedId('')
+      return
+    }
+
+    if (selectedId && assessments.some((assessment) => assessment.id === selectedId)) return
+    setSelectedId(assessments[0].id)
+  }, [assessments, selectedId])
 
   const selected = useMemo(
     () => assessments.find((assessment) => assessment.id === selectedId) ?? null,
@@ -66,7 +84,7 @@ export const MaturityAssessmentPanel = ({
     () =>
       assessments.map((assessment) => ({
         value: assessment.id,
-        label: `${assessment.frameworkName} — ${dateLabel(assessment.createdAt)}`,
+        label: `${assessment.frameworkName} - ${dateLabel(assessment.createdAt)}`,
       })),
     [assessments],
   )
@@ -77,7 +95,7 @@ export const MaturityAssessmentPanel = ({
       labels: selected.domains.map((domain) => domain.name),
       datasets: [
         {
-          label: 'Maturity (0–4)',
+          label: 'Maturity (0-4)',
           data: selected.domains.map((domain) => domain.score),
           backgroundColor: 'rgba(59, 130, 246, 0.15)',
           borderColor: 'rgba(59, 130, 246, 0.95)',
@@ -88,10 +106,41 @@ export const MaturityAssessmentPanel = ({
     }
   }, [selected])
 
-  const downloadPng = () => {
+  const downloadPng = useCallback(() => {
     const chart = radarRef.current
-    if (!chart || typeof chart.toBase64Image !== 'function') return
-    const dataUrl = chart.toBase64Image('image/png', 1)
+    const sourceCanvas = chart?.canvas as HTMLCanvasElement | undefined
+    if (!sourceCanvas) return
+
+    const outCanvas = document.createElement('canvas')
+    outCanvas.width = 1920
+    outCanvas.height = 1080
+
+    const ctx = outCanvas.getContext('2d')
+    if (!ctx) return
+
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, outCanvas.width, outCanvas.height)
+
+    const srcWidth = sourceCanvas.width
+    const srcHeight = sourceCanvas.height
+    if (!srcWidth || !srcHeight) return
+
+    const scale = Math.min(outCanvas.width / srcWidth, outCanvas.height / srcHeight)
+    const drawWidth = srcWidth * scale
+    const drawHeight = srcHeight * scale
+    const dx = (outCanvas.width - drawWidth) / 2
+    const dy = (outCanvas.height - drawHeight) / 2
+
+    ctx.imageSmoothingEnabled = true
+    try {
+      ctx.imageSmoothingQuality = 'high'
+    } catch {
+      // ignore
+    }
+    ctx.drawImage(sourceCanvas, dx, dy, drawWidth, drawHeight)
+
+    const dataUrl = outCanvas.toDataURL('image/png')
+
     try {
       const link = document.createElement('a')
       link.href = dataUrl
@@ -100,12 +149,13 @@ export const MaturityAssessmentPanel = ({
     } catch {
       // ignore
     }
-  }
+  }, [])
 
-  const exportPdf = () => {
+  const exportPdf = useCallback(() => {
     if (!selected) return
     const chart = radarRef.current
-    const pngDataUrl = chart && typeof chart.toBase64Image === 'function' ? chart.toBase64Image('image/png', 1) : null
+    const sourceCanvas = chart?.canvas as HTMLCanvasElement | undefined
+    const pngDataUrl = sourceCanvas ? sourceCanvas.toDataURL('image/png') : null
     const html = buildMaturityAssessmentReportHtml({
       generatedAtIso: new Date().toISOString(),
       assessment: selected,
@@ -115,6 +165,64 @@ export const MaturityAssessmentPanel = ({
         'Self-assessment only. This is assistive and does not represent certification, compliance, or legal advice.',
     })
     openReportWindow(html, 'Maturity self-assessment report')
+  }, [selected])
+
+  useEffect(() => {
+    if (!registerPdfExporter) return
+    registerPdfExporter(selected ? exportPdf : null)
+    return () => registerPdfExporter(null)
+  }, [exportPdf, registerPdfExporter, selected])
+
+  const handleCreate = async () => {
+    if (isCreating) return
+    setIsCreating(true)
+    try {
+      const created = await onCreate(createPreset)
+      setSelectedId(created.id)
+    } catch (error) {
+      toast.notify({
+        title: 'Unable to create assessment',
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: 'warning',
+      })
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!selected || isDeleting) return
+    setIsDeleting(true)
+    try {
+      await onDelete(selected.id)
+      setSelectedId('')
+    } catch (error) {
+      toast.notify({
+        title: 'Unable to delete assessment',
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: 'warning',
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleUpdateDomain = async (domainKey: string, score: number) => {
+    if (!selected) return
+    if (updatingDomainKey) return
+
+    setUpdatingDomainKey(domainKey)
+    try {
+      await onUpdateDomain(selected.id, domainKey, { score })
+    } catch (error) {
+      toast.notify({
+        title: 'Unable to save score',
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: 'warning',
+      })
+    } finally {
+      setUpdatingDomainKey(null)
+    }
   }
 
   if (!settings.maturityEnabled) {
@@ -151,16 +259,8 @@ export const MaturityAssessmentPanel = ({
                 onChange={(value) => setCreatePreset(value as MaturityFrameworkPreset)}
               />
             </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                const created = onCreate(createPreset)
-                setSelectedId(created.id)
-              }}
-            >
-              New assessment
+            <Button type="button" size="sm" variant="secondary" onClick={handleCreate} disabled={isCreating}>
+              {isCreating ? 'Creating…' : 'New assessment'}
             </Button>
             <Button type="button" size="sm" variant="secondary" onClick={exportPdf} disabled={!selected}>
               Export PDF
@@ -206,21 +306,21 @@ export const MaturityAssessmentPanel = ({
             <div className="flex items-baseline justify-between gap-3">
               <div>
                 <h4 className="text-sm font-semibold text-text-high">Radar chart</h4>
-                <p className="mt-1 text-xs text-text-low">
-                  Scores range from 0 (not started) to 4 (managed).
-                </p>
+                <p className="mt-1 text-xs text-text-low">Scores range from 0 (not started) to 4 (managed).</p>
               </div>
-              <Button
-                type="button"
-                size="sm"
-                variant="destructive"
-                onClick={() => {
-                  onDelete(selected.id)
-                  setSelectedId('')
-                }}
-              >
-                Delete assessment
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowTableFallback((prev) => !prev)}
+                >
+                  {showTableFallback ? 'Hide table' : 'Show table'}
+                </Button>
+                <Button type="button" size="sm" variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                  {isDeleting ? 'Deleting…' : 'Delete assessment'}
+                </Button>
+              </div>
             </div>
             <div className="mt-4" style={{ height: '400px' }} aria-label="Maturity radar chart">
               <div className="h-full w-full">
@@ -243,49 +343,55 @@ export const MaturityAssessmentPanel = ({
               </div>
             </div>
             <p className="mt-4 text-xs text-text-low">
-              Created: <span className="font-semibold text-text-high">{dateLabel(selected.createdAt)}</span> · Updated:{' '}
+              Created: <span className="font-semibold text-text-high">{dateLabel(selected.createdAt)}</span> ú Updated:{' '}
               <span className="font-semibold text-text-high">{dateLabel(selected.updatedAt)}</span>
             </p>
           </div>
 
-          <div className="rr-panel p-5">
-            <h4 className="text-sm font-semibold text-text-high">Domain scores and notes</h4>
-            <p className="mt-1 text-xs text-text-low">
-              Update scores and optional notes. Changes are saved locally.
-            </p>
+          {showTableFallback ? (
+            <div className="rr-panel p-5">
+              <h4 className="text-sm font-semibold text-text-high">Domain scores (table)</h4>
+              <p className="mt-1 text-xs text-text-low">
+                Use this as a non-visual fallback for the radar chart. Scores range from 0 (not started) to 4 (managed).
+              </p>
 
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              {selected.domains.map((domain, index) => (
-                <div key={domain.key} className="rounded-2xl border border-border-faint bg-surface-secondary/10 p-4 transition-colors hover:bg-surface-secondary/20">
-                  <div className="flex flex-col gap-3">
-                    <div className="grid grid-cols-2 gap-2 items-center">
-                      <div className="flex items-center gap-3">
-                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-primary/10 text-xs font-semibold text-brand-primary">
-                          {index + 1}
-                        </span>
-                        <p className="text-sm font-semibold text-text-high">{domain.name}</p>
-                      </div>
-                      <Select
-                        label="Score"
-                        labelVisibility="sr-only"
-                        options={scoreOptions.map((option) => ({ value: String(option.value), label: option.label }))}
-                        value={String(domain.score)}
-                        onChange={(value) => onUpdateDomain(selected.id, domain.key, { score: Number(value) })}
-                      />
-                    </div>
-
-                    <Textarea
-                      label="Notes (optional)"
-                      value={domain.notes ?? ''}
-                      onChange={(event) => onUpdateDomain(selected.id, domain.key, { notes: event.target.value })}
-                      rows={1}
-                      placeholder="What's working, what's missing, next steps…"
-                    />
-                  </div>
-                </div>
-              ))}
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-border-faint text-left text-xs uppercase tracking-wide text-text-low">
+                      <th className="py-2 pr-3">#</th>
+                      <th className="py-2 pr-3">Domain</th>
+                      <th className="py-2 pr-3 text-right">Score</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selected.domains.map((domain, index) => (
+                      <tr key={domain.key} className="border-b border-border-faint last:border-b-0">
+                        <td className="py-3 pr-3 align-top text-text-low">{index + 1}</td>
+                        <td className="py-3 pr-3 align-top font-medium text-text-high">{domain.name}</td>
+                        <td className="py-3 pr-3 align-top text-right">
+                          <div className="inline-block min-w-[220px] text-left">
+                            <Select
+                              label={`Score for ${domain.name}`}
+                              labelVisibility="sr-only"
+                              options={scoreOptions.map((option) => ({
+                                value: String(option.value),
+                                label: option.label,
+                              }))}
+                              value={String(domain.score)}
+                              onChange={(value) => handleUpdateDomain(domain.key, Number(value))}
+                              disabled={Boolean(updatingDomainKey)}
+                              helperText={updatingDomainKey === domain.key ? 'Saving…' : undefined}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
       ) : null}
     </div>

@@ -5,6 +5,7 @@ import Papa from 'papaparse'
 
 import { DEFAULT_CATEGORIES, LOCAL_STORAGE_KEY } from '../constants/risk'
 import { COMPLIANCE_CHECKLIST_TEMPLATES, buildChecklistInstanceFromTemplate } from '../constants/cyber'
+import { MATURITY_PRESETS } from '../constants/maturity'
 import type { Risk, RiskFilters, RiskInput, RiskPlaybookStep } from '../types/risk'
 import type {
   MaturityAssessment,
@@ -138,35 +139,6 @@ const isTrendDefaultMode = (value: unknown): value is TrendDefaultMode =>
 const isMaturityFrameworkPreset = (value: unknown): value is MaturityFrameworkPreset =>
   value === 'acsc_essential_eight' || value === 'nist_csf'
 
-const maturityPresets: Record<
-  MaturityFrameworkPreset,
-  { frameworkName: string; domains: Array<{ key: string; name: string }> }
-> = {
-  acsc_essential_eight: {
-    frameworkName: 'ACSC Essential Eight (self-assessment)',
-    domains: [
-      { key: 'application_control', name: 'Application control' },
-      { key: 'patch_applications', name: 'Patch applications' },
-      { key: 'patch_operating_systems', name: 'Patch operating systems' },
-      { key: 'mfa', name: 'Multi-factor authentication (MFA)' },
-      { key: 'restrict_admin', name: 'Restrict administrative privileges' },
-      { key: 'backups', name: 'Regular backups' },
-      { key: 'user_application_hardening', name: 'User application hardening' },
-      { key: 'macro_settings', name: 'Macro settings' },
-    ],
-  },
-  nist_csf: {
-    frameworkName: 'NIST CSF (self-assessment)',
-    domains: [
-      { key: 'identify', name: 'Identify' },
-      { key: 'protect', name: 'Protect' },
-      { key: 'detect', name: 'Detect' },
-      { key: 'respond', name: 'Respond' },
-      { key: 'recover', name: 'Recover' },
-    ],
-  },
-}
-
 const clampMaturityScore = (value: number) => Math.max(0, Math.min(Math.floor(value), 4))
 
 const normalizeMaturityDomainScore = (value: unknown): MaturityDomainScore | null => {
@@ -194,7 +166,7 @@ const normalizeMaturityAssessment = (value: unknown): MaturityAssessment | null 
   const frameworkName =
     typeof raw.frameworkName === 'string' && raw.frameworkName.trim()
       ? raw.frameworkName.trim()
-      : maturityPresets[frameworkKey].frameworkName
+      : MATURITY_PRESETS[frameworkKey].frameworkName
 
   const createdAt = typeof raw.createdAt === 'number' && Number.isFinite(raw.createdAt) ? raw.createdAt : NaN
   const updatedAt = typeof raw.updatedAt === 'number' && Number.isFinite(raw.updatedAt) ? raw.updatedAt : createdAt
@@ -925,6 +897,9 @@ export interface RiskStoreState {
   settings: AppSettings
   riskScoreSnapshots: RiskScoreSnapshot[]
   maturityAssessments: MaturityAssessment[]
+  replaceMaturityAssessmentsFromApi: (assessments: MaturityAssessment[]) => void
+  upsertMaturityAssessmentFromApi: (assessment: MaturityAssessment) => void
+  removeMaturityAssessmentFromApi: (id: string) => void
   updateSettings: (updates: Partial<AppSettings>) => void
   updateReminderSettings: (updates: Partial<ReminderSettings>) => void
   createMaturityAssessment: (preset?: MaturityFrameworkPreset) => MaturityAssessment
@@ -1140,6 +1115,7 @@ export const useRiskStore = create<RiskStoreState>()(
         set((state) => ({
           ...recalc([], state.filters),
           categories: [...DEFAULT_CATEGORIES],
+          maturityAssessments: [],
           dataSyncStatus: 'idle',
           dataSyncError: null,
           dataLastSyncedAt: null,
@@ -1179,6 +1155,21 @@ export const useRiskStore = create<RiskStoreState>()(
           const nextRisks = state.risks.filter((risk) => risk.id !== id)
           return recalc(nextRisks, state.filters)
         }),
+      replaceMaturityAssessmentsFromApi: (assessments) =>
+        set(() => ({
+          maturityAssessments: Array.isArray(assessments) ? assessments : [],
+        })),
+      upsertMaturityAssessmentFromApi: (assessment) =>
+        set((state) => {
+          const next = state.maturityAssessments.some((existing) => existing.id === assessment.id)
+            ? state.maturityAssessments.map((existing) => (existing.id === assessment.id ? assessment : existing))
+            : [assessment, ...state.maturityAssessments]
+          return { maturityAssessments: next }
+        }),
+      removeMaturityAssessmentFromApi: (id) =>
+        set((state) => ({
+          maturityAssessments: state.maturityAssessments.filter((assessment) => assessment.id !== id),
+        })),
       updateSettings: (updates) =>
         set((state) => {
           const nextSettings = normalizeSettings({ ...state.settings, ...updates })
@@ -1206,7 +1197,7 @@ export const useRiskStore = create<RiskStoreState>()(
       createMaturityAssessment: (preset) => {
         const key = preset ?? get().settings.visualizations.maturityFrameworkPreset
         const now = Date.now()
-        const base = maturityPresets[key]
+        const base = MATURITY_PRESETS[key]
 
         const assessment: MaturityAssessment = {
           id: nanoid(10),

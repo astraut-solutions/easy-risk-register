@@ -384,7 +384,6 @@ export function RiskPlaybooksPanel({ riskId }: RiskPlaybooksPanelProps) {
                     <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_240px] sm:items-end">
                       <Input
                         label="Description"
-                        labelVisibility="sr-only"
                         placeholder="Describe the step"
                         value={newStepText}
                         onChange={(event) => setNewStepText(event.target.value)}
@@ -413,4 +412,3 @@ export function RiskPlaybooksPanel({ riskId }: RiskPlaybooksPanelProps) {
     </div>
   )
 }
-
