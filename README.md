@@ -21,7 +21,7 @@ A lightweight, privacy-first risk management application for small and medium-si
 
 Easy Risk Register addresses a critical market gap where SMBs currently rely on outdated methods like Excel spreadsheets or informal processes for risk management, while enterprise-grade tools remain too complex and costly for their needs. The application offers:
 
-- **Privacy-first approach**: Data is stored in your Supabase project (workspace-scoped with RLS); the browser stores non-authoritative UI state plus the Supabase session token (with some preferences optionally synced to your workspace, e.g. tooltips/onboarding)
+- **Privacy-first approach**: Data is stored in your Supabase project (workspace-scoped with RLS); the browser stores non-authoritative UI state plus the Supabase session token (with some preferences optionally synced to your workspace, e.g. tooltips/onboarding/reminders)
 - **Cross-industry applicability**: Universal solution suitable for various business types
 - **Cost-effective**: Simple architecture (Vercel + Supabase) with minimal operational overhead
 - **User-friendly**: Intuitive interface accessible to non-risk experts
@@ -51,8 +51,9 @@ A regional financial advisor firm manages risks including market volatility, cyb
 - CSV export (standard + audit pack) with CSV/Excel formula injection protection
 - PDF exports: direct download via server-side endpoints (`/api/exports/*.pdf`) with print-to-PDF fallback
 - Per-risk optional fields stored in `public.risks.data` (jsonb): templates, evidence, playbooks, structured mitigation steps
+- Automated reminders: due/review prompts via in-app banners with optional desktop notifications (no push/background jobs)
 - Offline/unreachable behavior (MVP): block writes with explicit "not saved" messaging; optional read-only IndexedDB cache (bounded to last 7 days or 100 items) with "last updated" timestamp
-- Guided onboarding + tooltips: key field tooltips and a “first 3 steps” onboarding checklist; preference sync via `/api/settings` with local fallback
+- Guided onboarding + tooltips: key field tooltips and a "first 3 steps" onboarding checklist; preference sync via `/api/settings` with local fallback
 - Sanitization and a strict Content Security Policy (CSP)
 
 UX notes:
@@ -261,6 +262,7 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | | [Code Style Guide](docs/guides/dev/code-style.md) | Coding standards and best practices |
 | **Verification** | [Matrix + filters perf/a11y verification](docs/verification/matrix-filters-performance-a11y.md) | Validate "up to 1000 risks" performance + matrix/filters accessibility |
 | | [Offline / read-only verification](docs/verification/offline-readonly-cache.md) | Validate offline/unreachable behavior and bounded read-only cache |
+| | [Reminders verification](docs/verification/reminders.md) | Validate Notification permission denied fallback + cadence behavior |
 | | [Audit-ready workflow](docs/guides/product/audit-ready-workflow.md) | Owners, reviews, evidence, and audit pack exports |
 | | [PDF exports](docs/guides/product/pdf-exports.md) | Direct download endpoints + print-to-PDF troubleshooting |
 | | [Evidence guidance](docs/guides/product/evidence-guidance.md) | What counts as evidence and how to capture it |
@@ -333,7 +335,7 @@ We welcome contributions to the Easy Risk Register project! To contribute:
 Please ensure your code follows our [Code Style Guide](docs/guides/dev/code-style.md) and includes appropriate tests.
 
 ## Project Status
-- **Last Updated**: November 2025
+- **Last Updated**: December 2025
 
 ### Feature: Guided onboarding + educational tooltips
 - [x] [database] Add user/workspace settings (tooltips on/off, onboarding state)
@@ -349,3 +351,10 @@ Please ensure your code follows our [Code Style Guide](docs/guides/dev/code-styl
 - [x] [frontend] Implement PNG export (default 1080p) for charts
 - [x] [deploy] Verify bundle size and chart rendering performance
 - [x] [verify] Chart drill-down matches filters/matrix semantics; "DB unreachable" state is clear
+
+### Feature: Automated reminders (notifications + in-app fallback)
+- [x] [database] Add reminder settings + risk metadata needed to schedule prompts (workspace-scoped)
+- [x] [backend] Define reminder computation logic (what is "due") and expose via API; avoid background jobs in MVP
+- [x] [frontend] Implement opt-in reminders; Notification API prompt; fallback in-app banners + snooze/disable
+- [x] [deploy] Document browser permission behavior and supported environments
+- [x] [verify] Denied permission path shows in-app reminders; cadence respects settings
