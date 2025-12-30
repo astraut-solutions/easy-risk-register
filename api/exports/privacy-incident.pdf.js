@@ -102,8 +102,38 @@ module.exports = async function handler(req, res) {
     const completedCount = items.filter((item) => Boolean(item.completed_at)).length
 
     const dataObj = risk.data && typeof risk.data === 'object' && !Array.isArray(risk.data) ? risk.data : {}
-    const playbook = dataObj.playbook && typeof dataObj.playbook === 'object' && !Array.isArray(dataObj.playbook) ? dataObj.playbook : null
-    const playbookSteps = Array.isArray(playbook?.steps) ? playbook.steps : []
+    const legacyPlaybook =
+      dataObj.playbook && typeof dataObj.playbook === 'object' && !Array.isArray(dataObj.playbook) ? dataObj.playbook : null
+
+    const { data: playbooks, error: playbookError } = await supabase
+      .from('risk_playbooks')
+      .select(
+        'id, title, description, attached_at, steps:risk_playbook_steps(id, position, section, description, created_at, completed_at, completed_by)',
+      )
+      .eq('workspace_id', workspaceId)
+      .eq('risk_id', riskId)
+      .order('attached_at', { ascending: false })
+      .order('position', { ascending: true, foreignTable: 'risk_playbook_steps' })
+
+    if (playbookError) {
+      logApiWarn('supabase_query_failed', { requestId, workspaceId, riskId, message: playbookError.message })
+      const apiError = supabaseErrorToApiError(playbookError, { action: 'query' })
+      return sendApiError(req, res, apiError)
+    }
+
+    const latestPlaybook = Array.isArray(playbooks) && playbooks.length ? playbooks[0] : null
+    const dbSteps = Array.isArray(latestPlaybook?.steps) ? latestPlaybook.steps : []
+
+    const playbookTitle = latestPlaybook?.title ?? legacyPlaybook?.title ?? null
+    const playbookSteps =
+      latestPlaybook && dbSteps.length
+        ? dbSteps.map((step) => ({
+            description: step?.description,
+            completedAt: step?.completed_at,
+          }))
+        : Array.isArray(legacyPlaybook?.steps)
+          ? legacyPlaybook.steps
+          : []
 
     const generatedAtIso = new Date().toISOString()
     const doc = new PdfDoc({ title: 'Privacy incident / checklist report', author: 'Easy Risk Register' })
@@ -140,10 +170,10 @@ module.exports = async function handler(req, res) {
     doc.addText(`Created: ${formatDateTime(risk.created_at)} | Updated: ${formatDateTime(risk.updated_at)}`, { font: 'F1', fontSizePt: 9 })
     doc.addLineBreak(10)
 
-    if (playbook && playbookSteps.length) {
+    if (playbookTitle && playbookSteps.length) {
       doc.addText('Incident response playbook', { font: 'F1', fontSizePt: 12 })
       doc.addLineBreak(12)
-      doc.addText(safeString(playbook.title, { fallback: 'Playbook' }), { font: 'F1', fontSizePt: 10 })
+      doc.addText(safeString(playbookTitle, { fallback: 'Playbook' }), { font: 'F1', fontSizePt: 10 })
       doc.addLineBreak(12)
 
       for (let i = 0; i < playbookSteps.length; i += 1) {
@@ -201,4 +231,3 @@ module.exports = async function handler(req, res) {
     logApiResponse({ requestId, method: req.method, path: req.url, status: res.statusCode, durationMs: Date.now() - start })
   }
 }
-

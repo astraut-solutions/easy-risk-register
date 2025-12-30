@@ -19,6 +19,7 @@ import { Button, Input, Modal, SectionHeader, Select } from './design-system'
 import { cn } from './utils/cn'
 import { useToast } from './components/feedback/ToastProvider'
 import { apiFetch, apiGetBlob, type ApiError } from './services/apiClient'
+import { playbookService } from './services/playbookService'
 import { MetricsModal } from './components/feedback/MetricsModal'
 import { isAnalyticsEnabled, setAnalyticsEnabled, trackEvent } from './utils/analytics'
 import { buildRiskDefaultsFromCyberTemplate, CYBER_RISK_TEMPLATES } from './constants/cyber'
@@ -697,25 +698,35 @@ function App() {
     }
   }
 
-  const handleOpenPrivacyPrintView = () => {
+  const handleOpenPrivacyPrintView = async () => {
     const risk = allRisks.find((item) => item.id === selectedPrivacyRiskId)
     if (!risk) return
 
-    const html = buildPrivacyIncidentChecklistReportHtml({
-      risk,
-      generatedAtIso: new Date().toISOString(),
-    })
+    try {
+      const playbooks = await playbookService.listRiskPlaybooks(risk.id).catch(() => [])
+      const html = buildPrivacyIncidentChecklistReportHtml({
+        risk,
+        generatedAtIso: new Date().toISOString(),
+        playbooks,
+      })
 
-    const opened = openReportWindow(html, 'Privacy incident checklist report')
-    if (!opened) {
+      const opened = openReportWindow(html, 'Privacy incident checklist report')
+      if (!opened) {
+        toast.notify({
+          title: 'Unable to open report',
+          description: 'Your browser blocked the popup. Allow popups and try again.',
+          variant: 'warning',
+        })
+        return
+      }
+      setIsPdfExportModalOpen(false)
+    } catch (error) {
       toast.notify({
         title: 'Unable to open report',
-        description: 'Your browser blocked the popup. Allow popups and try again.',
+        description: describeApiError(error),
         variant: 'warning',
       })
-      return
     }
-    setIsPdfExportModalOpen(false)
   }
 
   const handleExportDashboardPdf = () => {

@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import type { Risk } from '../../types/risk'
 import { COMPLIANCE_CHECKLIST_TEMPLATES } from '../../constants/cyber'
 import { Badge, Button, Modal } from '../../design-system'
+import { RiskPlaybooksPanel } from './RiskPlaybooksPanel'
 
 interface RiskDetailModalProps {
   risk: Risk | null
@@ -316,9 +317,11 @@ export const RiskDetailModal = ({
           )}
         </div>
 
+        <RiskPlaybooksPanel riskId={risk.id} />
+
         <div className="rr-panel space-y-3 p-4">
           <h4 className="text-sm font-semibold text-text-high">Notes</h4>
-          <p className="text-sm text-text-low whitespace-pre-wrap">{risk.notes || '—'}</p>
+          <p className="text-sm text-text-low whitespace-pre-wrap">{risk.notes || '-'}</p>
         </div>
 
         <div className="flex flex-wrap justify-end gap-2">

@@ -1,4 +1,5 @@
 import type { Risk, RiskFilters } from '../types/risk'
+import type { RiskPlaybook } from '../types/playbooks'
 import { getRiskSeverity } from './riskCalculations'
 
 const REPORT_CHANNEL_NAME = 'easy-risk-register:report'
@@ -431,13 +432,27 @@ export type PrivacyIncidentReportInput = {
   risk: Risk
   generatedAtIso: string
   checklistTemplateId?: string
+  playbooks?: RiskPlaybook[] | null
+}
+
+function pickBestIncidentPlaybook(playbooks?: RiskPlaybook[] | null) {
+  if (!Array.isArray(playbooks) || playbooks.length === 0) return null
+  const sorted = [...playbooks].sort((a, b) => {
+    const aTime = Date.parse(a.attachedAt)
+    const bTime = Date.parse(b.attachedAt)
+    if (!Number.isNaN(aTime) && !Number.isNaN(bTime)) return bTime - aTime
+    return String(b.attachedAt).localeCompare(String(a.attachedAt))
+  })
+  return sorted[0] ?? null
 }
 
 export const buildPrivacyIncidentChecklistReportHtml = ({
   risk,
   generatedAtIso,
   checklistTemplateId = 'checklist_privacy_incident_ndb_v1',
+  playbooks,
 }: PrivacyIncidentReportInput) => {
+  const bestPlaybook = pickBestIncidentPlaybook(playbooks)
   const checklist = risk.checklists.find((item) => item.templateId === checklistTemplateId) ?? null
   const items = checklist?.items ?? []
   const completed = items.filter((item) => Boolean(item.completedAt)).length
@@ -457,14 +472,17 @@ export const buildPrivacyIncidentChecklistReportHtml = ({
     })
     .join('')
 
+  const playbookTitle = bestPlaybook?.title ?? risk.playbook?.title ?? ''
+  const playbookSteps = bestPlaybook?.steps ?? risk.playbook?.steps ?? []
+
   const playbookHtml =
-    risk.playbook && (risk.playbook.steps?.length ?? 0) > 0
+    playbookTitle && playbookSteps.length > 0
       ? `
         <h2>Incident Response Playbook</h2>
         <div class="card">
-          <h3>${escapeHtml(risk.playbook.title)}</h3>
+          <h3>${escapeHtml(playbookTitle)}</h3>
           <ul>
-            ${risk.playbook.steps
+            ${playbookSteps
               .map((step) => {
                 const status = step.completedAt ? 'Done' : 'Open'
                 const timestamp = step.completedAt ? formatIsoDateTime(step.completedAt) : '-'

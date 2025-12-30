@@ -24,7 +24,7 @@ describe('apiGetBlob', () => {
         status: 200,
         headers: {
           'content-type': 'application/pdf',
-          'content-disposition': 'attachment; filename=\"risks.pdf\"',
+          'content-disposition': 'attachment; filename="risks.pdf"',
         },
       })
     })
@@ -53,4 +53,3 @@ describe('apiGetBlob', () => {
     expect(filename).toBe('risk-register-2025-01-01.pdf')
   })
 })
-
