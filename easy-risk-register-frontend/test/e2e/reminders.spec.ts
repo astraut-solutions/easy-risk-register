@@ -39,7 +39,7 @@ test('denied notifications: shows in-app reminder banner and supports snooze', a
   test.setTimeout(60_000)
   await page.goto('/')
 
-  await page.getByRole('button', { name: 'New risk' }).click()
+  await page.getByRole('button', { name: 'Create new risk' }).click()
   await expect(page.getByRole('textbox', { name: 'Title *' })).toBeVisible()
 
   const yesterday = new Date()
@@ -73,7 +73,7 @@ test('cadence: does not re-show banner within frequency window', async ({ page }
   test.setTimeout(60_000)
   await page.goto('/')
 
-  await page.getByRole('button', { name: 'New risk' }).click()
+  await page.getByRole('button', { name: 'Create new risk' }).click()
   await expect(page.getByRole('textbox', { name: 'Title *' })).toBeVisible()
 
   const yesterday = new Date()

@@ -15,16 +15,16 @@ Goal: validate PDF exports for correctness, filters, chart inclusion, and ensure
    - Status = `open`
    - Threat type = `phishing`
    - Checklist status = `in_progress`
-2) Open `Export PDF` -> `Risk register` -> scope `Current view`.
+2) Open `Export` -> `Export PDF report` -> `Risk register` -> scope `Current view`.
 3) Click `Download register PDF`.
 4) Confirm the PDF header shows:
    - Generated timestamp
    - “Applied filters” includes the selected filters
 5) Spot check that exported rows match the visible list ordering (updated desc) and do not include out-of-filter risks.
 
-## Verify: risk register PDF scope (“All risks”)
+## Verify: risk register PDF scope ("All risks")
 
-1) Open `Export PDF` -> set scope `All risks`.
+1) Open `Export` -> `Export PDF report` -> set scope `All risks`.
 2) Click `Download register PDF`.
 3) Confirm “Applied filters” shows `None (all risks)` and that the export includes risks outside the previous filter.
 
@@ -40,7 +40,7 @@ Goal: validate PDF exports for correctness, filters, chart inclusion, and ensure
 
 ## Verify: privacy incident / checklist PDF (server download)
 
-1) Open `Export PDF` -> `Privacy incident / checklist` and select the risk with the privacy incident checklist attached.
+1) Open `Export` -> `Export PDF report` -> `Privacy incident / checklist` and select the risk with the privacy incident checklist attached.
 2) Click `Download checklist PDF`.
 3) Confirm:
    - Risk title/status appear
@@ -52,7 +52,7 @@ Goal: validate PDF exports for correctness, filters, chart inclusion, and ensure
 
 1) Go to `Dashboard charts`.
 2) Apply a filter set (and optionally a matrix selection).
-3) Click `Export dashboard PDF` (either from the Dashboard page or from the global `Export PDF` modal).
+3) Click `Export dashboard PDF` (either from the Dashboard page or from the global `Export` menu).
 4) In the report view, Print / Save as PDF and confirm the PDF includes:
    - Chart images (severity + category + trend)
    - A data table fallback section when enabled
@@ -61,7 +61,7 @@ Goal: validate PDF exports for correctness, filters, chart inclusion, and ensure
 
 1) Go to `Maturity radar`.
 2) Create an assessment (or select an existing one) and set a few domain scores.
-3) Click `Export PDF` (either from the Maturity page or from the global `Export PDF` modal via `Export maturity PDF`).
+3) Click `Export PDF` (either from the Maturity page or from the global `Export` menu via `Export maturity PDF`).
 4) In the report view, Print / Save as PDF and confirm the PDF includes:
    - The disclaimer (self-assessment only; not certification/compliance/legal advice)
    - Preset label + generated timestamp

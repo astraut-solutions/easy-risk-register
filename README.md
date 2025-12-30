@@ -217,12 +217,12 @@ docker compose down
 
 ### Exporting for Reports
 1. Apply filters (and/or select a matrix cell) to scope what you want to export
-2. Click **Export CSV**
+2. Click **Export** → **Export CSV**
 3. Choose **Standard** (round-trip friendly) or **Audit pack** (adds evidence URL columns)
 4. Download the CSV and open it in Excel or another spreadsheet tool
 
 ### Importing from CSV
-1. Click the "Import CSV" button on the dashboard
+1. Click **Import** → **Import CSV**
 2. Choose a CSV file exported from Easy Risk Register (or a compatible format)
 3. Review the preview, then click **Import to workspace**
 4. If any rows are rejected, the UI shows row-level errors (and the server blocks spreadsheet injection patterns)

@@ -85,7 +85,7 @@ Retention baseline and operational notes: `docs/guides/deploy/audit-trail.md`.
 ### 5) Export for audits ("Audit pack")
 
 When you need to share or archive evidence:
-- Use **Export CSV → Audit pack** for a spreadsheet-friendly variant that includes evidence URL columns and review/acceptance metadata.
+- Use **Export → Export CSV → Audit pack** for a spreadsheet-friendly variant that includes evidence URL columns and review/acceptance metadata.
 - Use **Standard CSV** when you primarily need reliable **round-trip** re-import (it includes JSON columns for evidence and mitigation steps).
 
 Security note: CSV exports include spreadsheet injection protection, but you should still treat exported files as sensitive.

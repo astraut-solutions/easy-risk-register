@@ -349,7 +349,7 @@ export const MaturityAssessmentPanel = ({
               </div>
             </div>
             <p className="mt-4 text-xs text-text-low">
-              Created: <span className="font-semibold text-text-high">{dateLabel(selected.createdAt)}</span> ú Updated:{' '}
+              Created: <span className="font-semibold text-text-high">{dateLabel(selected.createdAt)}</span> • Updated:{' '}
               <span className="font-semibold text-text-high">{dateLabel(selected.updatedAt)}</span>
             </p>
           </div>

@@ -107,4 +107,4 @@ Core risk register data is stored server-side (workspace-scoped with Supabase RL
 - WCAG 2.1 AA accessibility compliance checklist
 - Maturity assessment panel: Full-width chart (400px height) + 2-column domain grid (numbered badges, equal-width label/dropdown)
 - Settings: Moved from modal dialog to full-page view for improved usability
-- Header simplified: Removed description text, maintained action buttons (New Risk, Export CSV/PDF, Import CSV)
+- Header simplified: One primary CTA (New risk) + Export/Import menus

@@ -23,7 +23,7 @@ test('local-only: create risk, drill down matrix, export CSV', async ({ page }) 
   await expect(page.getByRole('heading', { name: 'Risk management workspace' })).toBeVisible()
   await expect(page.getByText('Local-only until you sign in')).toBeVisible()
 
-  await page.getByRole('button', { name: 'New risk' }).click()
+  await page.getByRole('button', { name: 'Create new risk' }).click()
   await expect(page.getByRole('textbox', { name: 'Title *' })).toBeVisible()
 
   await page.getByRole('textbox', { name: 'Title *' }).fill('Playwright smoke risk')
@@ -46,7 +46,8 @@ test('local-only: create risk, drill down matrix, export CSV', async ({ page }) 
     page.getByRole('button', { name: 'Edit risk: Playwright smoke risk', exact: true }),
   ).toBeVisible()
 
-  await page.getByRole('button', { name: 'Export CSV' }).click()
+  await page.getByRole('button', { name: 'Export' }).click()
+  await page.getByRole('menuitem', { name: 'Export CSV' }).click()
   await expect(page.getByRole('heading', { name: 'Export CSV' })).toBeVisible()
 
   const downloadPromise = page.waitForEvent('download')

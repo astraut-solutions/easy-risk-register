@@ -24,11 +24,11 @@ Both endpoints require `Authorization: Bearer <supabase-jwt>` and are workspace-
 
 ## How to export
 
-1. Click `Export PDF` in the header.
+1. Click `Export` → `Export PDF report` in the header.
 2. For **Risk register** and **Privacy incident / checklist**, choose:
    - `Download ... PDF` (server-generated, direct download), or
    - `Open print view` (opens a report tab you can Print / Save as PDF).
-3. For **Dashboard charts**, choose `Export dashboard PDF` (opens a print-friendly report with embedded chart images).
+3. For **Dashboard charts**, choose `Export dashboard PDF` (from the Dashboard page or from the global `Export` menu).
 4. For **Maturity self-assessment**, choose `Export maturity PDF` (opens a print-friendly report with the embedded radar image).
 
 ## Limits (server-side PDFs)

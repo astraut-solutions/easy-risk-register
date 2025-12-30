@@ -11,6 +11,7 @@ import { RiskDetailModal } from './components/risk/RiskDetailModal'
 import { RiskMatrix } from './components/risk/RiskMatrix'
 import { RiskFiltersBar } from './components/risk/RiskFilters'
 import { RiskTable } from './components/risk/RiskTable'
+import { NowPanel, type NowPanelItem } from './components/risk/NowPanel'
 import { useRiskManagement } from './services/riskService'
 import type { Risk, RiskSeverity } from './types/risk'
 import { exportRisksToCSV, type CSVExportVariant, type ReminderFrequency } from './stores/riskStore'
@@ -56,6 +57,7 @@ type MatrixSelection = {
 type DashboardView = 'overview' | 'dashboard' | 'maturity' | 'table' | 'new' | 'settings'
 
 type DashboardWorkspaceView = Exclude<DashboardView, 'new'>
+type TableNowFilter = NowPanelItem['id'] | null
 
 const RISK_FORM_DRAFT_KEY = 'easy-risk-register:risk-form-draft'
 
@@ -128,6 +130,8 @@ function App() {
   const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false)
   const [pendingView, setPendingView] = useState<DashboardWorkspaceView | null>(null)
   const [returnView, setReturnView] = useState<DashboardWorkspaceView>('overview')
+  const [isHeaderExportMenuOpen, setIsHeaderExportMenuOpen] = useState(false)
+  const [isHeaderToolsMenuOpen, setIsHeaderToolsMenuOpen] = useState(false)
   const [isExportModalOpen, setIsExportModalOpen] = useState(false)
   const [exportVariant, setExportVariant] = useState<CSVExportVariant>('standard')
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
@@ -142,6 +146,7 @@ function App() {
   const [selectedPrivacyRiskId, setSelectedPrivacyRiskId] = useState('')
   const [isPdfDownloading, setIsPdfDownloading] = useState(false)
   const [isMetricsModalOpen, setIsMetricsModalOpen] = useState(false)
+  const [tableNowFilter, setTableNowFilter] = useState<TableNowFilter>(null)
   const [reminderSummary, setReminderSummary] = useState<{
     overdue: number
     dueSoon: number
@@ -152,6 +157,10 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const dashboardPdfExporterRef = useRef<null | (() => void)>(null)
   const maturityPdfExporterRef = useRef<null | (() => void)>(null)
+  const exportMenuRef = useRef<HTMLDivElement | null>(null)
+  const toolsMenuRef = useRef<HTMLDivElement | null>(null)
+  const exportFirstItemRef = useRef<HTMLButtonElement | null>(null)
+  const toolsFirstItemRef = useRef<HTMLButtonElement | null>(null)
   const formModalOpenedAtRef = useRef<number | null>(null)
   const formModalModeRef = useRef<'create' | 'edit' | null>(null)
   const formModalOpenedFromDraftRef = useRef(false)
@@ -212,6 +221,46 @@ function App() {
       // best-effort: the panel will show empty state if unavailable
     })
   }, [activeView, actions, authStatus, settings.visualizations.maturityEnabled])
+
+  useEffect(() => {
+    if (isHeaderExportMenuOpen) exportFirstItemRef.current?.focus()
+  }, [isHeaderExportMenuOpen])
+
+  useEffect(() => {
+    if (isHeaderToolsMenuOpen) toolsFirstItemRef.current?.focus()
+  }, [isHeaderToolsMenuOpen])
+
+  useEffect(() => {
+    if (!isHeaderExportMenuOpen && !isHeaderToolsMenuOpen) return
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node | null
+      if (!target) return
+
+      if (isHeaderExportMenuOpen) {
+        const container = exportMenuRef.current
+        if (container && !container.contains(target)) setIsHeaderExportMenuOpen(false)
+      }
+
+      if (isHeaderToolsMenuOpen) {
+        const container = toolsMenuRef.current
+        if (container && !container.contains(target)) setIsHeaderToolsMenuOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setIsHeaderExportMenuOpen(false)
+      setIsHeaderToolsMenuOpen(false)
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isHeaderExportMenuOpen, isHeaderToolsMenuOpen])
 
   const loadRiskDraft = () => {
     try {
@@ -601,6 +650,19 @@ function App() {
     setIsPdfExportModalOpen(true)
   }
 
+  const openImportModal = (source: string) => {
+    resetImportState()
+    setIsImportModalOpen(true)
+    trackEvent('import_csv_open', { source })
+    window.setTimeout(() => fileInputRef.current?.click(), 0)
+  }
+
+  const openMetrics = (source: string) => {
+    setAnalyticsEnabled(true)
+    trackEvent('analytics_enabled', { source })
+    setIsMetricsModalOpen(true)
+  }
+
   const downloadBlob = (opts: { blob: Blob; filename: string }) => {
     const url = URL.createObjectURL(opts.blob)
     const link = document.createElement('a')
@@ -980,6 +1042,7 @@ function App() {
   const handleResetFilters = () => {
     actions.setFilters({ ...DEFAULT_FILTERS })
     setMatrixSelection(null)
+    setTableNowFilter(null)
   }
 
   const clearMatrixSelection = () => setMatrixSelection(null)
@@ -994,6 +1057,155 @@ function App() {
   }, [matrixSelection, risks])
 
   const visibleStats = useMemo(() => computeRiskStats(visibleRisks), [visibleRisks])
+
+  const nowPanel = useMemo(() => {
+    const nowMs = Date.now()
+    const weekMs = 7 * 24 * 60 * 60 * 1000
+    const dueSoonMs = 14 * 24 * 60 * 60 * 1000
+    const isActiveStatus = (risk: Risk) => risk.status !== 'closed' && risk.status !== 'mitigated'
+
+    const overdueReviews = visibleRisks.filter((risk) => {
+      if (!isActiveStatus(risk)) return false
+      if (!risk.reviewDate) return false
+      const ts = Date.parse(risk.reviewDate)
+      if (Number.isNaN(ts)) return false
+      return ts < nowMs
+    })
+
+    const dueSoon = visibleRisks.filter((risk) => {
+      if (!isActiveStatus(risk)) return false
+      if (!risk.dueDate) return false
+      const ts = Date.parse(risk.dueDate)
+      if (Number.isNaN(ts)) return false
+      return ts >= nowMs && ts <= nowMs + dueSoonMs
+    })
+
+    const highRisks = visibleRisks.filter((risk) => {
+      if (!isActiveStatus(risk)) return false
+      const severity = risk.severity ?? getRiskSeverity(risk.riskScore)
+      return severity === 'high'
+    })
+
+    const recentlyChanged = visibleRisks.filter((risk) => {
+      const ts = Date.parse(risk.lastModified)
+      if (Number.isNaN(ts)) return false
+      return ts >= nowMs - weekMs
+    })
+
+    return {
+      overdueReviews,
+      dueSoon,
+      highRisks,
+      recentlyChanged,
+    }
+  }, [visibleRisks])
+
+  const tableNowFilteredRisks = useMemo(() => {
+    if (!tableNowFilter) return visibleRisks
+
+    const nowMs = Date.now()
+    const weekMs = 7 * 24 * 60 * 60 * 1000
+    const dueSoonMs = 14 * 24 * 60 * 60 * 1000
+
+    if (tableNowFilter === 'overdue_reviews') {
+      return visibleRisks.filter((risk) => {
+        if (!risk.reviewDate) return false
+        const ts = Date.parse(risk.reviewDate)
+        if (Number.isNaN(ts)) return false
+        return ts < nowMs
+      })
+    }
+
+    if (tableNowFilter === 'due_soon') {
+      return visibleRisks.filter((risk) => {
+        if (!risk.dueDate) return false
+        const ts = Date.parse(risk.dueDate)
+        if (Number.isNaN(ts)) return false
+        return ts >= nowMs && ts <= nowMs + dueSoonMs
+      })
+    }
+
+    if (tableNowFilter === 'high_risks') {
+      return visibleRisks.filter((risk) => (risk.severity ?? getRiskSeverity(risk.riskScore)) === 'high')
+    }
+
+    if (tableNowFilter === 'recently_changed') {
+      return visibleRisks.filter((risk) => {
+        const ts = Date.parse(risk.lastModified)
+        if (Number.isNaN(ts)) return false
+        return ts >= nowMs - weekMs
+      })
+    }
+
+    return visibleRisks
+  }, [tableNowFilter, visibleRisks])
+
+  const nowPanelItems: NowPanelItem[] = useMemo(
+    () => [
+      {
+        id: 'overdue_reviews',
+        label: 'Overdue reviews',
+        value: nowPanel.overdueReviews.length,
+        description:
+          nowPanel.overdueReviews.length === 0
+            ? 'No reviews overdue.'
+            : 'Review dates have passed. Update or reschedule.',
+        accent: nowPanel.overdueReviews.length ? 'warning' : 'success',
+        disabled: nowPanel.overdueReviews.length === 0,
+        onClick: () => {
+          setTableNowFilter('overdue_reviews')
+          requestNavigate('table')
+        },
+      },
+      {
+        id: 'due_soon',
+        label: 'Due soon',
+        value: nowPanel.dueSoon.length,
+        description:
+          nowPanel.dueSoon.length === 0
+            ? 'Nothing due in the next 14 days.'
+            : 'Upcoming due dates. Prioritise mitigation steps.',
+        accent: nowPanel.dueSoon.length ? 'brand' : 'success',
+        disabled: nowPanel.dueSoon.length === 0,
+        onClick: () => {
+          setTableNowFilter('due_soon')
+          requestNavigate('table')
+        },
+      },
+      {
+        id: 'high_risks',
+        label: 'High risks',
+        value: nowPanel.highRisks.length,
+        description:
+          nowPanel.highRisks.length === 0
+            ? 'No high-severity risks in view.'
+            : 'Focus on the highest exposure items first.',
+        accent: nowPanel.highRisks.length ? 'danger' : 'success',
+        disabled: nowPanel.highRisks.length === 0,
+        onClick: () => {
+          setTableNowFilter(null)
+          actions.setFilters({ ...filters, severity: 'high' })
+          requestNavigate('table')
+        },
+      },
+      {
+        id: 'recently_changed',
+        label: 'Recently changed',
+        value: nowPanel.recentlyChanged.length,
+        description:
+          nowPanel.recentlyChanged.length === 0
+            ? 'No updates in the last 7 days.'
+            : 'Recent edits appear first in the table.',
+        accent: nowPanel.recentlyChanged.length ? 'brand' : 'success',
+        disabled: nowPanel.recentlyChanged.length === 0,
+        onClick: () => {
+          setTableNowFilter('recently_changed')
+          requestNavigate('table')
+        },
+      },
+    ],
+    [actions, filters, nowPanel, requestNavigate],
+  )
 
   const templateSelectOptions = useMemo(
     () => [
@@ -1102,44 +1314,147 @@ function App() {
                 >
                   {activeView === 'new' ? 'Back to overview' : 'New risk'}
                 </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={handleExport}
-                  aria-label="Export CSV file"
-                >
-                  Export CSV
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={handleExportPdf}
-                  aria-label="Export PDF report"
-                >
-                  Export PDF
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    resetImportState()
-                    setIsImportModalOpen(true)
-                    trackEvent('import_csv_open', { source: 'topbar' })
-                    window.setTimeout(() => fileInputRef.current?.click(), 0)
-                  }}
-                  aria-label="Import CSV file"
-                >
-                  Import CSV
-                </Button>
-                {isMetricsUiEnabled ? (
+                <div className="relative" ref={exportMenuRef}>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      setIsHeaderToolsMenuOpen(false)
+                      setIsHeaderExportMenuOpen((current) => !current)
+                    }}
+                    aria-haspopup="menu"
+                    aria-expanded={isHeaderExportMenuOpen}
+                    aria-controls={isHeaderExportMenuOpen ? 'header-export-menu' : undefined}
+                    aria-label="Open export menu"
+                    className={cn(
+                      isHeaderExportMenuOpen &&
+                        'bg-brand-primary-light/60 ring-4 ring-brand-primary/20',
+                    )}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      Export
+                      <svg
+                        className={cn(
+                          'h-4 w-4 opacity-70 transition-transform',
+                          isHeaderExportMenuOpen && 'rotate-180',
+                        )}
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        aria-hidden="true"
+                      >
+                        <path d="M6 8l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                  </Button>
+                  {isHeaderExportMenuOpen ? (
+                    <div
+                      id="header-export-menu"
+                      role="menu"
+                      aria-label="Export menu"
+                      className="absolute right-0 top-full z-40 mt-2 w-48 rounded-2xl border border-border-faint bg-surface-primary p-1 shadow-card-soft"
+                    >
+                      <button
+                        ref={exportFirstItemRef}
+                        role="menuitem"
+                        type="button"
+                        className="w-full rounded-xl px-2 py-1 text-left text-sm font-semibold text-text-high transition hover:bg-surface-secondary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20"
+                        onClick={() => {
+                          setIsHeaderExportMenuOpen(false)
+                          handleExport()
+                        }}
+                      >
+                        Export CSV
+                      </button>
+                      <button
+                        role="menuitem"
+                        type="button"
+                        className="mt-1 w-full rounded-xl px-2 py-1 text-left text-sm font-semibold text-text-high transition hover:bg-surface-secondary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20"
+                        onClick={() => {
+                          setIsHeaderExportMenuOpen(false)
+                          handleExportPdf()
+                        }}
+                      >
+                        Export PDF report
+                      </button>
+                      <button
+                        role="menuitem"
+                        type="button"
+                        className="mt-1 w-full rounded-xl px-2 py-1 text-left text-sm font-semibold text-text-high transition hover:bg-surface-secondary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20"
+                        onClick={() => {
+                          setIsHeaderExportMenuOpen(false)
+                          handleExportDashboardPdf()
+                        }}
+                      >
+                        Export dashboard PDF
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="relative" ref={toolsMenuRef}>
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={() => {
-                      setAnalyticsEnabled(true)
-                      trackEvent('analytics_enabled', { source: 'topbar_metrics_button' })
-                      setIsMetricsModalOpen(true)
+                      setIsHeaderExportMenuOpen(false)
+                      setIsHeaderToolsMenuOpen((current) => !current)
                     }}
+                    aria-haspopup="menu"
+                    aria-expanded={isHeaderToolsMenuOpen}
+                    aria-controls={isHeaderToolsMenuOpen ? 'header-import-menu' : undefined}
+                    aria-label="Open import menu"
+                    className={cn(
+                      'border border-border-strong',
+                      isHeaderToolsMenuOpen &&
+                        'bg-brand-primary-light/40 ring-4 ring-brand-primary/15',
+                    )}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      Import
+                      <svg
+                        className={cn(
+                          'h-4 w-4 opacity-70 transition-transform',
+                          isHeaderToolsMenuOpen && 'rotate-180',
+                        )}
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        aria-hidden="true"
+                      >
+                        <path d="M6 8l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                  </Button>
+                  {isHeaderToolsMenuOpen ? (
+                    <div
+                      id="header-import-menu"
+                      role="menu"
+                      aria-label="Import menu"
+                      className="absolute right-0 top-full z-40 mt-2 w-32 rounded-2xl border border-border-faint bg-surface-primary p-1 shadow-card-soft"
+                    >
+                      <button
+                        ref={toolsFirstItemRef}
+                        role="menuitem"
+                        type="button"
+                        className="w-full rounded-xl px-2 py-1 text-left text-sm font-semibold text-text-high transition hover:bg-surface-secondary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20"
+                        onClick={() => {
+                          setIsHeaderToolsMenuOpen(false)
+                          openImportModal('header_import_menu')
+                        }}
+                      >
+                        Import CSV
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+                {isMetricsUiEnabled ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => openMetrics('topbar_metrics_button')}
                     aria-label="Open metrics and feedback"
                   >
                     Metrics
@@ -1228,7 +1543,7 @@ function App() {
             />
           ) : null}
 
-          <div className="flex flex-wrap gap-3 lg:hidden">
+          <div className="flex flex-wrap gap-3 lg:hidden" role="navigation" aria-label="Main navigation">
             {NAV_ITEMS.map((item) => {
               const isActive = item.id === activeView
               return (
@@ -1242,12 +1557,27 @@ function App() {
                       ? 'border-brand-primary bg-brand-primary-light/60 text-brand-primary'
                       : 'border-border-subtle bg-surface-secondary text-text-high',
                   )}
+                  aria-current={isActive ? 'page' : undefined}
                 >
                   <p className="font-semibold">{item.label}</p>
                   <p className="text-xs text-text-low">{item.description}</p>
                 </button>
               )
             })}
+            <button
+              type="button"
+              onClick={() => requestNavigate('settings')}
+              className={cn(
+                'flex-1 min-w-[160px] rounded-2xl border px-4 py-3 text-left text-sm transition',
+                activeView === 'settings'
+                  ? 'border-brand-primary bg-brand-primary-light/60 text-brand-primary'
+                  : 'border-border-subtle bg-surface-secondary text-text-high',
+              )}
+              aria-current={activeView === 'settings' ? 'page' : undefined}
+            >
+              <p className="font-semibold">Settings</p>
+              <p className="text-xs text-text-low">Preferences, reminders, and visualizations</p>
+            </button>
           </div>
 
           {activeView === 'new' ? (
@@ -1689,6 +2019,22 @@ function App() {
 
               {activeView === 'overview' ? (
                 <div className="flex flex-col gap-6">
+                  {visibleStats.total === 0 ? (
+                    <div className="rr-panel p-5">
+                      <p className="text-sm font-semibold text-text-high">Get started</p>
+                      <p className="mt-1 text-sm text-text-low">
+                        Add your first risk to unlock the matrix, filters, and exports.
+                      </p>
+                      <div className="mt-4 flex justify-end">
+                        <Button type="button" variant="secondary" size="sm" onClick={() => startCreateRisk()}>
+                          New risk
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <NowPanel items={nowPanelItems} />
+                  )}
+
                   <RiskMatrix
                     risks={visibleRisks}
                     onSelect={(selection) => {
@@ -1835,13 +2181,55 @@ function App() {
                   </Suspense>
                 </div>
               ) : (
-                <RiskTable
-                  risks={matrixSelection ? visibleRisks : risks}
-                  onEdit={handleEditRisk}
-                  onDelete={handleDelete}
-                  onView={handleViewRisk}
-                  emptyState={tableEmptyState}
-                />
+                <div className="flex flex-col gap-4">
+                  {tableNowFilter ? (
+                    <div className="rr-panel flex flex-wrap items-center justify-between gap-3 p-4 text-sm text-text-high">
+                      <div>
+                        <span className="font-semibold text-text-high">Now filter:</span>{' '}
+                        {tableNowFilter === 'overdue_reviews'
+                          ? 'Overdue reviews'
+                          : tableNowFilter === 'due_soon'
+                            ? 'Due soon (next 14 days)'
+                            : tableNowFilter === 'high_risks'
+                              ? 'High risks'
+                              : 'Recently changed (last 7 days)'}
+                        <span className="text-text-low"> ({tableNowFilteredRisks.length})</span>
+                      </div>
+                      <Button type="button" size="sm" variant="ghost" onClick={() => setTableNowFilter(null)}>
+                        Clear
+                      </Button>
+                    </div>
+                  ) : null}
+
+                  <RiskTable
+                    risks={tableNowFilteredRisks}
+                    onEdit={handleEditRisk}
+                    onDelete={handleDelete}
+                    onView={handleViewRisk}
+                    emptyState={
+                      tableNowFilter
+                        ? {
+                            title:
+                              tableNowFilter === 'overdue_reviews'
+                                ? 'No overdue reviews'
+                                : tableNowFilter === 'due_soon'
+                                  ? 'Nothing due soon'
+                                  : tableNowFilter === 'high_risks'
+                                    ? 'No high-severity risks'
+                                    : 'No recent changes',
+                            description:
+                              tableNowFilter === 'overdue_reviews'
+                                ? 'Nice work—everything with a review date is up to date.'
+                                : tableNowFilter === 'due_soon'
+                                  ? 'You have no due dates coming up in the next two weeks.'
+                                  : tableNowFilter === 'high_risks'
+                                    ? 'No high risks match your current filters.'
+                                    : 'No risks were updated in the last week.',
+                          }
+                        : tableEmptyState
+                    }
+                  />
+                </div>
               )}
             </>
           )}

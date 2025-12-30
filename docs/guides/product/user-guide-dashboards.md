@@ -243,8 +243,8 @@ All views (matrix, dashboard, table) share the **same filters**. When you filter
 ### Export Best Practices
 
 1. **Clear filters** before exporting to include all risks (or export with specific filters for targeted reports)
-2. **Export PDF** for board/audit reports (most professional format)
-3. **Export CSV** for data analysis or external tools
+2. **Export → Export PDF report** for board/audit reports (most professional format)
+3. **Export → Export CSV** for data analysis or external tools
 4. **Screenshot charts** for quick sharing (no file download needed)
 
 ---
@@ -365,7 +365,7 @@ A: Yes, if both users are members of the same workspace in Supabase. The UI curr
 A: Export to CSV or PDF regularly. Store files securely (email, cloud drive, or local backup).
 
 **Q: Can I import risks from another tool?**
-A: Yes. Use **Import CSV** to upload a file into your workspace. The app shows a preview, then the server validates rows and blocks spreadsheet injection patterns. The CSV should match the Easy Risk Register column structure (see `docs/reference/risk-csv-spec.md`).
+A: Yes. Use **Import → Import CSV** to upload a file into your workspace. The app shows a preview, then the server validates rows and blocks spreadsheet injection patterns. The CSV should match the Easy Risk Register column structure (see `docs/reference/risk-csv-spec.md`).
 
 ---
 
