@@ -2,7 +2,7 @@
 
 Easy Risk Register is a privacy-first risk management app backed by **Supabase (Postgres)** and accessed via **serverless APIs** (`/api/*` on Vercel). It supports **audit evidence preparation for ISO 27001 / SOC 2** (it does not provide certification).
 
-Core risk register data is stored server-side (workspace-scoped with Supabase RLS). The browser stores non-authoritative UI state (for example filters and cached preferences) plus the Supabase session token; selected preferences (e.g. tooltips/onboarding) also sync to the workspace when available.
+Core risk register data is stored server-side (workspace-scoped with Supabase RLS). The browser stores non-authoritative UI state (for example filters and cached preferences) plus the Supabase session token; selected preferences (e.g. tooltips/onboarding/reminders) also sync to the workspace when available.
 
 ## Start here
 
@@ -17,6 +17,7 @@ Core risk register data is stored server-side (workspace-scoped with Supabase RL
 
 - Matrix + filters performance and accessibility quick pass: `docs/verification/matrix-filters-performance-a11y.md`
 - PDF exports (content + filters + charts + CSV regression): `docs/verification/pdf-exports.md`
+- Reminders (notifications + in-app fallback): `docs/verification/reminders.md`
 - Offline expectations (deploy + privacy): `docs/guides/deploy/deploy-vercel.md#offline-behavior-expectations`
 - Offline / read-only mode and cache: `docs/verification/offline-readonly-cache.md`
 - Checklist template updates (no timestamp overwrites): `docs/verification/checklist-template-updates.md`

@@ -119,6 +119,25 @@ If the frontend and API are deployed in the same Vercel project (recommended), t
 
 If you deploy the frontend and API on different hosts, treat CORS as a production security control: restrict allowed origins and avoid `*` with credentials.
 
+## Browser notifications + reminders
+
+Easy Risk Register supports **optional reminders**:
+
+- **Primary**: desktop notifications via the Web Notification API (`new Notification(...)`).
+- **Fallback**: in-app reminder banners (works even when notifications are unavailable/denied).
+
+Important deployment/operational notes:
+
+- **Secure context required**: most browsers only allow notifications on `https://` origins (localhost is typically treated as secure for development). Vercel deployments are HTTPS by default.
+- **No background delivery in MVP**: these are not push notifications. The app must be open (or at least running) for a notification/banner to be triggered.
+- **Permission UX varies by browser**:
+  - `default`: user has not decided yet; the app can request permission via the Settings page button.
+  - `denied`: the browser blocks notifications; reminders fall back to in-app banners.
+  - `granted`: notifications are shown when enabled and cadence conditions are met.
+- **Supported environments** (practical baseline):
+  - Desktop Chrome/Edge/Firefox: generally supported.
+  - Safari/iOS: support is limited and may require additional OS/browser settings; treat it as “banner-only” unless you have confirmed notifications work in your target environment.
+
 ## Smoke test (manual)
 
 After deploying (or when running locally), validate the end-to-end persistence path:
