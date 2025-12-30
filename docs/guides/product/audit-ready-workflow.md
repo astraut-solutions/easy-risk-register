@@ -75,7 +75,7 @@ When you need to share or archive evidence:
 
 Security note: CSV exports include spreadsheet injection protection, but you should still treat exported files as sensitive.
 
-For board packs or incident documentation, use PDF exports (print-to-PDF): `docs/guides/product/pdf-exports.md`.
+For board packs or incident documentation, use PDF exports (download or print-to-PDF): `docs/guides/product/pdf-exports.md`.
 
 ### 6) Keep exports and evidence organized
 

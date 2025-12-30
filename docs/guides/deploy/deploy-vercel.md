@@ -94,9 +94,17 @@ Vercel automatically deploys any files under the repo root `api/` directory as S
 - `api/risks/index.js` becomes `/api/risks`
 - `api/risks/[id].js` becomes `/api/risks/:id`
 - `api/exports/risks.csv.js` becomes `GET /api/exports/risks.csv` (download)
+- `api/exports/risks.pdf.js` becomes `GET /api/exports/risks.pdf` (download)
+- `api/exports/privacy-incident.pdf.js` becomes `GET /api/exports/privacy-incident.pdf` (download)
 - `api/imports/risks.csv.js` becomes `POST /api/imports/risks.csv` (upload)
 
 If the frontend and API are deployed in the same Vercel project (recommended), the frontend calls `/api/*` as **same-origin** requests.
+
+## PDF export notes (Vercel)
+
+- The PDF endpoints return `application/pdf`, `Content-Disposition: attachment`, and `Cache-Control: no-store`.
+- To keep serverless execution bounded, `GET /api/exports/risks.pdf` is capped at **2000** rows (returns `413 PAYLOAD_TOO_LARGE` when exceeded).
+- If you hit time/size limits in your Vercel plan, export narrower subsets (filters + matrix selection) rather than “all risks”.
 
 ## CSV export/import notes (Vercel)
 

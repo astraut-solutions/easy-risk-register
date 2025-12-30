@@ -156,8 +156,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 ### Feature: PDF exports (register + incident/checklist)
 - [x] [backend] Implement PDF generation endpoints for risk register (filtered) and incident/checklist template exports
 - [x] [frontend] Add export UI for PDF (include charts where enabled)
-- [ ] [deploy] Confirm Vercel serverless limits are respected (PDF generation time/size) and document constraints
-- [ ] [verify] Export validation (content correctness, filters, charts inclusion) + regression check on CSV export
+- [x] [deploy] Confirm Vercel serverless limits are respected (PDF generation time/size) and document constraints
+- [x] [verify] Export validation (content correctness, filters, charts inclusion) + regression check on CSV export
 
 ### Feature: Automated reminders (notifications + in-app fallback)
 - [ ] [database] Add reminder settings + risk metadata needed to schedule prompts (workspace-scoped)

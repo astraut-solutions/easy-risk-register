@@ -42,14 +42,14 @@ A regional financial advisor firm manages risks including market volatility, cyb
 - Supabase Auth sign-in/out and workspace-scoped access (default “Personal” workspace; no multi-workspace switcher UX yet)
 - Risk CRUD via APIs (`/api/risks`, `/api/categories`) with validation and consistent error handling
 - Dashboard charts (Chart.js): severity distribution, category distribution (stacked), and 30-day trend charts with drill-down to the Risk table
-- Export charts as PNG (default 1080p) and a dashboard PDF report via print-to-PDF (`report.html` viewer; popups must be allowed)
+- Export charts as PNG (default 1080p) and a dashboard PDF report via print-to-PDF (includes chart images)
 - Cyber risk templates: bundled-only template picker with preview (no template network calls); applying a template pre-fills the New risk form and edits remain independent of the template
 - Compliance checklists (privacy incident assist): attach a checklist to a risk, track completion timestamps, and filter by checklist status (assistive guidance only; not legal advice)
 - Risk score history snapshots for trends (captured server-side; bounded retention: 20 snapshots per risk or 90 days)
 - Automatic risk scoring (probability × impact; score 1-25) with severity labels (defaults: Low 1-8, Medium 9-15, High 16-25) and an interactive 5×5 matrix + table views (click/keyboard drill-down)
 - Server-side filtering/sorting/pagination via `/api/risks` (supports status/category/threat type/checklist status filters; avoids client-only filtering; supports up to 1000 risks per workspace snapshot for the MVP matrix/table)
 - CSV export (standard + audit pack) with CSV/Excel formula injection protection
-- PDF export via print-to-PDF (`report.html` viewer; popups must be allowed)
+- PDF exports: direct download via server-side endpoints (`/api/exports/*.pdf`) with print-to-PDF fallback
 - Per-risk optional fields stored in `public.risks.data` (jsonb): templates, evidence, playbooks, structured mitigation steps
 - Offline/unreachable behavior (MVP): block writes with explicit "not saved" messaging; optional read-only IndexedDB cache (bounded to last 7 days or 100 items) with "last updated" timestamp
 - Guided onboarding + tooltips: key field tooltips and a “first 3 steps” onboarding checklist; preference sync via `/api/settings` with local fallback
@@ -262,7 +262,7 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | **Verification** | [Matrix + filters perf/a11y verification](docs/verification/matrix-filters-performance-a11y.md) | Validate "up to 1000 risks" performance + matrix/filters accessibility |
 | | [Offline / read-only verification](docs/verification/offline-readonly-cache.md) | Validate offline/unreachable behavior and bounded read-only cache |
 | | [Audit-ready workflow](docs/guides/product/audit-ready-workflow.md) | Owners, reviews, evidence, and audit pack exports |
-| | [PDF exports](docs/guides/product/pdf-exports.md) | Print-to-PDF reports + troubleshooting |
+| | [PDF exports](docs/guides/product/pdf-exports.md) | Direct download endpoints + print-to-PDF troubleshooting |
 | | [Evidence guidance](docs/guides/product/evidence-guidance.md) | What counts as evidence and how to capture it |
 | | [Privacy controls](docs/guides/security/privacy-controls.md) | Current privacy controls + encryption roadmap |
 | | [Deploying to Vercel](docs/guides/deploy/deploy-vercel.md) | Required env vars + Vercel setup |

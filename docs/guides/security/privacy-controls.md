@@ -33,4 +33,9 @@ Implementation notes:
 
 ## PDF export integration
 
-PDF exports are generated via a print-friendly report view in the browser (no server-side PDF generation). Reports are built from the currently loaded dataset (fetched from `/api/*`) and may include playbook/checklist information when present.
+Easy Risk Register supports two PDF export paths:
+
+- **Server-side PDF endpoints** (`/api/exports/*.pdf`) for direct downloads (risk register + privacy incident/checklist report).
+- **Print to PDF** via a print-friendly report view (used for dashboard charts so exported PDFs include chart images).
+
+Reports are built from workspace-scoped data fetched via `/api/*` and may include playbook/checklist information when present.
