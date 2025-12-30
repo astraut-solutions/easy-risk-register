@@ -22,6 +22,7 @@ Core risk register data is stored server-side (workspace-scoped with Supabase RL
 - Offline expectations (deploy + privacy): `docs/guides/deploy/deploy-vercel.md#offline-behavior-expectations`
 - Offline / read-only mode and cache: `docs/verification/offline-readonly-cache.md`
 - Checklist template updates (no timestamp overwrites): `docs/verification/checklist-template-updates.md`
+- Playbook template updates (no instance overwrites): `docs/verification/playbook-template-updates.md`
 
 ## Cyber templates and checklists
 

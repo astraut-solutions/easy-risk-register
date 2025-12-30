@@ -180,8 +180,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [database] Add playbook templates + per-risk playbook instances (editable)
 - [x] [backend] Implement playbook CRUD APIs (workspace-scoped)
 - [x] [frontend] Add playbook UI on risk details and include in relevant PDF exports
-- [ ] [deploy] Document "assistive, not legal advice" constraints
-- [ ] [verify] Playbooks remain editable and template updates don't overwrite existing risk playbooks
+- [x] [deploy] Document "assistive, not legal advice" constraints
+- [x] [verify] Playbooks remain editable and template updates don't overwrite existing risk playbooks
 
 ### Feature: Maturity radar (ACSC/NIST self-assessment)
 - [ ] [database] Add maturity assessment tables (framework preset, domain scores, timestamps)

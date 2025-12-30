@@ -45,12 +45,13 @@ A regional financial advisor firm manages risks including market volatility, cyb
 - Export charts as PNG (default 1080p) and a dashboard PDF report via print-to-PDF (includes chart images)
 - Cyber risk templates: bundled-only template picker with preview (no template network calls); applying a template pre-fills the New risk form and edits remain independent of the template
 - Compliance checklists (privacy incident assist): attach a checklist to a risk, track completion timestamps, and filter by checklist status (assistive guidance only; not legal advice)
+- Incident response playbooks: attach a playbook template to a risk, customize steps, and export via the privacy incident/checklist report (assistive guidance only; not legal advice)
 - Risk score history snapshots for trends (captured server-side; bounded retention: 20 snapshots per risk or 90 days)
 - Automatic risk scoring (probability × impact; score 1-25) with severity labels (defaults: Low 1-8, Medium 9-15, High 16-25) and an interactive 5×5 matrix + table views (click/keyboard drill-down)
 - Server-side filtering/sorting/pagination via `/api/risks` (supports status/category/threat type/checklist status filters; avoids client-only filtering; supports up to 1000 risks per workspace snapshot for the MVP matrix/table)
 - CSV export (standard + audit pack) with CSV/Excel formula injection protection
 - PDF exports: direct download via server-side endpoints (`/api/exports/*.pdf`) with print-to-PDF fallback
-- Per-risk optional fields stored in `public.risks.data` (jsonb): templates, evidence, playbooks, structured mitigation steps
+- Per-risk optional fields stored in `public.risks.data` (jsonb): templates, evidence, structured mitigation steps (playbooks are stored in dedicated tables; legacy `data.playbook` may exist on older records)
 - Automated reminders: due/review prompts via in-app banners with optional desktop notifications (no push/background jobs)
 - Offline/unreachable behavior (MVP): block writes with explicit "not saved" messaging; optional read-only IndexedDB cache (bounded to last 7 days or 100 items) with "last updated" timestamp
 - Guided onboarding + tooltips: key field tooltips and a "first 3 steps" onboarding checklist; preference sync via `/api/settings` with local fallback

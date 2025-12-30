@@ -31,7 +31,19 @@ See:
 
 ## Incident response playbooks (current UI)
 
-Playbooks are editable response checklists you can attach to a risk. In the current implementation these are stored in the risk row's `data` JSON payload (see `docs/reference/risk-record-schema.md`).
+Playbooks are editable response checklists you can attach to a risk. They are designed to help teams capture roles, immediate actions, communications, and recovery steps in one place.
+
+Important:
+
+- Playbooks are **assistive guidance only** and are not legal advice.
+- Template content is intentionally lightweight and does **not** make legal determinations (for example, it cannot decide whether an incident is an "eligible data breach").
+
+Implementation notes (Supabase-backed):
+
+- Playbook templates are stored in Supabase (`public.playbook_templates` + `public.playbook_template_steps`).
+- Per-risk playbook instances and completion timestamps are stored in Supabase (`public.risk_playbooks` + `public.risk_playbook_steps`).
+- Template changes do **not** overwrite existing per-risk playbooks; instances snapshot the template title/steps at attach-time.
+- If end-to-end encryption is enabled for sensitive content, the UI may store ciphertext in `public.risk_playbooks.encrypted_fields` (the backend stores opaque payloads only).
 
 ## Compliance checklists (privacy incident assist)
 

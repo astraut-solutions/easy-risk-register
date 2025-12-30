@@ -42,11 +42,22 @@ All `/api/*` routes require an **end-user Supabase JWT** (Bearer token):
 - `GET /api/risks/:id/checklists` (list per-risk checklist instances + items)
 - `POST /api/risks/:id/checklists` (attach a checklist template to a risk)
 - `PATCH /api/risks/:id/checklists/items/:itemId` (complete/uncomplete a checklist item)
+- `GET /api/playbook-templates` (list playbook templates + steps)
+- `GET /api/risks/:id/playbooks` (list per-risk playbook instances + steps)
+- `POST /api/risks/:id/playbooks` (attach a playbook template to a risk)
+- `GET /api/risks/:id/playbooks/:playbookId` (get a playbook instance)
+- `PATCH /api/risks/:id/playbooks/:playbookId` (edit playbook title/description)
+- `DELETE /api/risks/:id/playbooks/:playbookId` (delete a playbook instance)
+- `POST /api/risks/:id/playbooks/steps` (add a playbook step)
+- `PATCH /api/risks/:id/playbooks/steps/:stepId` (edit/complete a playbook step)
+- `DELETE /api/risks/:id/playbooks/steps/:stepId` (delete a playbook step)
 
 Notes:
 
 - Checklist templates and checklist UX are **assistive guidance only** (not legal advice).
+- Playbook templates and playbook UX are **assistive guidance only** (not legal advice).
 - Checklist endpoints are workspace-scoped via `x-workspace-id` (or personal-workspace fallback) and enforced primarily by Supabase RLS.
+- Playbook endpoints are workspace-scoped via `x-workspace-id` (or personal-workspace fallback) and enforced primarily by Supabase RLS.
 
 Server-side environment variables:
 

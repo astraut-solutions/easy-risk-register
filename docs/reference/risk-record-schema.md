@@ -9,12 +9,16 @@ This document describes the **current risk schema** as implemented in Supabase a
 
 ## Core tables
 
-Defined in `supabase/init/002_workspaces_core_tables_rls.sql` and `supabase/init/006_compliance_checklists.sql`:
+Defined in `supabase/init/002_workspaces_core_tables_rls.sql`, `supabase/init/006_compliance_checklists.sql`, and `supabase/init/011_incident_playbooks.sql`:
 
 - `public.workspaces`
 - `public.workspace_members`
 - `public.categories`
 - `public.risks`
+- `public.playbook_templates`
+- `public.playbook_template_steps`
+- `public.risk_playbooks`
+- `public.risk_playbook_steps`
 - `public.checklist_templates`
 - `public.checklist_template_items`
 - `public.risk_checklists`
@@ -85,6 +89,15 @@ Per-risk checklists are stored in dedicated tables (not in `public.risks.data`):
 
 Template changes do **not** rewrite existing per-risk checklist items; instances copy template content at attach-time and retain completion timestamps.
 
+## Incident response playbooks (normalized)
+
+Per-risk playbooks are stored in dedicated tables (not in `public.risks.data`):
+
+- Templates (global): `public.playbook_templates` + `public.playbook_template_steps`
+- Per-risk instances: `public.risk_playbooks` + `public.risk_playbook_steps`
+
+Template changes do **not** rewrite existing per-risk playbooks; instances copy template content at attach-time and retain completion timestamps.
+
 ## `data` extension payload (current usage)
 
 The frontend currently stores several "Phase 2+" fields inside the `data` JSON (not normalized into separate tables yet). This allows incremental rollout while keeping the core schema stable.
@@ -97,6 +110,6 @@ Common keys include:
 - `riskResponse` (enum string)
 - `mitigationSteps` (array)
 - `evidence` (array)
-- `playbook` (object)
+- `playbook` (object; legacy only — newer records store playbooks in `public.risk_playbooks`)
 
 If you plan to query/filter these fields server-side, consider promoting them to first-class columns or tables (see `TASK_PLAN.md` Cycle 2+).
