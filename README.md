@@ -344,6 +344,16 @@ Please ensure your code follows our [Code Style Guide](docs/guides/dev/code-styl
 ## Project Status
 - **Last Updated**: December 2025
 
+## Cycle 5 (Phase 5): User Validation and Iteration
+
+### Feature: Usability validation loop
+- [x] [docs] Prepare interview scripts and success-metric instrumentation plan (time-to-first-risk, export adoption)
+  - Guide: `docs/guides/product/usability-validation-loop.md`
+  - Results template: `docs/verification/usability-validation-results-template.md`
+- [x] [frontend] Add lightweight UX instrumentation (privacy-respecting; can be local-only if needed)
+- [~] [verify] Run 5-10 SME interviews/tests; triage issues; feed into next task plan revision
+  - Runbook: `docs/verification/usability-validation-loop.md`
+
 ### Feature: Guided onboarding + educational tooltips
 - [x] [database] Add user/workspace settings (tooltips on/off, onboarding state)
 - [x] [backend] Add settings endpoints (workspace-scoped)

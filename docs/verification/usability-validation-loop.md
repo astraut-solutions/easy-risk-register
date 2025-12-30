@@ -5,6 +5,9 @@ This is a lightweight runbook for completing the Phase 5 usability validation lo
 Primary guide (scripts + templates + metrics collection):
 - `docs/guides/product/usability-validation-loop.md`
 
+Results write-up template:
+- `docs/verification/usability-validation-results-template.md`
+
 ## Goal
 
 Run **5–10** SME usability sessions and produce a short write-up that includes:
@@ -32,4 +35,3 @@ Run **5–10** SME usability sessions and produce a short write-up that includes
   - Export counts (CSV/PDF/PNG)
 - [ ] Rank issues by (impact × frequency); propose fixes and owners.
 - [ ] Update `TASK_PLAN.md` with any follow-up items and mark the verify checkbox done when complete.
-
