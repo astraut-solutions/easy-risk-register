@@ -2,18 +2,7 @@ const { ensureRequestId, handleOptions, setCors } = require('../_lib/http')
 const { requireApiContext } = require('../_lib/context')
 const { logApiError, logApiRequest, logApiResponse, logApiWarn } = require('../_lib/logger')
 const { sendApiError, supabaseErrorToApiError, unexpectedErrorToApiError } = require('../_lib/apiErrors')
-
-async function readJsonBody(req) {
-  if (req.body && typeof req.body === 'object') return req.body
-
-  const chunks = []
-  for await (const chunk of req) chunks.push(Buffer.from(chunk))
-  if (chunks.length === 0) return null
-
-  const raw = Buffer.concat(chunks).toString('utf8')
-  if (!raw) return null
-  return JSON.parse(raw)
-}
+const { readJsonBody } = require('../_lib/body')
 
 module.exports = async function handler(req, res) {
   setCors(req, res)
@@ -35,7 +24,7 @@ module.exports = async function handler(req, res) {
     // Deprecated: snapshots are captured server-side on risk create/update.
     // Keep endpoint as a no-op for backwards compatibility with older clients.
     try {
-      await readJsonBody(req)
+      await readJsonBody(req, { maxBytes: 64 * 1024 })
     } catch {
       // Ignore malformed bodies; endpoint is best-effort and intentionally no-op.
     }

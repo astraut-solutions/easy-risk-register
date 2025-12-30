@@ -97,6 +97,28 @@ function supabaseErrorToApiError(error, { action } = {}) {
 }
 
 function unexpectedErrorToApiError(error) {
+  if (error && typeof error === 'object' && Number.isFinite(error.statusCode)) {
+    const statusCode = Number(error.statusCode)
+
+    if (statusCode === 413) {
+      return {
+        status: 413,
+        code: 'PAYLOAD_TOO_LARGE',
+        message: 'Request payload too large',
+        retryable: false,
+      }
+    }
+
+    if (statusCode === 400 && error.code === 'INVALID_JSON') {
+      return {
+        status: 400,
+        code: 'INVALID_JSON',
+        message: 'Invalid JSON body',
+        retryable: false,
+      }
+    }
+  }
+
   if (error && typeof error === 'object' && error.code === 'MISSING_ENV') {
     return {
       status: 500,
@@ -128,4 +150,3 @@ module.exports = {
   supabaseErrorToApiError,
   unexpectedErrorToApiError,
 }
-

@@ -33,7 +33,7 @@ Implementation:
 Important scope note:
 
 - This encryption protects the local persisted payload (preferences). It does **not** encrypt data stored in Supabase.
-- End-to-end encryption of selected risk fields is tracked as Phase 4 work in `TASK_PLAN.md`.
+- Optional end-to-end encryption (selected risk fields) is documented in `docs/architecture/end-to-end-encryption.md`.
 
 ## Threat model notes
 

@@ -2,6 +2,7 @@ const { ensureRequestId, handleOptions, setCors } = require('../_lib/http')
 const { requireApiContext } = require('../_lib/context')
 const { logApiError, logApiRequest, logApiResponse, logApiWarn } = require('../_lib/logger')
 const { sendApiError, supabaseErrorToApiError, unexpectedErrorToApiError } = require('../_lib/apiErrors')
+const { readJsonBody } = require('../_lib/body')
 const {
   getWorkspaceRiskThresholds,
   scoreFromProbabilityImpact,
@@ -81,16 +82,21 @@ function parseOptionalIntOrNull(value, { min, max }) {
   return { value: num }
 }
 
-async function readJsonBody(req) {
-  if (req.body && typeof req.body === 'object') return req.body
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
 
-  const chunks = []
-  for await (const chunk of req) chunks.push(Buffer.from(chunk))
-  if (chunks.length === 0) return null
+function parseEncryptedFields(value, { maxBytes }) {
+  if (value === undefined) return { value: undefined }
+  if (value === null) return { value: {} }
+  if (!isPlainObject(value)) return { error: 'Invalid encryptedFields (expected object)' }
 
-  const raw = Buffer.concat(chunks).toString('utf8')
-  if (!raw) return null
-  return JSON.parse(raw)
+  if (typeof maxBytes === 'number') {
+    const bytes = Buffer.byteLength(JSON.stringify(value), 'utf8')
+    if (bytes > maxBytes) return { error: 'encryptedFields payload too large' }
+  }
+
+  return { value }
 }
 
 function mapRiskRow(row, { thresholds }) {
@@ -99,6 +105,7 @@ function mapRiskRow(row, { thresholds }) {
     id: row.id,
     title: row.title,
     description: row.description,
+    encryptedFields: row.encrypted_fields ?? {},
     probability: Number(row.probability),
     impact: Number(row.impact),
     riskScore: score,
@@ -146,7 +153,7 @@ module.exports = async function handler(req, res) {
         const { data, error } = await supabase
           .from('risks')
           .select(
-            'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, checklist_status, data, last_reviewed_at, next_review_at, review_interval_days, created_at, updated_at',
+            'id, title, description, encrypted_fields, probability, impact, risk_score, category, status, threat_type, mitigation_plan, checklist_status, data, last_reviewed_at, next_review_at, review_interval_days, created_at, updated_at',
           )
           .eq('id', riskId)
           .eq('workspace_id', workspaceId)
@@ -163,7 +170,7 @@ module.exports = async function handler(req, res) {
       }
 
       case 'PATCH': {
-        const body = await readJsonBody(req)
+        const body = await readJsonBody(req, { maxBytes: 256 * 1024 })
         if (!body || typeof body !== 'object') {
           return res.status(400).json({ error: 'Expected JSON body' })
         }
@@ -197,6 +204,28 @@ module.exports = async function handler(req, res) {
           const title = normalizeText(body.title, { maxLen: 200 })
           if (!title) return res.status(400).json({ error: 'Invalid title' })
           updates.title = title
+        }
+
+        const encryptedFields = parseEncryptedFields(body.encryptedFields, { maxBytes: 50_000 })
+        if (encryptedFields.error) return res.status(400).json({ error: encryptedFields.error })
+
+        if (encryptedFields.value !== undefined) {
+          updates.encrypted_fields = encryptedFields.value
+          const wantsE2ee = Object.keys(encryptedFields.value).length > 0
+
+          if (wantsE2ee) {
+            if (typeof body.description === 'string' && body.description.trim()) {
+              return res.status(400).json({ error: '`description` must be omitted/empty when `encryptedFields` is provided' })
+            }
+            if (typeof body.mitigationPlan === 'string' && body.mitigationPlan.trim()) {
+              return res.status(400).json({
+                error: '`mitigationPlan` must be omitted/empty when `encryptedFields` is provided',
+              })
+            }
+
+            updates.description = ''
+            updates.mitigation_plan = ''
+          }
         }
 
         if (body.description !== undefined) {
@@ -294,7 +323,7 @@ module.exports = async function handler(req, res) {
           .eq('id', riskId)
           .eq('workspace_id', workspaceId)
           .select(
-            'id, title, description, probability, impact, risk_score, category, status, threat_type, mitigation_plan, checklist_status, data, last_reviewed_at, next_review_at, review_interval_days, created_at, updated_at',
+            'id, title, description, encrypted_fields, probability, impact, risk_score, category, status, threat_type, mitigation_plan, checklist_status, data, last_reviewed_at, next_review_at, review_interval_days, created_at, updated_at',
           )
           .maybeSingle()
 

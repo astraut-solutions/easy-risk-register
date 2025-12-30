@@ -2,6 +2,7 @@ const { ensureRequestId, handleOptions, setCors } = require('../../../../_lib/ht
 const { requireApiContext } = require('../../../../_lib/context')
 const { logApiError, logApiRequest, logApiResponse, logApiWarn } = require('../../../../_lib/logger')
 const { sendApiError, supabaseErrorToApiError, unexpectedErrorToApiError } = require('../../../../_lib/apiErrors')
+const { readJsonBody } = require('../../../../_lib/body')
 
 const UUID_V4ish_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -11,18 +12,6 @@ function normalizeUuid(value) {
   const trimmed = value.trim()
   if (!UUID_V4ish_REGEX.test(trimmed)) return null
   return trimmed.toLowerCase()
-}
-
-async function readJsonBody(req) {
-  if (req.body && typeof req.body === 'object') return req.body
-
-  const chunks = []
-  for await (const chunk of req) chunks.push(Buffer.from(chunk))
-  if (chunks.length === 0) return null
-
-  const raw = Buffer.concat(chunks).toString('utf8')
-  if (!raw) return null
-  return JSON.parse(raw)
 }
 
 function rpcErrorToResponse(error) {
@@ -58,7 +47,7 @@ module.exports = async function handler(req, res) {
 
     switch (req.method) {
       case 'PATCH': {
-        const body = await readJsonBody(req)
+        const body = await readJsonBody(req, { maxBytes: 64 * 1024 })
         if (!body || typeof body !== 'object') {
           return res.status(400).json({ error: 'Expected JSON body' })
         }
@@ -120,4 +109,3 @@ module.exports = async function handler(req, res) {
     })
   }
 }
-
