@@ -20,6 +20,7 @@ This repo uses **Supabase Auth** for user identity and **workspace scoping** for
 3) After the user is authenticated, the frontend calls `GET /api/users` to resolve:
    - `workspaceId`
    - `workspaceName` (if available)
+   - `workspaceRole` (owner/admin/member/viewer; used for role-based UI like audit trail export)
 
 4) For subsequent API calls, the frontend automatically attaches:
    - `Authorization: Bearer <accessToken>`

@@ -63,9 +63,24 @@ On review:
 - Update **review date** (next review)
 - Confirm or update **risk response**
 - Update **status** (open / accepted / mitigated / closed)
-- Add new evidence links (for example, “completed training report”, “PR link”, “change ticket”)
+- Add new evidence links (for example, "completed training report", "PR link", "change ticket")
 
 Tip: If a risk is **accepted**, capture the rationale in Owner response and link to the approval artifact in Evidence.
+
+### 4.1) Use the Activity log (audit trail) for "who changed what?"
+
+For workspaces with audit trail enabled, each risk includes an **Activity log (audit trail)** that records:
+
+- Risk create/update/delete events
+- Checklist completion/uncompletion events
+
+Access rules:
+
+- Owner/Admin: view + export
+- Member: view-only
+- Viewer: no access
+
+Retention baseline and operational notes: `docs/guides/deploy/audit-trail.md`.
 
 ### 5) Export for audits ("Audit pack")
 

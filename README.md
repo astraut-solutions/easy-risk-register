@@ -46,6 +46,7 @@ A regional financial advisor firm manages risks including market volatility, cyb
 - Maturity self-assessments (ACSC/NIST inspired): record timestamped snapshots per domain (0-4), view radar + table fallback, export as PNG and print-to-PDF (self-assessment only; not certification/compliance/legal advice)
 - Cyber risk templates: bundled-only template picker with preview (no template network calls); applying a template pre-fills the New risk form and edits remain independent of the template
 - Compliance checklists (privacy incident assist): attach a checklist to a risk, track completion timestamps, and filter by checklist status (assistive guidance only; not legal advice)
+- Audit trail (per-risk activity log): append-only events for risk CRUD + checklist completion, scoped to the workspace and role-protected (Owner/Admin view+export, Member view-only, Viewer no access; retention baseline 90 days)
 - Incident response playbooks: attach a playbook template to a risk, customize steps, and export via the privacy incident/checklist report (assistive guidance only; not legal advice)
 - Risk score history snapshots for trends (captured server-side; bounded retention: 20 snapshots per risk or 90 days)
 - Automatic risk scoring (probability × impact; score 1-25) with severity labels (defaults: Low 1-8, Medium 9-15, High 16-25) and an interactive 5×5 matrix + table views (click/keyboard drill-down)
@@ -266,6 +267,8 @@ This README serves as the **single source of truth** for the Easy Risk Register 
 | **Verification** | [Matrix + filters perf/a11y verification](docs/verification/matrix-filters-performance-a11y.md) | Validate "up to 1000 risks" performance + matrix/filters accessibility |
 | | [Offline / read-only verification](docs/verification/offline-readonly-cache.md) | Validate offline/unreachable behavior and bounded read-only cache |
 | | [Reminders verification](docs/verification/reminders.md) | Validate Notification permission denied fallback + cadence behavior |
+| | [Audit trail verification](docs/verification/audit-trail.md) | Validate role rules (Owner/Admin export, Member view-only, Viewer denied) |
+| | [Audit trail retention and access rules](docs/guides/deploy/audit-trail.md) | Retention baseline (90 days) + database/UI access rules |
 | | [Audit-ready workflow](docs/guides/product/audit-ready-workflow.md) | Owners, reviews, evidence, and audit pack exports |
 | | [PDF exports](docs/guides/product/pdf-exports.md) | Direct download endpoints + print-to-PDF troubleshooting |
 | | [Evidence guidance](docs/guides/product/evidence-guidance.md) | What counts as evidence and how to capture it |
@@ -377,3 +380,10 @@ Please ensure your code follows our [Code Style Guide](docs/guides/dev/code-styl
 - [x] [frontend] Implement radar chart + table fallback; export as PNG and include in PDFs
 - [x] [deploy] Ensure presets and copy avoid implying certification/compliance guarantees
 - [x] [verify] Accessibility check + export correctness
+
+### Feature: Audit trail (append-only, role-based access)
+- [x] [database] Add `audit_events` append-only table + retention baseline (90 days) + RLS by role
+- [x] [backend] Record risk CRUD and checklist completion events; add per-risk activity log endpoint
+- [x] [frontend] Add per-risk activity log UI; restrict export to Owner/Admin
+- [x] [deploy] Document retention and access rules
+- [x] [verify] Verify role rules: Owner/Admin view+export, Member view-only, Viewer no access
