@@ -148,7 +148,7 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 
 ### Feature: Dashboard charts + PNG export
 - [ ] [database] No change (depends on risk + history tables)
-- [ ] [backend] Add aggregated endpoints as needed (or compute client-side with bounded payloads)
+- [x] [backend] Add aggregated endpoints as needed (or compute client-side with bounded payloads)
 - [ ] [frontend] Implement 2-3 default charts (distribution + trends) with drill-down + accessible table equivalents
 - [ ] [frontend] Implement PNG export (default 1080p) for charts
 - [ ] [deploy] Verify bundle size and chart rendering performance
