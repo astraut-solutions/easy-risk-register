@@ -121,6 +121,41 @@ export const RiskDashboardCharts = ({
 
   const timestampSlug = () => new Date().toISOString().replaceAll(':', '-')
 
+  const render1080pPng = (chart: any) => {
+    const sourceCanvas = chart?.canvas as HTMLCanvasElement | undefined
+    if (!sourceCanvas) return null
+
+    const outCanvas = document.createElement('canvas')
+    outCanvas.width = 1920
+    outCanvas.height = 1080
+
+    const ctx = outCanvas.getContext('2d')
+    if (!ctx) return null
+
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, outCanvas.width, outCanvas.height)
+
+    const srcWidth = sourceCanvas.width
+    const srcHeight = sourceCanvas.height
+    if (!srcWidth || !srcHeight) return null
+
+    const scale = Math.min(outCanvas.width / srcWidth, outCanvas.height / srcHeight)
+    const drawWidth = srcWidth * scale
+    const drawHeight = srcHeight * scale
+    const dx = (outCanvas.width - drawWidth) / 2
+    const dy = (outCanvas.height - drawHeight) / 2
+
+    ctx.imageSmoothingEnabled = true
+    try {
+      ctx.imageSmoothingQuality = 'high'
+    } catch {
+      // ignore: not supported in some environments
+    }
+    ctx.drawImage(sourceCanvas, dx, dy, drawWidth, drawHeight)
+
+    return outCanvas.toDataURL('image/png')
+  }
+
   const exportChartPng = (key: 'severity' | 'categories' | 'trend') => {
     const chart =
       key === 'severity'
@@ -129,7 +164,8 @@ export const RiskDashboardCharts = ({
           ? categoryChartRef.current
           : trendChartRef.current
     if (!chart) return
-    const dataUrl = typeof chart.toBase64Image === 'function' ? chart.toBase64Image('image/png', 1) : null
+
+    const dataUrl = render1080pPng(chart)
     if (!dataUrl) return
 
     const filename = safeFilename(

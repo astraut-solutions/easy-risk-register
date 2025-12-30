@@ -149,8 +149,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 ### Feature: Dashboard charts + PNG export
 - [ ] [database] No change (depends on risk + history tables)
 - [x] [backend] Add aggregated endpoints as needed (or compute client-side with bounded payloads)
-- [ ] [frontend] Implement 2-3 default charts (distribution + trends) with drill-down + accessible table equivalents
-- [ ] [frontend] Implement PNG export (default 1080p) for charts
+- [x] [frontend] Implement 2-3 default charts (distribution + trends) with drill-down + accessible table equivalents
+- [x] [frontend] Implement PNG export (default 1080p) for charts
 - [ ] [deploy] Verify bundle size and chart rendering performance
 - [ ] [verify] Chart drill-down matches filters/matrix semantics; "DB unreachable" state is clear
 
