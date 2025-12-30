@@ -172,7 +172,7 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [arch] Confirm crypto posture (PBKDF2 + AES-GCM, no server-side recovery) and define sensitive fields
 - [x] [database] Ensure encrypted fields can be stored (ciphertext + metadata) without breaking search/list UX
 - [x] [backend] Ensure APIs treat encrypted fields as opaque (no plaintext logging); enforce payload limits
-- [ ] [frontend] Implement passphrase flow (enable/disable/rotate) and client-side encrypt/decrypt via Web Crypto
+- [x] [frontend] Implement passphrase flow (enable/disable/rotate) and client-side encrypt/decrypt via Web Crypto
 - [ ] [deploy] Document limitations (no recovery), and ensure logs/telemetry don't capture plaintext
 - [ ] [verify] Threat model review + recovery-flow validation (passphrase loss, rotation)
 

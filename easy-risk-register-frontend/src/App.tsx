@@ -33,6 +33,7 @@ import {
 import { computeReminderSummary, getFrequencyMs } from './utils/reminders'
 import { getEncryptionStatus } from './utils/encryptionManager'
 import { EncryptionSettingsPanel } from './components/privacy/EncryptionSettingsPanel'
+import { EndToEndEncryptionSettingsPanel } from './components/privacy/EndToEndEncryptionSettingsPanel'
 import { IntegrationSettingsPanel } from './components/integrations/IntegrationSettingsPanel'
 import { EncryptionUnlockGate } from './components/privacy/EncryptionUnlockGate'
 import { AuthControls } from './components/auth/AuthControls'
@@ -391,6 +392,16 @@ function App() {
   }
 
   const startEditRisk = (risk: Risk) => {
+    if (risk.e2eeLocked) {
+      toast.notify({
+        title: 'Encrypted risk locked',
+        description: 'Unlock end-to-end encryption in Settings to view or edit encrypted fields.',
+        variant: 'warning',
+      })
+      setActiveView('settings')
+      return
+    }
+
     setEditingRisk(risk)
     setRiskDraft(null)
     setCreateDefaults(null)
@@ -1537,6 +1548,8 @@ function App() {
                 <IntegrationSettingsPanel />
 
                 <EncryptionSettingsPanel />
+
+                <EndToEndEncryptionSettingsPanel />
               </div>
             </div>
           ) : (

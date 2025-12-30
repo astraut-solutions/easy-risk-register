@@ -91,6 +91,8 @@ export interface Risk {
   id: string
   title: string
   description: string
+  encryptedFields?: unknown
+  e2eeLocked?: boolean
   probability: number // 1-5
   impact: number // 1-5
   riskScore: number

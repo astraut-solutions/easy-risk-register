@@ -69,7 +69,7 @@ export const RiskDetailModal = ({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h3 className="text-xl font-semibold text-text-high">{risk.title}</h3>
-              <p className="mt-1 text-sm text-text-low">{risk.description}</p>
+              <p className="mt-1 text-sm text-text-low">{risk.e2eeLocked ? 'Encrypted (locked)' : risk.description}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone="neutral">{risk.category}</Badge>
@@ -143,7 +143,7 @@ export const RiskDetailModal = ({
           <div className="rounded-2xl border border-border-faint bg-surface-secondary/10 p-3">
             <p className="text-xs font-semibold text-text-high">Summary plan</p>
             <p className="mt-1 text-sm text-text-low whitespace-pre-wrap">
-              {risk.mitigationPlan || '—'}
+              {risk.e2eeLocked ? 'Encrypted (locked)' : risk.mitigationPlan || '—'}
             </p>
           </div>
 

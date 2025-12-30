@@ -77,7 +77,7 @@ export const RiskPrioritizationByFinancialImpact: React.FC<RiskPrioritizationByF
                         Priority: {risk.calculatedPriority.toFixed(2)}
                       </span>
                     </div>
-                    <p className="text-text-medium mt-1">{risk.description}</p>
+                    <p className="text-text-medium mt-1">{risk.e2eeLocked ? 'Encrypted (locked)' : risk.description}</p>
                     <div className="mt-2 flex flex-wrap gap-4 text-sm">
                       <div>
                         <span className="font-medium text-text-medium">Risk Score:</span>{' '}

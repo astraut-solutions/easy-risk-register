@@ -61,7 +61,7 @@ export const RiskCard = ({ risk, onEdit, onDelete, onView }: RiskCardProps) => {
             {risk.riskScore} {severityLabel}
           </Badge>
         </div>
-        <p className="mt-2 text-sm text-text-low line-clamp-2">{risk.description}</p>
+        <p className="mt-2 text-sm text-text-low line-clamp-2">{risk.e2eeLocked ? 'Encrypted (locked)' : risk.description}</p>
       </div>
 
       <div className="mt-auto space-y-4 pt-4">

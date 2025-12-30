@@ -98,7 +98,9 @@ export const RiskTable = ({
                 ) : (
                   <p className="font-semibold text-text-high">{risk.title}</p>
                 )}
-                <p className="line-clamp-2 text-sm text-text-low">{risk.description}</p>
+                <p className="line-clamp-2 text-sm text-text-low">
+                  {risk.e2eeLocked ? 'Encrypted (locked)' : risk.description}
+                </p>
               </TableCell>
               <TableCell role="cell">
                 <Badge tone="neutral" className="rounded-full px-3 py-1 text-xs font-semibold" aria-label={`Category: ${risk.category}`}>

@@ -10,6 +10,8 @@ import { timeSeriesService } from './timeSeriesService'
 import { useAuthStore } from '../stores/authStore'
 import { getRiskSeverity } from '../utils/riskCalculations'
 import { loadWorkspaceOfflineCache, saveWorkspaceOfflineCache } from '../utils/offlineCache'
+import { getE2eeSessionKey, getE2eeStatus, getE2eeKdfConfig } from '../utils/e2eeManager'
+import { buildRiskEncryptedFieldsV1, decryptRiskEncryptedFieldsV1, normalizeRiskEncryptedFieldsV1 } from '../utils/e2eeRiskFields'
 
 /**
  * Cache Utility for frequently accessed data
@@ -128,6 +130,7 @@ type ApiRisk = {
   id: string
   title: string
   description: string
+  encryptedFields?: unknown
   probability: number
   impact: number
   riskScore: number
@@ -246,6 +249,7 @@ function inflateRisk(apiRisk: ApiRisk): Risk {
     id: apiRisk.id,
     title: apiRisk.title,
     description: apiRisk.description,
+    encryptedFields: apiRisk.encryptedFields,
     probability: Number(apiRisk.probability),
     impact: Number(apiRisk.impact),
     riskScore: Number(apiRisk.riskScore),
@@ -290,6 +294,32 @@ function inflateRisk(apiRisk: ApiRisk): Risk {
     riskPriority: typeof data.riskPriority === 'number' ? data.riskPriority : undefined,
     immediateAttention: typeof data.immediateAttention === 'boolean' ? data.immediateAttention : undefined,
     actionableRecommendations: normalizeStringArray(data.actionableRecommendations),
+  }
+}
+
+async function inflateRiskWithE2ee(apiRisk: ApiRisk, workspaceId: string | null): Promise<Risk> {
+  const risk = inflateRisk(apiRisk)
+  const encrypted = normalizeRiskEncryptedFieldsV1(apiRisk.encryptedFields)
+  if (!encrypted) {
+    risk.e2eeLocked = false
+    return risk
+  }
+
+  const key = getE2eeSessionKey(workspaceId)
+  if (!key) {
+    risk.e2eeLocked = true
+    return risk
+  }
+
+  try {
+    const decrypted = await decryptRiskEncryptedFieldsV1({ encryptedFields: encrypted, key })
+    risk.description = decrypted.description
+    risk.mitigationPlan = decrypted.mitigationPlan
+    risk.e2eeLocked = false
+    return risk
+  } catch {
+    risk.e2eeLocked = true
+    return risk
   }
 }
 
@@ -427,7 +457,10 @@ export const riskService = {
         ),
       )
 
-      const risks = (risksResponse?.items || []).map(inflateRisk)
+      const workspaceId = useAuthStore.getState().workspaceId
+      const risks = await Promise.all(
+        (risksResponse?.items || []).map((risk) => inflateRiskWithE2ee(risk, workspaceId)),
+      )
 
       const lastSyncedAt = new Date().toISOString()
 
@@ -439,7 +472,6 @@ export const riskService = {
       })
       cacheUtil.clear()
 
-      const workspaceId = useAuthStore.getState().workspaceId
       if (workspaceId) {
         const boundedRisks = buildBoundedOfflineCache(risks)
         void saveWorkspaceOfflineCache({
@@ -566,8 +598,30 @@ export const riskService = {
       ...(typeof reviewIntervalDays === 'number' ? { reviewIntervalDays } : {}),
     }
 
-    const apiRisk = await apiPostJson<ApiRisk>('/api/risks', payload)
-    const risk = inflateRisk(apiRisk)
+    const workspaceId = useAuthStore.getState().workspaceId
+    const e2eeStatus = getE2eeStatus(workspaceId)
+    if (e2eeStatus.enabled) {
+      if (!e2eeStatus.unlocked) {
+        throw new Error('End-to-end encryption is enabled. Unlock it to create/update encrypted fields.')
+      }
+      const key = getE2eeSessionKey(workspaceId)
+      const kdf = getE2eeKdfConfig(workspaceId)
+      if (!key || !kdf) throw new Error('End-to-end encryption misconfigured. Re-enable E2EE and try again.')
+
+      const encryptedFields = await buildRiskEncryptedFieldsV1({
+        kdf,
+        key,
+        description: input.description ?? '',
+        mitigationPlan: input.mitigationPlan ?? '',
+      })
+
+      ;(payload as any).encryptedFields = encryptedFields
+      ;(payload as any).description = ''
+      ;(payload as any).mitigationPlan = ''
+    }
+
+    const apiRisk = await apiPostJson<ApiRisk>('/api/risks', payload as any)
+    const risk = await inflateRiskWithE2ee(apiRisk, workspaceId)
 
     useRiskStore.getState().upsertFromApi(risk)
     void timeSeriesService.writeSnapshot(risk).catch(() => {})
@@ -644,8 +698,34 @@ export const riskService = {
       reviewIntervalDays,
     }
 
-    const apiRisk = await apiPatchJson<ApiRisk>(`/api/risks/${id}`, patch)
-    const risk = inflateRisk(apiRisk)
+    const workspaceId = useAuthStore.getState().workspaceId
+    const e2eeStatus = getE2eeStatus(workspaceId)
+    const touchesSensitive =
+      Object.prototype.hasOwnProperty.call(updates, 'description') ||
+      Object.prototype.hasOwnProperty.call(updates, 'mitigationPlan')
+
+    if (e2eeStatus.enabled && touchesSensitive) {
+      if (!e2eeStatus.unlocked) {
+        throw new Error('End-to-end encryption is enabled. Unlock it to edit encrypted fields.')
+      }
+      const key = getE2eeSessionKey(workspaceId)
+      const kdf = getE2eeKdfConfig(workspaceId)
+      if (!key || !kdf) throw new Error('End-to-end encryption misconfigured. Re-enable E2EE and try again.')
+
+      const encryptedFields = await buildRiskEncryptedFieldsV1({
+        kdf,
+        key,
+        description: merged.description ?? '',
+        mitigationPlan: merged.mitigationPlan ?? '',
+      })
+
+      delete (patch as any).description
+      delete (patch as any).mitigationPlan
+      ;(patch as any).encryptedFields = encryptedFields
+    }
+
+    const apiRisk = await apiPatchJson<ApiRisk>(`/api/risks/${id}`, patch as any)
+    const risk = await inflateRiskWithE2ee(apiRisk, workspaceId)
     risk.checklists = current.checklists
     useRiskStore.getState().upsertFromApi(risk)
 
@@ -728,7 +808,8 @@ export const riskService = {
     // Refresh risk-level checklistStatus (rollup is computed server-side).
     try {
       const apiRisk = await apiGetJson<ApiRisk>(`/api/risks/${riskId}`)
-      const inflated = inflateRisk(apiRisk)
+      const workspaceId = useAuthStore.getState().workspaceId
+      const inflated = await inflateRiskWithE2ee(apiRisk, workspaceId)
       const preserve = store.risks.find((risk) => risk.id === riskId)?.checklists ?? []
       inflated.checklists = preserve
       store.upsertFromApi(inflated)
