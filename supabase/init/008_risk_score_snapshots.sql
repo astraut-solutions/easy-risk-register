@@ -47,6 +47,8 @@ create policy risk_score_snapshots_insert_writer
   with check (public.is_workspace_writer(workspace_id));
 
 grant select, insert on public.risk_score_snapshots to authenticated, service_role;
+-- Needed for retention enforcement via SECURITY DEFINER function owned by `service_role`.
+grant delete on public.risk_score_snapshots to service_role;
 
 -- Retention enforcement (bypass RLS; runs server-side).
 create or replace function public.enforce_risk_score_snapshot_retention(p_workspace_id uuid, p_risk_id uuid)

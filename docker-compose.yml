@@ -32,6 +32,9 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
+      # Browser-side Supabase client (served from Vite) should talk to the local gateway by default.
+      - VITE_SUPABASE_URL=${SUPABASE_URL:-http://localhost:54321}
+      - VITE_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
       # Vercel-style serverless APIs are not served by Vite; point the browser at the local dev API server.
       - VITE_API_BASE_URL=http://localhost:3000
       # Used by the Vite proxy when VITE_API_BASE_URL is blank (and also useful for local debugging).
