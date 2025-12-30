@@ -7,15 +7,18 @@ export type AuthUser = {
   email: string | null
 }
 
+export type WorkspaceRole = 'owner' | 'admin' | 'member' | 'viewer'
+
 type AuthState = {
   status: AuthStatus
   user: AuthUser | null
   accessToken: string | null
   workspaceId: string | null
   workspaceName: string | null
+  workspaceRole: WorkspaceRole | null
   setMisconfigured: () => void
   setAuthenticated: (params: { user: AuthUser; accessToken: string }) => void
-  setWorkspace: (params: { workspaceId: string | null; workspaceName?: string | null }) => void
+  setWorkspace: (params: { workspaceId: string | null; workspaceName?: string | null; workspaceRole?: WorkspaceRole | null }) => void
   clear: () => void
 }
 
@@ -25,6 +28,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   workspaceId: null,
   workspaceName: null,
+  workspaceRole: null,
   setMisconfigured: () =>
     set({
       status: 'misconfigured',
@@ -32,6 +36,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       accessToken: null,
       workspaceId: null,
       workspaceName: null,
+      workspaceRole: null,
     }),
   setAuthenticated: ({ user, accessToken }) =>
     set({
@@ -39,10 +44,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       user,
       accessToken,
     }),
-  setWorkspace: ({ workspaceId, workspaceName }) =>
+  setWorkspace: ({ workspaceId, workspaceName, workspaceRole }) =>
     set({
       workspaceId,
       workspaceName: workspaceName ?? null,
+      workspaceRole: workspaceRole ?? null,
     }),
   clear: () =>
     set({
@@ -51,5 +57,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       accessToken: null,
       workspaceId: null,
       workspaceName: null,
+      workspaceRole: null,
     }),
 }))

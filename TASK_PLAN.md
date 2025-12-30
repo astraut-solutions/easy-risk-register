@@ -191,11 +191,11 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [verify] Accessibility check + export correctness
 
 ### Feature: Audit trail (append-only, role-based access)
-- [ ] [database] Add `audit_events` append-only table + retention baseline (90 days) + RLS by role
-- [ ] [backend] Record risk CRUD and checklist completion events; add per-risk activity log endpoint
-- [ ] [frontend] Add per-risk activity log UI; restrict export to Owner/Admin
-- [ ] [deploy] Document retention and access rules
-- [ ] [verify] Verify role rules: Owner/Admin view+export, Member view-only, Viewer no access
+- [x] [database] Add `audit_events` append-only table + retention baseline (90 days) + RLS by role
+- [x] [backend] Record risk CRUD and checklist completion events; add per-risk activity log endpoint
+- [x] [frontend] Add per-risk activity log UI; restrict export to Owner/Admin
+- [x] [deploy] Document retention and access rules
+- [x] [verify] Verify role rules: Owner/Admin view+export, Member view-only, Viewer no access
 
 ## Cycle 5 (Phase 5): User Validation and Iteration
 

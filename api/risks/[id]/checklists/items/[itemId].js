@@ -3,6 +3,7 @@ const { requireApiContext } = require('../../../../_lib/context')
 const { logApiError, logApiRequest, logApiResponse, logApiWarn } = require('../../../../_lib/logger')
 const { sendApiError, supabaseErrorToApiError, unexpectedErrorToApiError } = require('../../../../_lib/apiErrors')
 const { readJsonBody } = require('../../../../_lib/body')
+const { insertAuditEvent } = require('../../../../_lib/auditEvents')
 
 const UUID_V4ish_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -80,6 +81,24 @@ module.exports = async function handler(req, res) {
             message: 'Supabase rpc failed: missing response',
             retryable: false,
           })
+        }
+
+        const auditResult = await insertAuditEvent({
+          supabase,
+          workspaceId,
+          riskId,
+          eventType: completed ? 'checklist_item.completed' : 'checklist_item.uncompleted',
+          payload: {
+            itemId: row.item_id,
+            checklistId: row.checklist_id,
+            completed,
+            completedAt: row.completed_at,
+            checklistStatus: row.checklist_status,
+            riskChecklistStatus: row.risk_checklist_status,
+          },
+        })
+        if (auditResult?.error) {
+          logApiWarn('audit_insert_failed', { requestId, workspaceId, riskId, itemId, message: auditResult.error.message })
         }
 
         return res.status(200).json({

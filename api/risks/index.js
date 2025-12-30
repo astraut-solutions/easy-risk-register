@@ -10,6 +10,7 @@ const {
   validateClientRiskScore,
   validateClientSeverity,
 } = require('../_lib/riskScoring')
+const { insertAuditEvent, sanitizeRiskAuditPayload } = require('../_lib/auditEvents')
 
 function clampInt(value, { min, max, fallback }) {
   const num = Number.parseInt(String(value), 10)
@@ -372,6 +373,17 @@ module.exports = async function handler(req, res) {
           logApiWarn('supabase_insert_failed', { requestId, workspaceId, message: error.message })
           const apiError = supabaseErrorToApiError(error, { action: 'insert' })
           return sendApiError(req, res, apiError)
+        }
+
+        const auditResult = await insertAuditEvent({
+          supabase,
+          workspaceId,
+          riskId: createdRow?.id,
+          eventType: 'risk.created',
+          payload: { risk: sanitizeRiskAuditPayload(createdRow) },
+        })
+        if (auditResult?.error) {
+          logApiWarn('audit_insert_failed', { requestId, workspaceId, riskId: createdRow?.id, message: auditResult.error.message })
         }
 
         return res.status(201).json(mapRiskRow(createdRow, { thresholds }))

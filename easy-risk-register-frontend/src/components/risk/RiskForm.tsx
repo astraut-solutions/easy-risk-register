@@ -10,6 +10,7 @@ import { trackEvent } from '../../utils/analytics'
 import { COMPLIANCE_CHECKLIST_TEMPLATES, THREAT_TYPE_OPTIONS } from '../../constants/cyber'
 import { PLAYBOOK_TEMPLATES } from '../../constants/playbooks'
 import { selectRiskById, useRiskStore } from '../../stores/riskStore'
+import { RiskActivityLogPanel } from './RiskActivityLogPanel'
 
 export type RiskFormValues = RiskInput & { status: RiskStatus }
 
@@ -1420,6 +1421,15 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                     </p>
                   </>
                 )}
+              </div>
+            </details>
+
+            <details className="rounded-2xl bg-surface-secondary/10 p-4">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                Activity log (audit trail)
+              </summary>
+              <div className="mt-3">
+                <RiskActivityLogPanel riskId={mode === 'edit' ? riskId ?? null : null} />
               </div>
             </details>
 

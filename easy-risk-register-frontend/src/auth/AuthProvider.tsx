@@ -10,6 +10,7 @@ type ApiUsersResponse = {
   user: { id: string; email: string | null }
   workspaceId: string
   workspaceName?: string | null
+  workspaceRole?: string | null
 }
 
 type ApiSettingsResponse = {
@@ -80,6 +81,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setWorkspace({
           workspaceId: payload.workspaceId,
           workspaceName: payload.workspaceName ?? null,
+          workspaceRole:
+            payload.workspaceRole === 'owner' ||
+            payload.workspaceRole === 'admin' ||
+            payload.workspaceRole === 'member' ||
+            payload.workspaceRole === 'viewer'
+              ? payload.workspaceRole
+              : null,
         })
 
         try {

@@ -10,6 +10,7 @@ const {
   validateClientRiskScore,
   validateClientSeverity,
 } = require('../_lib/riskScoring')
+const { insertAuditEvent, sanitizeRiskUpdateAuditPayload, sanitizeRiskAuditPayload } = require('../_lib/auditEvents')
 
 const UUID_V4ish_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -334,6 +335,20 @@ module.exports = async function handler(req, res) {
         }
         if (!data) return res.status(404).json({ error: 'Not found' })
 
+        const auditResult = await insertAuditEvent({
+          supabase,
+          workspaceId,
+          riskId,
+          eventType: 'risk.updated',
+          payload: {
+            ...sanitizeRiskUpdateAuditPayload({ updates }),
+            risk: sanitizeRiskAuditPayload(data),
+          },
+        })
+        if (auditResult?.error) {
+          logApiWarn('audit_insert_failed', { requestId, workspaceId, riskId, message: auditResult.error.message })
+        }
+
         return res.status(200).json(mapRiskRow(data, { thresholds }))
       }
 
@@ -343,7 +358,7 @@ module.exports = async function handler(req, res) {
           .delete()
           .eq('id', riskId)
           .eq('workspace_id', workspaceId)
-          .select('id')
+          .select('id, title, probability, impact, risk_score, category, status, threat_type')
           .maybeSingle()
 
         if (error) {
@@ -352,6 +367,17 @@ module.exports = async function handler(req, res) {
           return sendApiError(req, res, apiError)
         }
         if (!data) return res.status(404).json({ error: 'Not found' })
+
+        const auditResult = await insertAuditEvent({
+          supabase,
+          workspaceId,
+          riskId,
+          eventType: 'risk.deleted',
+          payload: { risk: sanitizeRiskAuditPayload(data) },
+        })
+        if (auditResult?.error) {
+          logApiWarn('audit_insert_failed', { requestId, workspaceId, riskId, message: auditResult.error.message })
+        }
 
         return res.status(204).end()
       }

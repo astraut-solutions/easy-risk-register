@@ -18,6 +18,7 @@ module.exports = async function handler(req, res) {
     switch (req.method) {
       case 'GET': {
         let workspaceName = null
+        let workspaceRole = null
         try {
           const { data } = await ctx.supabase
             .from('workspaces')
@@ -34,10 +35,28 @@ module.exports = async function handler(req, res) {
           })
         }
 
+        try {
+          const { data } = await ctx.supabase
+            .from('workspace_members')
+            .select('role')
+            .eq('workspace_id', ctx.workspaceId)
+            .eq('user_id', ctx.user.id)
+            .maybeSingle()
+          if (typeof data?.role === 'string') workspaceRole = data.role
+        } catch (error) {
+          logApiWarn('workspace_role_lookup_failed', {
+            requestId,
+            workspaceId: ctx.workspaceId,
+            userId: ctx.user.id,
+            message: typeof error?.message === 'string' ? error.message : undefined,
+          })
+        }
+
         return res.status(200).json({
           user: { id: ctx.user.id, email: ctx.user.email ?? null },
           workspaceId: ctx.workspaceId,
           workspaceName,
+          workspaceRole,
         })
       }
 

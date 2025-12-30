@@ -20,6 +20,7 @@ Core risk register data is stored server-side (workspace-scoped with Supabase RL
 - Maturity assessments (accessibility + exports): `docs/verification/maturity-assessments.md`
 - Reminders (notifications + in-app fallback): `docs/verification/reminders.md`
 - End-to-end encryption (threat model + recovery): `docs/verification/e2ee-threat-model-and-recovery.md`
+- Audit trail (role access + export): `docs/verification/audit-trail.md`
 - Offline expectations (deploy + privacy): `docs/guides/deploy/deploy-vercel.md#offline-behavior-expectations`
 - Offline / read-only mode and cache: `docs/verification/offline-readonly-cache.md`
 - Checklist template updates (no timestamp overwrites): `docs/verification/checklist-template-updates.md`
@@ -64,6 +65,7 @@ Core risk register data is stored server-side (workspace-scoped with Supabase RL
 - Security policy: `docs/SECURITY.md`
 - Security implementation: `docs/security-implementation.md`
 - Security & Compliance Features: `security-and-compliance.md`
+- Audit trail retention and access rules: `docs/guides/deploy/audit-trail.md`
 
 ## Financial Risk Quantification Features
 
