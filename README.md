@@ -41,6 +41,8 @@ A regional financial advisor firm manages risks including market volatility, cyb
 
 - Supabase Auth sign-in/out and workspace-scoped access (default “Personal” workspace; no multi-workspace switcher UX yet)
 - Risk CRUD via APIs (`/api/risks`, `/api/categories`) with validation and consistent error handling
+- Dashboard charts (Chart.js): severity distribution, category distribution (stacked), and 30-day trend charts with drill-down to the Risk table
+- Export charts as PNG (default 1080p) and a dashboard PDF report via print-to-PDF (`report.html` viewer; popups must be allowed)
 - Cyber risk templates: bundled-only template picker with preview (no template network calls); applying a template pre-fills the New risk form and edits remain independent of the template
 - Compliance checklists (privacy incident assist): attach a checklist to a risk, track completion timestamps, and filter by checklist status (assistive guidance only; not legal advice)
 - Risk score history snapshots for trends (captured server-side; bounded retention: 20 snapshots per risk or 90 days)
@@ -339,3 +341,11 @@ Please ensure your code follows our [Code Style Guide](docs/guides/dev/code-styl
 - [x] [frontend] Add tooltips on key fields + "first 3 steps" onboarding checklist; allow disabling tooltips
 - [x] [deploy] Ensure external links (if any) are optional and do not block core use
 - [x] [verify] Accessibility check for tooltip triggers and keyboard-only flow
+
+### Feature: Dashboard charts + PNG export
+- [x] [database] No change (depends on risk + history tables)
+- [x] [backend] Add aggregated endpoints as needed (or compute client-side with bounded payloads)
+- [x] [frontend] Implement 2-3 default charts (distribution + trends) with drill-down + accessible table equivalents
+- [x] [frontend] Implement PNG export (default 1080p) for charts
+- [x] [deploy] Verify bundle size and chart rendering performance
+- [x] [verify] Chart drill-down matches filters/matrix semantics; "DB unreachable" state is clear

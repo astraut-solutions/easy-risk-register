@@ -1,4 +1,4 @@
-import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { type ChangeEvent, Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import Papa from 'papaparse'
 
 import {
@@ -9,10 +9,8 @@ import { RiskSummaryCards } from './components/risk/RiskSummaryCards'
 import { RiskForm, type RiskFormValues } from './components/risk/RiskForm'
 import { RiskDetailModal } from './components/risk/RiskDetailModal'
 import { RiskMatrix } from './components/risk/RiskMatrix'
-import RiskDashboardCharts from './components/risk/RiskDashboardCharts'
 import { RiskFiltersBar } from './components/risk/RiskFilters'
 import { RiskTable } from './components/risk/RiskTable'
-import { MaturityAssessmentPanel } from './components/maturity/MaturityAssessmentPanel'
 import { useRiskManagement } from './services/riskService'
 import type { Risk, RiskSeverity } from './types/risk'
 import { exportRisksToCSV, type CSVExportVariant, type ReminderFrequency } from './stores/riskStore'
@@ -39,6 +37,13 @@ import { IntegrationSettingsPanel } from './components/integrations/IntegrationS
 import { EncryptionUnlockGate } from './components/privacy/EncryptionUnlockGate'
 import { AuthControls } from './components/auth/AuthControls'
 import { useAuthStore } from './stores/authStore'
+
+const RiskDashboardCharts = lazy(() => import('./components/risk/RiskDashboardCharts'))
+const MaturityAssessmentPanel = lazy(() =>
+  import('./components/maturity/MaturityAssessmentPanel').then((mod) => ({
+    default: mod.MaturityAssessmentPanel,
+  })),
+)
 
 type MatrixSelection = {
   probability: number
@@ -1458,32 +1463,48 @@ function App() {
                 </div>
               ) : activeView === 'dashboard' ? (
                 <div className="flex flex-col gap-6">
-                  <RiskDashboardCharts
-                    risks={visibleRisks}
-                    snapshots={riskScoreSnapshots}
-                    filters={filters}
-                    matrixFilterLabel={
-                      matrixSelection
-                        ? `Likelihood ${matrixSelection.probability} x Impact ${matrixSelection.impact}`
-                        : undefined
+                  <Suspense
+                    fallback={
+                      <div className="rr-panel p-4">
+                        <p className="text-sm text-text-low">Loading dashboard charts.</p>
+                      </div>
                     }
-                    historyEnabled={settings.visualizations.scoreHistoryEnabled}
-                    defaultTrendMode={settings.visualizations.defaultTrendMode}
-                    onDrillDown={({ filters: drillFilters }) => {
-                      actions.setFilters({ ...drillFilters })
-                      requestNavigate('table')
-                    }}
-                  />
+                  >
+                    <RiskDashboardCharts
+                      risks={visibleRisks}
+                      snapshots={riskScoreSnapshots}
+                      filters={filters}
+                      matrixFilterLabel={
+                        matrixSelection
+                          ? `Likelihood ${matrixSelection.probability} x Impact ${matrixSelection.impact}`
+                          : undefined
+                      }
+                      historyEnabled={settings.visualizations.scoreHistoryEnabled}
+                      defaultTrendMode={settings.visualizations.defaultTrendMode}
+                      onDrillDown={({ filters: drillFilters }) => {
+                        actions.setFilters({ ...filters, ...drillFilters })
+                        requestNavigate('table')
+                      }}
+                    />
+                  </Suspense>
                 </div>
               ) : activeView === 'maturity' ? (
                 <div className="flex flex-col gap-6">
-                  <MaturityAssessmentPanel
-                    settings={settings.visualizations}
-                    assessments={maturityAssessments}
-                    onCreate={actions.createMaturityAssessment}
-                    onUpdateDomain={actions.updateMaturityDomain}
-                    onDelete={actions.deleteMaturityAssessment}
-                  />
+                  <Suspense
+                    fallback={
+                      <div className="rr-panel p-4">
+                        <p className="text-sm text-text-low">Loading maturity assessment.</p>
+                      </div>
+                    }
+                  >
+                    <MaturityAssessmentPanel
+                      settings={settings.visualizations}
+                      assessments={maturityAssessments}
+                      onCreate={actions.createMaturityAssessment}
+                      onUpdateDomain={actions.updateMaturityDomain}
+                      onDelete={actions.deleteMaturityAssessment}
+                    />
+                  </Suspense>
                 </div>
               ) : (
                 <RiskTable

@@ -151,8 +151,8 @@ Each feature below is listed with the **database -> backend -> frontend -> deplo
 - [x] [backend] Add aggregated endpoints as needed (or compute client-side with bounded payloads)
 - [x] [frontend] Implement 2-3 default charts (distribution + trends) with drill-down + accessible table equivalents
 - [x] [frontend] Implement PNG export (default 1080p) for charts
-- [ ] [deploy] Verify bundle size and chart rendering performance
-- [ ] [verify] Chart drill-down matches filters/matrix semantics; "DB unreachable" state is clear
+- [x] [deploy] Verify bundle size and chart rendering performance
+- [x] [verify] Chart drill-down matches filters/matrix semantics; "DB unreachable" state is clear
 
 ### Feature: PDF exports (register + incident/checklist)
 - [ ] [database] No change (uses existing data)

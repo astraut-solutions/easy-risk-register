@@ -46,38 +46,37 @@ The **Dashboard Charts** tab shows distribution and trend data to help you commu
 
 ### Distribution Chart
 
-Shows how risks are distributed across **severity levels** and/or **categories**.
+Shows how risks are distributed across **severity levels** and **top categories** (stacked by severity).
 
 **What it tells you**:
-- "Most of our risks are Medium severity" → May indicate you're managing risk well
-- "Lots of High severity" → Clear action items needed
+- "Most of our risks are Medium severity" may indicate you're managing risk well
+- "Lots of High severity" suggests clear action items are needed
 - Distribution by category helps identify problem areas (e.g., "70% are Cyber Security risks")
 
 **How to use it**:
-1. Click on any bar segment to filter the risk list
-2. The matrix and table automatically filter to match
-3. Charts update to reflect your current filters
+1. Click a bar segment to drill down
+2. The app opens the **Risk table** with matching filters applied
+3. Use **Show data table** for an accessible, copy/paste-friendly equivalent of the chart
 
 ### Trend Chart (Score History)
 
-Shows how your **overall risk exposure** has changed over time (last 30, 90, or 365 days).
+Shows how your risk signal changes over time (last 30 days).
 
 **What it tells you**:
 - Upward trend = risk exposure is increasing (new risks, control failures)
 - Downward trend = risk exposure is decreasing (mitigations working)
 - Flat = stable risk profile
 
-**Customization**:
-- In **Settings**, choose the default trend view:
-  - **Overall exposure**: Sum/average of active risks (shows org-wide trend)
-  - **Recently changed**: Highlights risks that were just added or updated
+**Trend modes**:
+- **Overall exposure**: average score across risks, based on stored snapshots
+- **Recent score changes**: count of score updates recorded per day
 
 ### Tips for Board Reporting
 
 - **Take a screenshot** of the dashboard to include in board reports
-- **Export as PNG** (button on each chart) for slides or emails
-- **Export as PDF** for complete reports with all charts
-- Use the **clear filters** button to reset to "all risks" before exporting
+- **Export as PNG** (button on each chart) for slides or emails (default 1080p)
+- **Export as PDF** (Dashboard charts report) for a single printable document with charts + tables
+- Reset filters to "all risks" before exporting for board-ready summaries
 - Trend charts are ideal for showing improvement over time
 
 ---
