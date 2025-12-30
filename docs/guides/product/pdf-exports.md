@@ -9,6 +9,7 @@ Easy Risk Register supports two PDF export paths:
 
 - **Risk register report**: current view (filters + matrix selection) or all risks, includes generated time, applied filters, and a severity legend.
 - **Privacy incident / checklist report**: per-risk checklist summary with completion timestamps (requires the privacy incident checklist to be attached to that risk).
+- **Maturity self-assessment report**: selected assessment (framework preset + timestamp) with embedded radar image and a domain scores table (self-assessment only; not certification/compliance/legal advice).
 
 ## Server-side endpoints (direct download)
 
@@ -28,6 +29,7 @@ Both endpoints require `Authorization: Bearer <supabase-jwt>` and are workspace-
    - `Download ... PDF` (server-generated, direct download), or
    - `Open print view` (opens a report tab you can Print / Save as PDF).
 3. For **Dashboard charts**, choose `Export dashboard PDF` (opens a print-friendly report with embedded chart images).
+4. For **Maturity self-assessment**, choose `Export maturity PDF` (opens a print-friendly report with the embedded radar image).
 
 ## Limits (server-side PDFs)
 

@@ -57,6 +57,17 @@ Goal: validate PDF exports for correctness, filters, chart inclusion, and ensure
    - Chart images (severity + category + trend)
    - A data table fallback section when enabled
 
+## Verify: maturity self-assessment PDF (chart + table included)
+
+1) Go to `Maturity radar`.
+2) Create an assessment (or select an existing one) and set a few domain scores.
+3) Click `Export PDF` (either from the Maturity page or from the global `Export PDF` modal via `Export maturity PDF`).
+4) In the report view, Print / Save as PDF and confirm the PDF includes:
+   - The disclaimer (self-assessment only; not certification/compliance/legal advice)
+   - Preset label + generated timestamp
+   - Embedded radar chart image (not blank)
+   - A domain scores table matching the selected assessment
+
 ## Verify: CSV export regression
 
 1) Export CSV via the app’s `Export` modal (standard + audit pack).
@@ -66,4 +77,3 @@ Goal: validate PDF exports for correctness, filters, chart inclusion, and ensure
 3) If you use server-side CSV export (`GET /api/exports/risks.csv`), confirm:
    - Filtering by `threatType` and `checklistStatus` still works
    - Large exports return 413 rather than timing out
-

@@ -43,6 +43,7 @@ A regional financial advisor firm manages risks including market volatility, cyb
 - Risk CRUD via APIs (`/api/risks`, `/api/categories`) with validation and consistent error handling
 - Dashboard charts (Chart.js): severity distribution, category distribution (stacked), and 30-day trend charts with drill-down to the Risk table
 - Export charts as PNG (default 1080p) and a dashboard PDF report via print-to-PDF (includes chart images)
+- Maturity self-assessments (ACSC/NIST inspired): record timestamped snapshots per domain (0-4), view radar + table fallback, export as PNG and print-to-PDF (self-assessment only; not certification/compliance/legal advice)
 - Cyber risk templates: bundled-only template picker with preview (no template network calls); applying a template pre-fills the New risk form and edits remain independent of the template
 - Compliance checklists (privacy incident assist): attach a checklist to a risk, track completion timestamps, and filter by checklist status (assistive guidance only; not legal advice)
 - Incident response playbooks: attach a playbook template to a risk, customize steps, and export via the privacy incident/checklist report (assistive guidance only; not legal advice)
@@ -369,3 +370,10 @@ Please ensure your code follows our [Code Style Guide](docs/guides/dev/code-styl
 - [x] [frontend] Implement passphrase flow (enable/disable/rotate) and client-side encrypt/decrypt via Web Crypto
 - [x] [deploy] Document limitations (no recovery), and ensure logs/telemetry don't capture plaintext
 - [x] [verify] Threat model review + recovery-flow validation (passphrase loss, rotation)
+
+### Feature: Maturity radar (ACSC/NIST self-assessment)
+- [x] [database] Add maturity assessment tables (framework preset, domain scores, timestamps)
+- [x] [backend] Implement assessment CRUD APIs + query for latest/series
+- [x] [frontend] Implement radar chart + table fallback; export as PNG and include in PDFs
+- [x] [deploy] Ensure presets and copy avoid implying certification/compliance guarantees
+- [x] [verify] Accessibility check + export correctness
