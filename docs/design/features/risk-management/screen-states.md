@@ -265,7 +265,7 @@ This document provides detailed specifications for all screen states in the Risk
   
 - **Color Application**: 
   - Active filter tags in primary color
-  - "Clear Filters" button for resetting
+  - "Reset" button for clearing filters
 
 ## Risk Creation/Editing Screen
 

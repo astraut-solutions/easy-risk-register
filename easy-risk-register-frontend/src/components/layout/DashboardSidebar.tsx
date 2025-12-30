@@ -82,10 +82,6 @@ export const DashboardSidebar = ({
           >
             Settings
           </button>
-          <div className="rounded-2xl border border-dashed border-border-subtle bg-surface-secondary/70 p-4 text-sm text-text-low">
-            Tip: Use the New risk tab in the header to capture a risk without leaving the workspace.
-            Drafts are saved locally so you can return later.
-          </div>
         </div>
       </div>
     </aside>

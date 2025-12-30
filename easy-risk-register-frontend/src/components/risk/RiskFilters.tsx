@@ -109,16 +109,19 @@ export const RiskFiltersBar = ({
     <div className="rr-panel p-4">
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6 xl:items-end">
         <div className="md:col-span-1 xl:col-span-1">
+          <p className="mb-1 text-xs font-semibold text-text-low md:sr-only">Search</p>
           <input
             type="search"
             placeholder="Search risks..."
             value={filters.search}
             onChange={handleInput('search')}
             className="rr-input w-full"
+            aria-label="Search risks"
           />
         </div>
 
         <div className="xl:col-span-1">
+          <p className="mb-1 text-xs font-semibold text-text-low md:sr-only">Category</p>
           <Select
             label="Category"
             labelVisibility="sr-only"
@@ -131,6 +134,7 @@ export const RiskFiltersBar = ({
         </div>
 
         <div className="xl:col-span-1">
+          <p className="mb-1 text-xs font-semibold text-text-low md:sr-only">Threat type</p>
           <Select
             label="Threat type"
             labelVisibility="sr-only"
@@ -143,6 +147,7 @@ export const RiskFiltersBar = ({
         </div>
 
         <div className="xl:col-span-1">
+          <p className="mb-1 text-xs font-semibold text-text-low md:sr-only">Status</p>
           <Select
             label="Status"
             labelVisibility="sr-only"
@@ -155,6 +160,7 @@ export const RiskFiltersBar = ({
         </div>
 
         <div className="xl:col-span-1">
+          <p className="mb-1 text-xs font-semibold text-text-low md:sr-only">Severity</p>
           <Select
             label="Severity"
             labelVisibility="sr-only"
@@ -167,6 +173,7 @@ export const RiskFiltersBar = ({
         </div>
 
         <div className="xl:col-span-1">
+          <p className="mb-1 text-xs font-semibold text-text-low md:sr-only">Checklist status</p>
           <Select
             label="Checklist status"
             labelVisibility="sr-only"
@@ -177,29 +184,29 @@ export const RiskFiltersBar = ({
             placeholder="All checklist statuses"
           />
         </div>
-
       </div>
 
       {activeFilterChips.length ? (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2" aria-label="Active filters">
-          {activeFilterChips.map((chip) => (
-            <Button
-              key={chip.key}
-              type="button"
-              size="sm"
-              variant="subtle"
-              onClick={chip.onClear}
-              className="h-8 rounded-full px-3 text-xs"
-              aria-label={`Remove filter: ${chip.label}`}
-            >
-              <span className="truncate">{chip.label}</span>
-              <span aria-hidden="true" className="ml-2 text-text-muted">
-                ×
-              </span>
-            </Button>
-          ))}
-          </div>
+          <ul className="flex flex-wrap items-center gap-2" aria-label="Active filters">
+            {activeFilterChips.map((chip) => (
+              <li key={chip.key}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="subtle"
+                  onClick={chip.onClear}
+                  className="h-8 max-w-[min(320px,100%)] rounded-full px-3 text-xs"
+                  aria-label={`Remove filter: ${chip.label}`}
+                >
+                  <span className="truncate">{chip.label}</span>
+                  <span aria-hidden="true" className="ml-2 text-text-muted">
+                    ×
+                  </span>
+                </Button>
+              </li>
+            ))}
+          </ul>
 
           <Button type="button" size="sm" variant="ghost" onClick={onReset}>
             Reset
@@ -215,3 +222,4 @@ export const RiskFiltersBar = ({
     </div>
   )
 }
+

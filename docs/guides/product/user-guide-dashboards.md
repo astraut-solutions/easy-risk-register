@@ -154,24 +154,24 @@ The **Risk Table** tab displays all risks in a spreadsheet-like view for quick s
 
 ### Columns
 
-- **Risk Title**: Description of the risk
+- **Risk**: Title and a short description preview (click the title to open details)
 - **Category**: Cyber Security, Operational, etc.
-- **Probability**: 1 (Very Low) to 5 (Very High)
-- **Impact**: 1 (Very Low) to 5 (Very High)
-- **Risk Score**: Calculated probability × impact (1–25)
+- **Score**: Calculated probability × impact (1–25), with severity styling
+- **Owner**: Accountable person/team
+- **Due**: Due date (if set)
 - **Status**: Open, Mitigated, Closed, Accepted
-- **Actions**: Icon buttons for edit/view and delete (checklists are managed inside the risk editor)
+- **Last updated**: Timestamp of last modification
+- **Actions**: 3-dot menu with View/Edit/Delete (Delete requires confirmation)
 
-### Filtering & Sorting
+### Filtering
 
-Click **column headers** to sort by that column (↑ ascending, ↓ descending).
-
-Use the **Filter panel** on the left to narrow the list by:
+Use the filter bar to narrow the list by:
 - Status (Open, Mitigated, etc.)
 - Category
 - Threat type
 - Severity level
 - Search text
+- Checklist status
 
 ### Exporting
 
@@ -213,10 +213,10 @@ All views (matrix, dashboard, table) share the **same filters**. When you filter
 
 ### Applying Filters
 
-1. Check the boxes next to the values you want to filter
+1. Choose values in the filter bar (or type into Search)
 2. The risk list, matrix, and charts update instantly
-3. A **"Filters Applied"** indicator appears at the top
-4. Click **"Clear Filters"** to reset
+3. Active filters appear as removable chips under the filter bar
+4. Click a chip to remove that filter, or use **Reset** to clear all filters
 
 ---
 
@@ -324,8 +324,8 @@ Easy Risk Register is designed to be accessible to all users:
 
 ### "My filters are not working"
 
-- **Check filter panel**: Ensure you've checked the boxes for the values you want
-- **Clear and reapply**: Click "Clear Filters" and start over
+- **Check the filter bar**: Confirm your dropdown/search selections are set as expected
+- **Reset and reapply**: Use **Reset** to clear filters, then reapply
 - **Refresh page**: Sometimes caching can interfere
 
 ### "Charts are not updating"

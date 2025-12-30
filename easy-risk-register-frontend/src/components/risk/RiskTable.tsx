@@ -1,4 +1,5 @@
 import type { Risk } from '../../types/risk'
+import { useEffect, useState } from 'react'
 import {
   Badge,
   Button,
@@ -48,6 +49,39 @@ export const RiskTable = ({
   onView,
   emptyState,
 }: RiskTableProps) => {
+  const [openActionsMenuForId, setOpenActionsMenuForId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!openActionsMenuForId) return
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const menu = document.getElementById(`risk-actions-menu-${openActionsMenuForId}`)
+      const button = document.getElementById(`risk-actions-trigger-${openActionsMenuForId}`)
+      const target = event.target as Node | null
+
+      if (!target) return
+      if (menu?.contains(target) || button?.contains(target)) return
+
+      setOpenActionsMenuForId(null)
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpenActionsMenuForId(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('touchstart', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('touchstart', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [openActionsMenuForId])
+
   if (!risks.length) {
     return (
       <div className="rr-panel p-8 text-center">
@@ -72,26 +106,26 @@ export const RiskTable = ({
       >
         <TableHeader className="bg-surface-secondary/60">
           <TableRow role="row">
-            <TableHead role="columnheader">Risk</TableHead>
-            <TableHead role="columnheader">Category</TableHead>
-            <TableHead role="columnheader" className="text-center">Score</TableHead>
-            <TableHead role="columnheader">Owner</TableHead>
-            <TableHead role="columnheader">Due</TableHead>
-            <TableHead role="columnheader">Status</TableHead>
-            <TableHead role="columnheader">Last updated</TableHead>
-            <TableHead role="columnheader" className="text-center">Actions</TableHead>
+            <TableHead role="columnheader" scope="col">Risk</TableHead>
+            <TableHead role="columnheader" scope="col">Category</TableHead>
+            <TableHead role="columnheader" scope="col" className="text-center">Score</TableHead>
+            <TableHead role="columnheader" scope="col">Owner</TableHead>
+            <TableHead role="columnheader" scope="col">Due</TableHead>
+            <TableHead role="columnheader" scope="col">Status</TableHead>
+            <TableHead role="columnheader" scope="col">Last updated</TableHead>
+            <TableHead role="columnheader" scope="col" className="text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {risks.map((risk) => (
-              <TableRow key={risk.id} role="row">
+            <TableRow key={risk.id} role="row">
               <TableCell className="max-w-[320px]" role="cell">
                 {onView ? (
                   <button
                     type="button"
                     onClick={() => onView(risk)}
                     className="text-left font-semibold text-brand-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-primary rounded-md"
-                    aria-label={`Edit risk: ${risk.title}`}
+                    aria-label={`Open risk details: ${risk.title}`}
                   >
                     {risk.title}
                   </button>
@@ -136,59 +170,86 @@ export const RiskTable = ({
                 {dateFormatter.format(new Date(risk.lastModified))}
               </TableCell>
               <TableCell className="text-center" role="cell">
-                <div className="flex items-center justify-center gap-2" role="group" aria-label={`Actions for risk ${risk.title}`}>
+                <div
+                  className="relative flex items-center justify-center gap-2"
+                  role="group"
+                  aria-label={`Actions for risk ${risk.title}`}
+                >
                   <Button
+                    id={`risk-actions-trigger-${risk.id}`}
                     type="button"
                     size="sm"
-                    variant="secondary"
-                    onClick={() => onEdit(risk)}
-                    aria-label={`View or edit risk: ${risk.title}`}
-                    className="h-9 w-9 p-0"
+                    variant="ghost"
+                    onClick={() =>
+                      setOpenActionsMenuForId((current) => (current === risk.id ? null : risk.id))
+                    }
+                    aria-label={`More actions for risk: ${risk.title}`}
+                    aria-haspopup="menu"
+                    aria-expanded={openActionsMenuForId === risk.id}
+                    aria-controls={`risk-actions-menu-${risk.id}`}
+                    className={`h-9 w-9 p-0 text-text-high ${
+                      openActionsMenuForId === risk.id ? 'ring-2 ring-brand-primary/30' : ''
+                    }`}
                   >
-                    <span className="sr-only">View/Edit</span>
+                    <span className="sr-only">More</span>
                     <svg
-                      className="h-5 w-5"
+                      className="h-5 w-5 text-text-high"
                       viewBox="0 0 20 20"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth={1.8}
                       aria-hidden="true"
                     >
-                      <path
-                        d="M12.5 3.5l4 4L7 17H3v-4L12.5 3.5z"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
+                      <path d="M4.5 10h0.01" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M10 10h0.01" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M15.5 10h0.01" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => onDelete(risk.id)}
-                    aria-label={`Delete risk: ${risk.title}`}
-                    className="h-9 w-9 p-0"
-                  >
-                    <span className="sr-only">Delete</span>
-                    <svg
-                      className="h-5 w-5"
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.8}
-                      aria-hidden="true"
+
+                  {openActionsMenuForId === risk.id ? (
+                    <div
+                      id={`risk-actions-menu-${risk.id}`}
+                      role="menu"
+                      aria-label={`More actions for risk ${risk.title}`}
+                      className="absolute right-0 top-full z-20 mt-2 w-24 overflow-hidden rounded-2xl border border-border-faint bg-surface-primary shadow-[0_18px_35px_rgba(15,23,42,0.15)]"
                     >
-                      <path d="M4.5 6.5h11" strokeLinecap="round" />
-                      <path d="M8 6.5v-2h4v2" strokeLinecap="round" strokeLinejoin="round" />
-                      <path
-                        d="M6.5 6.5l.7 10h5.6l.7-10"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path d="M8.5 9v5" strokeLinecap="round" />
-                      <path d="M11.5 9v5" strokeLinecap="round" />
-                    </svg>
-                  </Button>
+                      {onView ? (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-text-high hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/20"
+                          onClick={() => {
+                            setOpenActionsMenuForId(null)
+                            onView(risk)
+                          }}
+                        >
+                          View
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-text-high hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/20"
+                        onClick={() => {
+                          setOpenActionsMenuForId(null)
+                          onEdit(risk)
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-status-danger hover:bg-status-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-danger/25"
+                        onClick={() => {
+                          setOpenActionsMenuForId(null)
+                          onDelete(risk.id)
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               </TableCell>
             </TableRow>

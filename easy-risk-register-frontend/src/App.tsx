@@ -605,9 +605,8 @@ function App() {
   }
 
   const handleViewRisk = (risk: Risk) => {
-    // Prefer direct editing rather than opening a read-only modal.
-    handleCloseDetailModal()
-    startEditRisk(risk)
+    setViewingRisk(risk)
+    setIsDetailModalOpen(true)
   }
 
   const handleCloseDetailModal = () => {
@@ -2058,14 +2057,14 @@ function App() {
                             Showing a quick preview. Open the risk table to review and edit.
                           </p>
                         </div>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => requestNavigate('table')}
-                        >
-                          Open filtered risk table
-                        </Button>
+                         <Button
+                           type="button"
+                           variant="secondary"
+                           size="sm"
+                           onClick={() => requestNavigate('table')}
+                         >
+                           View
+                         </Button>
                       </div>
 
                       <ul className="mt-4 grid gap-2" aria-label="Risks in selected matrix cell (preview)">
@@ -2102,31 +2101,13 @@ function App() {
                     </div>
                   ) : null}
 
-                  <div className="rr-panel flex flex-wrap items-center justify-between gap-4 p-4">
-                    <div className="space-y-1">
-                      <p className="text-sm font-semibold text-text-high">
-                        Showing {visibleRisks.length} of {stats.total} risk{stats.total === 1 ? '' : 's'}
-                      </p>
-                      <p className="text-xs text-text-low">
-                        Executive overview focuses on KPIs and the matrix. Use the risk table to review individual items.
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center justify-end gap-2">
-                      {visibleRisks.length === 0 ? (
+                    {visibleRisks.length === 0 ? (
+                      <div className="flex justify-end">
                         <Button type="button" variant="ghost" size="sm" onClick={handleResetFilters}>
                           Reset filters
                         </Button>
-                      ) : null}
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => requestNavigate('table')}
-                      >
-                        Open risk table
-                      </Button>
-                    </div>
-                  </div>
+                      </div>
+                    ) : null}
 
                 </div>
               ) : activeView === 'dashboard' ? (

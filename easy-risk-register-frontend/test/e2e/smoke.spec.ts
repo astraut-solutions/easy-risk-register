@@ -42,9 +42,7 @@ test('local-only: create risk, drill down matrix, export CSV', async ({ page }) 
     .click()
 
   await expect(page.getByRole('heading', { name: 'Risk Table' })).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: 'Edit risk: Playwright smoke risk', exact: true }),
-  ).toBeVisible()
+  await expect(page.getByText('Playwright smoke risk')).toBeVisible()
 
   await page.getByRole('button', { name: 'Export' }).click()
   await page.getByRole('menuitem', { name: 'Export CSV' }).click()

@@ -194,8 +194,8 @@ describe('RiskTable', () => {
     const onEditSpy = vi.fn()
     render(<RiskTable {...defaultProps} onEdit={onEditSpy} />)
 
-    const viewEditButtons = screen.getAllByText('View/Edit')
-    fireEvent.click(viewEditButtons[0])
+    fireEvent.click(screen.getByRole('button', { name: 'More actions for risk: Test Risk 1' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit' }))
 
     expect(onEditSpy).toHaveBeenCalledWith(mockRisk1)
   })
@@ -204,8 +204,8 @@ describe('RiskTable', () => {
     const onDeleteSpy = vi.fn()
     render(<RiskTable {...defaultProps} onDelete={onDeleteSpy} />)
 
-    const deleteButtons = screen.getAllByText('Delete')
-    fireEvent.click(deleteButtons[1])
+    fireEvent.click(screen.getByRole('button', { name: 'More actions for risk: Test Risk 2' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /delete/i }))
 
     expect(onDeleteSpy).toHaveBeenCalledWith('2')
   })
@@ -214,8 +214,7 @@ describe('RiskTable', () => {
     const onViewSpy = vi.fn()
     render(<RiskTable {...defaultProps} onView={onViewSpy} />)
 
-    const titleButton = screen.getByRole('button', { name: 'Edit risk: Test Risk 1' })
-    fireEvent.click(titleButton)
+    fireEvent.click(screen.getByRole('button', { name: 'Open risk details: Test Risk 1' }))
 
     expect(onViewSpy).toHaveBeenCalledWith(mockRisk1)
   })

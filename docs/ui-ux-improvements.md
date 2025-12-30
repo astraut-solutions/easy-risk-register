@@ -208,11 +208,11 @@ Next → (disabled until required fields complete)
 Risk table
 Title + 2-line description   Category   Score   Owner   Due   Status   Actions
 ---------------------------------------------------------------------------
-[Risk A ...]                 [Badge]    18 H    IT      Jan   Open     [View] [...]
+[Risk A ...]                 [Badge]    18 H    IT      Jan   Open     [...]
 ```
 
 **Annotations**
-- Keep destructive actions visually separated or tucked into a menu to reduce accidental clicks.
+- Keep destructive actions tucked into a menu to reduce accidental clicks.
 - Make “View” the default; “Delete” requires an extra step.
 
 ---
