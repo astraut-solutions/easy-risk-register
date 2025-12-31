@@ -537,12 +537,9 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
             <div className="grid gap-5">
               <Input
                 label="Title *"
-                helperText="Keep it sharp so execs can scan quickly."
-                tooltip={
-                  showTooltips
-                    ? 'Use a short headline (5–10 words). Good titles make exports and dashboards scan-friendly.'
-                    : undefined
-                }
+                label="Title *"
+                tooltip="Keep it sharp so execs can scan quickly. Use a short headline (5–10 words). Good titles make exports and dashboards scan-friendly."
+                error={errors.title?.message?.toString()}
                 error={errors.title?.message?.toString()}
                 placeholder="Supply chain disruption"
                 className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-3 text-sm focus:ring-brand-primary/30"
@@ -572,12 +569,8 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                             </button>
                           ) : undefined
                         }
-                        helperText="Use broad buckets."
-                        tooltip={
-                          showTooltips
-                            ? 'Categories help sort and filter the register for reporting (e.g. Security, Compliance, Operational).'
-                            : undefined
-                        }
+                        tooltip="Use broad buckets. Categories help sort and filter the register for reporting (e.g. Security, Compliance, Operational)."
+                        error={errors.category?.message?.toString()}
                         error={errors.category?.message?.toString()}
                         options={categories.map((category) => ({
                           value: category,
@@ -628,12 +621,9 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                   render={({ field }) => (
                     <Select
                       label="Status *"
-                      helperText="Keep open risks actionable."
-                      tooltip={
-                        showTooltips
-                          ? 'Status is for governance: Open = active work, Accepted = explicitly tolerated, Mitigated = controls in place, Closed = no longer relevant.'
-                          : undefined
-                      }
+                      label="Status *"
+                      tooltip="Keep open risks actionable. Status is for governance: Open = active work, Accepted = explicitly tolerated, Mitigated = controls in place, Closed = no longer relevant."
+                      error={errors.status?.message?.toString()}
                       error={errors.status?.message?.toString()}
                       options={[
                         { value: 'open', label: 'Open' },
@@ -657,12 +647,8 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                   render={({ field }) => (
                     <Select
                       label="Threat type (optional)"
-                      helperText="Used for cyber reporting."
-                      tooltip={
-                        showTooltips
-                          ? 'Threat type is a cyber lens for filtering and reporting (e.g. phishing, ransomware, data breach).'
-                          : undefined
-                      }
+                      label="Threat type (optional)"
+                      tooltip="Used for cyber reporting. Threat type is a cyber lens for filtering and reporting (e.g. phishing, ransomware, data breach)."
                       options={THREAT_TYPE_OPTIONS.map((option) => ({
                         value: option.value,
                         label: option.label,
@@ -680,12 +666,9 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
               <Textarea
                 label="Description *"
                 error={errors.description?.message?.toString()}
-                helperText="Capture context, trigger, and business impact in 2-3 sentences."
-                tooltip={
-                  showTooltips
-                    ? 'Include the likely cause, what could go wrong, and the business impact. This helps reviewers understand why the score matters.'
-                    : undefined
-                }
+                label="Description *"
+                error={errors.description?.message?.toString()}
+                tooltip="Capture context, trigger, and business impact in 2-3 sentences. Include the likely cause, what could go wrong, and the business impact. This helps reviewers understand why the score matters."
                 placeholder="Describe the risk context and impact..."
                 rows={3}
                 className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-3 text-sm focus:ring-brand-primary/30"
