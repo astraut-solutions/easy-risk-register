@@ -1596,7 +1596,7 @@ function App() {
 
               <div className="mt-6">
                 {!editingRisk ? (
-                  <div className="mb-5 rounded-2xl border border-border-faint bg-surface-secondary/10 p-4">
+                  <div className="mb-5 rounded-2xl border border-border-subtle bg-surface-primary p-5 shadow-sm">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                       <div className="flex-1">
                         <Select

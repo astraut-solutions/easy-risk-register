@@ -528,8 +528,7 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
     >
       <div className="flex flex-1 flex-col gap-4 pb-1">
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)]">
-          <div className="flex flex-col gap-5">
-
+          <div className="rounded-2xl border border-border-subtle bg-surface-primary p-5 shadow-sm">
             <div className="grid gap-5">
               <Input
                 label="Title *"
@@ -665,7 +664,7 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
             </div>
           </div>
 
-          <div className="flex flex-col gap-5">
+          <div className="rounded-2xl border border-border-subtle bg-surface-primary p-5 shadow-sm">
             <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
               <div className="flex flex-col gap-6">
                 <div className="grid gap-6 md:grid-cols-2">
