@@ -14,6 +14,7 @@ type Option = { value: string; label: string }
 
 export interface SelectProps {
   label?: string
+  labelAction?: React.ReactNode
   labelVisibility?: 'visible' | 'sr-only'
   error?: string
   helperText?: string
@@ -34,6 +35,7 @@ export interface SelectProps {
 export const Select = ({
   className,
   label,
+  labelAction,
   labelVisibility = 'visible',
   error,
   helperText,
@@ -202,6 +204,7 @@ export const Select = ({
           {labelVisibility !== 'sr-only' && tooltip ? (
             <Tooltip content={tooltip} ariaLabel={`Help: ${label}`} />
           ) : null}
+          {labelAction}
         </div>
       ) : null}
       {name && (

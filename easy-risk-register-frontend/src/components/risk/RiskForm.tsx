@@ -12,6 +12,36 @@ import { PLAYBOOK_TEMPLATES } from '../../constants/playbooks'
 import { selectRiskById, useRiskStore } from '../../stores/riskStore'
 import { RiskActivityLogPanel } from './RiskActivityLogPanel'
 
+const ChevronIcon = ({ className }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+)
+
+const PlusIcon = ({ className }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+)
+
 export type RiskFormValues = RiskInput & { status: RiskStatus }
 
 export type RiskFormHandle = {
@@ -139,16 +169,16 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
   const riskScore = calculateRiskScore(probability, impact)
   const severity = getRiskSeverity(riskScore)
 
-  const missingRequiredFields = useMemo(() => {
-    const missing: string[] = []
-    if (!formValues.title?.trim()) missing.push('Title')
-    if (!formValues.description?.trim()) missing.push('Description')
-    if (!formValues.category?.trim()) missing.push('Category')
-    if (!formValues.status?.trim()) missing.push('Status')
-    return missing
-  }, [formValues.category, formValues.description, formValues.status, formValues.title])
+  // const missingRequiredFields = useMemo(() => {
+  //   const missing: string[] = []
+  //   if (!formValues.title?.trim()) missing.push('Title')
+  //   if (!formValues.description?.trim()) missing.push('Description')
+  //   if (!formValues.category?.trim()) missing.push('Category')
+  //   if (!formValues.status?.trim()) missing.push('Status')
+  //   return missing
+  // }, [formValues.category, formValues.description, formValues.status, formValues.title])
 
-  const isPrimaryDisabled = Boolean(writeBlockedReason) || isSubmitting || !isValid || missingRequiredFields.length > 0
+  const isPrimaryDisabled = Boolean(writeBlockedReason) || isSubmitting || !isValid
 
   const severityMeta = useMemo(() => {
     switch (severity) {
@@ -192,10 +222,10 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
       isDirty,
       isSubmitting,
       isValid,
-      missingRequiredFields,
+      missingRequiredFields: [],
       isPrimaryDisabled,
     })
-  }, [isDirty, isPrimaryDisabled, isSubmitting, isValid, missingRequiredFields, onMetaChange])
+  }, [isDirty, isPrimaryDisabled, isSubmitting, isValid, onMetaChange])
 
   const [isAddingCategory, setIsAddingCategory] = useState(false)
   const [newCategory, setNewCategory] = useState('')
@@ -327,10 +357,10 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
     const nowIso = new Date().toISOString()
     const playbook = playbookEnabled
       ? {
-          title: (values as any).playbook?.title ?? '',
-          steps: Array.isArray((values as any).playbook?.steps) ? (values as any).playbook.steps : [],
-          lastModified: nowIso,
-        }
+        title: (values as any).playbook?.title ?? '',
+        steps: Array.isArray((values as any).playbook?.steps) ? (values as any).playbook.steps : [],
+        lastModified: nowIso,
+      }
       : undefined
 
     await onSubmit({
@@ -497,14 +527,14 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
       noValidate
     >
       <div className="flex flex-1 flex-col gap-4 pb-1">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-          <section className="space-y-4 rounded-[20px] border border-border-faint/70 bg-surface-primary/95 p-4 shadow-[0_28px_56px_rgba(15,23,42,0.08)]">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)]">
+          <section className="space-y-5 rounded-2xl border border-border-subtle bg-surface-primary p-5 shadow-sm transition-shadow hover:shadow-md">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold text-text-high">Essentials</h3>
+              <h3 className="text-sm font-semibold text-text-high">Basics</h3>
               <span className="text-xs font-medium text-text-low">Required fields marked *</span>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-[minmax(0,0.6fr)_minmax(0,0.4fr)]">
+            <div className="grid gap-5">
               <Input
                 label="Title *"
                 helperText="Keep it sharp so execs can scan quickly."
@@ -519,26 +549,40 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                 autoFocus
                 {...titleField}
               />
-              <Controller
-                name="category"
-                control={control}
+
+              <div className="grid gap-5 md:grid-cols-3">
+                <Controller
+                  name="category"
+                  control={control}
                   defaultValue={categories[0] ?? 'Operational'}
                   rules={{ required: 'Select a category.' }}
                   render={({ field }) => (
-                    <div className="space-y-2">
+                    <div className="relative space-y-2">
                       <Select
                         label="Category *"
-                        helperText="Use broad buckets for reporting and filtering."
+                        labelAction={
+                          onAddCategory ? (
+                            <button
+                              type="button"
+                              onClick={handleStartAddCategory}
+                              className="flex h-5 w-5 items-center justify-center rounded-md bg-surface-secondary/20 text-brand-primary transition-colors hover:bg-brand-primary/10 hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/20"
+                              aria-label="Add new category"
+                            >
+                              <PlusIcon className="h-3 w-3" />
+                            </button>
+                          ) : undefined
+                        }
+                        helperText="Use broad buckets."
                         tooltip={
                           showTooltips
                             ? 'Categories help sort and filter the register for reporting (e.g. Security, Compliance, Operational).'
                             : undefined
                         }
                         error={errors.category?.message?.toString()}
-                      options={categories.map((category) => ({
-                        value: category,
-                        label: category,
-                      }))}
+                        options={categories.map((category) => ({
+                          value: category,
+                          label: category,
+                        }))}
                         value={field.value}
                         onChange={field.onChange}
                         onBlur={field.onBlur}
@@ -547,214 +591,267 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                         placeholder="Select a category"
                       />
 
-                    {onAddCategory && !isAddingCategory && (
-                      <div className="flex items-center justify-end">
-                        <Button type="button" size="sm" variant="ghost" onClick={handleStartAddCategory}>
-                          Add category
-                        </Button>
-                      </div>
-                    )}
-
-                    {onAddCategory && isAddingCategory && (
-                      <div className="rounded-2xl border border-border-faint bg-surface-secondary/10 p-3">
-                        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end">
-                          <Input
-                            label="New category"
-                            value={newCategory}
-                            onChange={(event) => {
-                              setNewCategory(event.target.value)
-                              setNewCategoryError(null)
-                            }}
-                            error={newCategoryError ?? undefined}
-                            placeholder="e.g. Third-party, Privacy, Finance"
-                            className="rounded-xl border-border-faint bg-surface-primary/70 px-4 py-3 text-sm focus:ring-brand-primary/30"
-                          />
-                          <Button type="button" size="sm" onClick={handleConfirmAddCategory}>
-                            Add
-                          </Button>
-                          <Button type="button" size="sm" variant="ghost" onClick={handleCancelAddCategory}>
-                            Cancel
-                          </Button>
+                      {onAddCategory && isAddingCategory && (
+                        <div className="absolute left-0 right-0 top-7 z-50 min-w-[300px] rounded-xl border border-border-faint bg-surface-primary p-4 shadow-xl">
+                          <div className="grid gap-3">
+                            <Input
+                              label="New category"
+                              value={newCategory}
+                              onChange={(event) => {
+                                setNewCategory(event.target.value)
+                                setNewCategoryError(null)
+                              }}
+                              error={newCategoryError ?? undefined}
+                              placeholder="e.g. Privacy"
+                              autoFocus
+                            />
+                            <div className="flex justify-end gap-2">
+                              <Button type="button" size="sm" variant="ghost" onClick={handleCancelAddCategory}>
+                                Cancel
+                              </Button>
+                              <Button type="button" size="sm" onClick={handleConfirmAddCategory}>
+                                Add
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              />
-            </div>
-
-            <Controller
-              name="threatType"
-              control={control}
-              defaultValue="other"
-              render={({ field }) => (
-                <Select
-                  label="Threat type (optional)"
-                  helperText="Used for cyber-focused filtering and reporting."
-                  tooltip={
-                    showTooltips
-                      ? 'Threat type is a cyber lens for filtering and reporting (e.g. phishing, ransomware, data breach).'
-                      : undefined
-                  }
-                  options={THREAT_TYPE_OPTIONS.map((option) => ({
-                    value: option.value,
-                    label: option.label,
-                  }))}
-                  value={field.value ?? 'other'}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  name={field.name}
-                  placeholder="Select a threat type"
+                      )}
+                    </div>
+                  )}
                 />
-              )}
-            />
 
-            <Textarea
-              label="Description *"
-              error={errors.description?.message?.toString()}
-              helperText="Capture context, trigger, and business impact in 2-3 sentences."
-              tooltip={
-                showTooltips
-                  ? 'Include the likely cause, what could go wrong, and the business impact. This helps reviewers understand why the score matters.'
-                  : undefined
-              }
-              placeholder="Describe the risk context and impact..."
-              rows={3}
-              className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-3 text-sm focus:ring-brand-primary/30"
-              {...descriptionField}
-            />
-
-              <div className="grid gap-3 md:grid-cols-[minmax(0,0.35fr)_minmax(0,0.65fr)]">
                 <Controller
                   name="status"
                   control={control}
                   defaultValue="open"
-                rules={{ required: 'Select a status.' }}
-                render={({ field }) => (
-                   <Select
-                     label="Status *"
-                     helperText="Keep open risks actionable; close only when resolved."
-                     tooltip={
-                       showTooltips
-                         ? 'Status is for governance: Open = active work, Accepted = explicitly tolerated, Mitigated = controls in place, Closed = no longer relevant.'
-                         : undefined
-                     }
-                     error={errors.status?.message?.toString()}
-                     options={[
-                       { value: 'open', label: 'Open' },
-                       { value: 'accepted', label: 'Accepted' },
-                      { value: 'mitigated', label: 'Mitigated' },
-                      { value: 'closed', label: 'Closed' },
-                    ]}
-                    value={field.value}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    name={field.name}
-                    required
-                  />
-                )}
-              />
-                <div className="flex items-center rounded-2xl border border-dashed border-border-faint bg-surface-secondary/20 px-4 py-3 text-[11px] text-text-low">
-                  Likelihood x Impact updates instantly so you can gauge severity before committing changes.
-                </div>
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-4 shadow-sm">
-                  <div className="flex items-center justify-between text-xs font-medium text-text-high">
-                    <span className="flex items-center gap-2">
-                      <span>Likelihood *</span>
-                      {showTooltips ? (
-                        <Tooltip
-                          content="Likelihood is how probable the scenario is over your chosen time window (e.g. next 12 months). Use incident history and control strength."
-                          ariaLabel="Help: Likelihood"
-                        />
-                      ) : null}
-                    </span>
-                    <span className="rounded-full bg-surface-secondary/30 px-3 py-0.5 text-[11px] font-semibold text-text-high">
-                      {probability} / 5
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={1}
-                    max={5}
-                    step={1}
-                    {...register('probability', {
-                      required: true,
-                      valueAsNumber: true,
-                    })}
-                    className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-gradient-to-r from-brand-primary/20 via-brand-primary/10 to-brand-primary/5 accent-brand-primary focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/25"
-                    aria-label="Likelihood (1-5)"
-                    aria-describedby="likelihood-help"
-                    aria-valuemin={1}
-                    aria-valuemax={5}
-                    aria-valuenow={probability}
-                    aria-valuetext={`${probability} of 5`}
-                  />
-                  <p id="likelihood-help" className="mt-2 text-[11px] text-text-low">
-                    Estimate likelihood from 1 (rare) to 5 (almost certain).
-                  </p>
-                </div>
-
-                <div className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-4 shadow-sm">
-                  <div className="flex items-center justify-between text-xs font-medium text-text-high">
-                    <span className="flex items-center gap-2">
-                      <span>Impact *</span>
-                      {showTooltips ? (
-                        <Tooltip
-                          content="Impact is the severity if the risk occurs (financial, operational, legal, reputation). Use worst credible outcome, not average."
-                          ariaLabel="Help: Impact"
-                        />
-                      ) : null}
-                    </span>
-                    <span className="rounded-full bg-surface-secondary/30 px-3 py-0.5 text-[11px] font-semibold text-text-high">
-                      {impact} / 5
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={1}
-                    max={5}
-                    step={1}
-                    {...register('impact', {
-                      required: true,
-                      valueAsNumber: true,
-                    })}
-                    className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-gradient-to-r from-status-danger/20 via-status-danger/10 to-status-danger/5 accent-status-danger focus:outline-none focus-visible:ring-4 focus-visible:ring-status-danger/25"
-                    aria-label="Impact (1-5)"
-                    aria-describedby="impact-help"
-                    aria-valuemin={1}
-                    aria-valuemax={5}
-                    aria-valuenow={impact}
-                    aria-valuetext={`${impact} of 5`}
-                  />
-                  <p id="impact-help" className="mt-2 text-[11px] text-text-low">
-                    Gauge downstream effect from 1 (minimal) to 5 (critical).
-                  </p>
-                </div>
-              </div>
-            </section>
-
-          <section className="flex flex-col gap-3 rounded-[20px] border border-border-faint/60 bg-gradient-to-b from-surface-primary/90 to-surface-secondary/20 p-4 shadow-[0_28px_56px_rgba(15,23,42,0.08)]">
-            <details className="rounded-[18px] border border-border-faint bg-surface-primary/95 p-4 shadow-sm">
-              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
-                Details (optional)
-              </summary>
-              <div className="mt-3 space-y-3">
-                <Textarea
-                  label="Mitigation plan (optional)"
-                  placeholder="Outline mitigation actions, owners, or milestones..."
-                  helperText="Keeps downstream owners aligned."
-                  tooltip={
-                    showTooltips
-                      ? 'Capture the main mitigation approach. Use Mitigation steps below for actionable tasks with owners and dates.'
-                      : undefined
-                  }
-                  rows={2}
-                  className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-3 text-sm focus:ring-brand-primary/30"
-                  {...mitigationPlanField}
+                  rules={{ required: 'Select a status.' }}
+                  render={({ field }) => (
+                    <Select
+                      label="Status *"
+                      helperText="Keep open risks actionable."
+                      tooltip={
+                        showTooltips
+                          ? 'Status is for governance: Open = active work, Accepted = explicitly tolerated, Mitigated = controls in place, Closed = no longer relevant.'
+                          : undefined
+                      }
+                      error={errors.status?.message?.toString()}
+                      options={[
+                        { value: 'open', label: 'Open' },
+                        { value: 'accepted', label: 'Accepted' },
+                        { value: 'mitigated', label: 'Mitigated' },
+                        { value: 'closed', label: 'Closed' },
+                      ]}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      required
+                    />
+                  )}
                 />
+
+                <Controller
+                  name="threatType"
+                  control={control}
+                  defaultValue="other"
+                  render={({ field }) => (
+                    <Select
+                      label="Threat type (optional)"
+                      helperText="Used for cyber reporting."
+                      tooltip={
+                        showTooltips
+                          ? 'Threat type is a cyber lens for filtering and reporting (e.g. phishing, ransomware, data breach).'
+                          : undefined
+                      }
+                      options={THREAT_TYPE_OPTIONS.map((option) => ({
+                        value: option.value,
+                        label: option.label,
+                      }))}
+                      value={field.value ?? 'other'}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      placeholder="Select a threat type"
+                    />
+                  )}
+                />
+              </div>
+
+              <Textarea
+                label="Description *"
+                error={errors.description?.message?.toString()}
+                helperText="Capture context, trigger, and business impact in 2-3 sentences."
+                tooltip={
+                  showTooltips
+                    ? 'Include the likely cause, what could go wrong, and the business impact. This helps reviewers understand why the score matters.'
+                    : undefined
+                }
+                placeholder="Describe the risk context and impact..."
+                rows={3}
+                className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-3 text-sm focus:ring-brand-primary/30"
+                {...descriptionField}
+              />
+            </div>
+          </section>
+
+          {/* Score Section - Always Open */}
+          {/* Score Section - Always Open */}
+          <section className="space-y-5 rounded-2xl border border-border-subtle bg-surface-primary p-5 shadow-sm transition-shadow hover:shadow-md">
+            <h3 className="text-base font-semibold text-text-high">Score</h3>
+
+            <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
+              <div className="flex flex-col gap-6">
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="rounded-xl border border-border-faint bg-surface-secondary/20 p-5">
+                    <div className="flex items-center justify-between font-medium text-text-high">
+                      <span className="flex items-center gap-2 text-sm">
+                        <span>Likelihood *</span>
+                        {showTooltips ? (
+                          <Tooltip
+                            content="Likelihood is how probable the scenario is over your chosen time window (e.g. next 12 months). Use incident history and control strength."
+                            ariaLabel="Help: Likelihood"
+                          />
+                        ) : null}
+                      </span>
+                      <span className="rounded-full bg-surface-primary px-3 py-1 text-xs font-semibold text-text-high shadow-sm">
+                        {probability} / 5
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={1}
+                      max={5}
+                      step={1}
+                      {...register('probability', {
+                        required: true,
+                        valueAsNumber: true,
+                      })}
+                      className="mt-6 h-2 w-full cursor-pointer appearance-none rounded-full bg-surface-secondary/50 accent-brand-primary focus:outline-none focus:ring-4 focus:ring-brand-primary/20"
+                      style={{
+                        backgroundImage: `linear-gradient(to right, #2563eb 0%, #2563eb ${(probability - 1) * 25}%, transparent ${(probability - 1) * 25}%, transparent 100%)`
+                      }}
+                      aria-label="Likelihood (1-5)"
+                      aria-describedby="likelihood-help"
+                      aria-valuemin={1}
+                      aria-valuemax={5}
+                      aria-valuenow={probability}
+                      aria-valuetext={`${probability} of 5`}
+                    />
+                    <div className="mt-2 flex justify-between text-[10px] font-medium uppercase tracking-wider text-text-muted">
+                      <span>Rare</span>
+                      <span>Certain</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-border-faint bg-surface-secondary/20 p-5">
+                    <div className="flex items-center justify-between font-medium text-text-high">
+                      <span className="flex items-center gap-2 text-sm">
+                        <span>Impact *</span>
+                        {showTooltips ? (
+                          <Tooltip
+                            content="Impact is the severity if the risk occurs (financial, operational, legal, reputation). Use worst credible outcome, not average."
+                            ariaLabel="Help: Impact"
+                          />
+                        ) : null}
+                      </span>
+                      <span className="rounded-full bg-surface-primary px-3 py-1 text-xs font-semibold text-text-high shadow-sm">
+                        {impact} / 5
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={1}
+                      max={5}
+                      step={1}
+                      {...register('impact', {
+                        required: true,
+                        valueAsNumber: true,
+                      })}
+                      className="mt-6 h-2 w-full cursor-pointer appearance-none rounded-full bg-surface-secondary/50 accent-status-danger focus:outline-none focus:ring-4 focus:ring-status-danger/20"
+                      style={{
+                        backgroundImage: `linear-gradient(to right, #ef4444 0%, #ef4444 ${(impact - 1) * 25}%, transparent ${(impact - 1) * 25}%, transparent 100%)`
+                      }}
+                      aria-label="Impact (1-5)"
+                      aria-describedby="impact-help"
+                      aria-valuemin={1}
+                      aria-valuemax={5}
+                      aria-valuenow={impact}
+                      aria-valuetext={`${impact} of 5`}
+                    />
+                    <div className="mt-2 flex justify-between text-[10px] font-medium uppercase tracking-wider text-text-muted">
+                      <span>Minimal</span>
+                      <span>Critical</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Score Panel */}
+              <aside
+                className={cn(
+                  'flex flex-col gap-4 rounded-xl border p-5 shadow-sm transition-colors lg:h-full lg:justify-center',
+                  severityMeta.cardTone,
+                )}
+                aria-label="Live score"
+              >
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-text-low/80">
+                    Live Risk Score
+                  </p>
+
+                  <div className="mt-2 flex items-baseline gap-3">
+                    <span className="text-5xl font-bold tracking-tight text-text-high" aria-label={`Risk score: ${riskScore}`}>
+                      {riskScore}
+                    </span>
+                    <span
+                      className={cn(
+                        'rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide',
+                        severityMeta.pillTone,
+                      )}
+                      aria-label={`Risk severity: ${severityMeta.label.toUpperCase()}`}
+                    >
+                      {severityMeta.label.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <div className="mt-2 text-sm text-text-low">
+                    {probability} (L) × {impact} (I)
+                  </div>
+                </div>
+
+                <div className="mt-auto border-t border-black/5 pt-4">
+                  <p className="text-xs font-medium text-text-high">Recommendation</p>
+                  <p className="mt-1 text-xs leading-relaxed text-text-low">{severityMeta.nudge}</p>
+                </div>
+              </aside>
+            </div>
+          </section>        </div>
+
+        {/* Plan Section - Collapsible */}
+        <details className="group space-y-4 rounded-2xl border border-border-subtle bg-surface-primary p-2 shadow-sm transition-all hover:shadow-md open:p-6">
+          <summary className="flex cursor-pointer list-none items-center justify-between rounded-xl bg-surface-secondary/30 px-4 py-3 text-sm font-semibold text-text-high transition-colors hover:bg-surface-secondary/50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20 group-open:bg-transparent group-open:px-0 group-open:py-0 group-open:text-base group-open:mb-6">
+            <span className="flex items-center gap-2">
+              Plan (optional)
+              <span className="ml-2 rounded-full bg-surface-secondary px-2 py-0.5 text-[10px] font-medium text-text-low group-open:hidden">
+                {mitigationPlanField ? 'Active' : 'Empty'}
+              </span>
+            </span>
+            <ChevronIcon className="h-5 w-5 text-text-muted transition-transform duration-200 group-open:rotate-180" />
+          </summary>
+          <div className="space-y-4">
+            <Textarea
+              label="Mitigation plan (optional)"
+              placeholder="Outline mitigation actions, owners, or milestones..."
+              helperText="Keeps downstream owners aligned."
+              tooltip={
+                showTooltips
+                  ? 'Capture the main mitigation approach. Use Mitigation steps below for actionable tasks with owners and dates.'
+                  : undefined
+              }
+              rows={2}
+              className="rounded-xl border-border-faint bg-surface-secondary/10 px-4 py-3 text-sm focus:ring-brand-primary/30"
+              {...mitigationPlanField}
+            />
 
             <details className="rounded-2xl bg-surface-secondary/10 p-4">
               <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
@@ -895,6 +992,136 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
 
             <details className="rounded-2xl bg-surface-secondary/10 p-4">
               <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                Mitigation steps (optional)
+              </summary>
+              <div className="mt-3 space-y-3">
+                {mitigationStepsArray.fields.length === 0 ? (
+                  <p className="text-xs text-text-low">
+                    Track mitigation as actionable steps with owners and due dates.
+                  </p>
+                ) : null}
+
+                {mitigationStepsArray.fields.map((field, index) => {
+                  const base = `mitigationSteps.${index}` as const
+                  const stepErrors = (errors.mitigationSteps as any)?.[index]
+
+                  return (
+                    <div key={(field as any)._key} className="rounded-2xl bg-surface-primary/60 p-4">
+                      <div className="grid gap-3 md:grid-cols-[auto_minmax(0,1fr)] md:items-start">
+                        <div className="pt-8">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded accent-brand-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20"
+                            aria-label="Mark step done"
+                            // eslint-disable-next-line react-hooks/incompatible-library
+                            checked={(watch(`${base}.status`) as any) === 'done'}
+                            onChange={(event) => {
+                              const nextStatus = event.target.checked ? 'done' : 'open'
+                              setValue(`${base}.status`, nextStatus as any, { shouldDirty: true })
+                              setValue(
+                                `${base}.completedAt`,
+                                event.target.checked ? new Date().toISOString() : undefined,
+                                { shouldDirty: true },
+                              )
+                            }}
+                          />
+                        </div>
+                        <div className="grid gap-3">
+                          <Input
+                            label="Step (required)"
+                            helperText="Required for each step. Keep it short and actionable."
+                            placeholder="Describe the mitigation action"
+                            error={stepErrors?.description?.message?.toString()}
+                            {...register(`${base}.description`, {
+                              required: 'Describe the step (e.g., "Enable MFA for admin accounts").',
+                            })}
+                          />
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <Input
+                              label="Owner (optional)"
+                              helperText="Who will execute this step."
+                              placeholder="Who owns this step?"
+                              {...register(`${base}.owner`)}
+                            />
+                            <Input
+                              type="date"
+                              label="Due date (optional)"
+                              helperText="Target completion date."
+                              {...register(`${base}.dueDate`)}
+                            />
+                          </div>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                disabled={index === 0}
+                                onClick={() => mitigationStepsArray.move(index, index - 1)}
+                              >
+                                Up
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                disabled={index === mitigationStepsArray.fields.length - 1}
+                                onClick={() => mitigationStepsArray.move(index, index + 1)}
+                              >
+                                Down
+                              </Button>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => mitigationStepsArray.remove(index)}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <input type="hidden" {...register(`${base}.id`)} />
+                      <input type="hidden" {...register(`${base}.status`)} />
+                      <input type="hidden" {...register(`${base}.createdAt`)} />
+                      <input type="hidden" {...register(`${base}.completedAt`)} />
+                    </div>
+                  )
+                })}
+
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() =>
+                    mitigationStepsArray.append({
+                      id: nanoid(10),
+                      description: '',
+                      owner: '',
+                      dueDate: '',
+                      status: 'open',
+                      createdAt: new Date().toISOString(),
+                    } as any)
+                  }
+                >
+                  Add step
+                </Button>
+              </div>
+            </details>
+          </div>
+        </details>
+
+        {/* Evidence & Extras Section - Collapsible */}
+        <details className="group space-y-4 rounded-2xl border border-border-subtle bg-surface-primary p-2 shadow-sm transition-all hover:shadow-md open:p-6">
+          <summary className="flex cursor-pointer list-none items-center justify-between rounded-xl bg-surface-secondary/30 px-4 py-3 text-sm font-semibold text-text-high transition-colors hover:bg-surface-secondary/50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20 group-open:bg-transparent group-open:px-0 group-open:py-0 group-open:text-base group-open:mb-6">
+            Evidence & Extras (optional)
+            <ChevronIcon className="h-5 w-5 text-text-muted transition-transform duration-200 group-open:rotate-180" />
+          </summary>
+          <div className="space-y-4">
+            <details className="rounded-2xl bg-surface-secondary/10 p-4">
+              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
                 Evidence (optional)
               </summary>
               <div className="mt-3 space-y-3">
@@ -987,157 +1214,47 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
 
             <details className="rounded-2xl bg-surface-secondary/10 p-4">
               <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
-                Mitigation steps (optional)
-              </summary>
-              <div className="mt-3 space-y-3">
-                {mitigationStepsArray.fields.length === 0 ? (
-                  <p className="text-xs text-text-low">
-                    Track mitigation as actionable steps with owners and due dates.
-                  </p>
-                ) : null}
-
-                {mitigationStepsArray.fields.map((field, index) => {
-                  const base = `mitigationSteps.${index}` as const
-                  const stepErrors = (errors.mitigationSteps as any)?.[index]
-
-                  return (
-                    <div key={(field as any)._key} className="rounded-2xl bg-surface-primary/60 p-4">
-                      <div className="grid gap-3 md:grid-cols-[auto_minmax(0,1fr)] md:items-start">
-                        <div className="pt-8">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded accent-brand-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20"
-                            aria-label="Mark step done"
-                            // eslint-disable-next-line react-hooks/incompatible-library
-                            checked={(watch(`${base}.status`) as any) === 'done'}
-                            onChange={(event) => {
-                              const nextStatus = event.target.checked ? 'done' : 'open'
-                              setValue(`${base}.status`, nextStatus as any, { shouldDirty: true })
-                              setValue(
-                                `${base}.completedAt`,
-                                event.target.checked ? new Date().toISOString() : undefined,
-                                { shouldDirty: true },
-                              )
-                            }}
-                          />
-                        </div>
-                        <div className="grid gap-3">
-                          <Input
-                            label="Step (required)"
-                            helperText="Required for each step. Keep it short and actionable."
-                            placeholder="Describe the mitigation action"
-                            error={stepErrors?.description?.message?.toString()}
-                            {...register(`${base}.description`, {
-                              required: 'Describe the step (e.g., “Enable MFA for admin accounts”).',
-                            })}
-                          />
-                          <div className="grid gap-3 md:grid-cols-2">
-                            <Input
-                              label="Owner (optional)"
-                              helperText="Who will execute this step."
-                              placeholder="Who owns this step?"
-                              {...register(`${base}.owner`)}
-                            />
-                            <Input
-                              type="date"
-                              label="Due date (optional)"
-                              helperText="Target completion date."
-                              {...register(`${base}.dueDate`)}
-                            />
-                          </div>
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                disabled={index === 0}
-                                onClick={() => mitigationStepsArray.move(index, index - 1)}
-                              >
-                                Up
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                disabled={index === mitigationStepsArray.fields.length - 1}
-                                onClick={() => mitigationStepsArray.move(index, index + 1)}
-                              >
-                                Down
-                              </Button>
-                            </div>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => mitigationStepsArray.remove(index)}
-                            >
-                              Remove
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <input type="hidden" {...register(`${base}.id`)} />
-                      <input type="hidden" {...register(`${base}.status`)} />
-                      <input type="hidden" {...register(`${base}.createdAt`)} />
-                      <input type="hidden" {...register(`${base}.completedAt`)} />
-                    </div>
-                  )
-                })}
-
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={() =>
-                    mitigationStepsArray.append({
-                      id: nanoid(10),
-                      description: '',
-                      owner: '',
-                      dueDate: '',
-                      status: 'open',
-                      createdAt: new Date().toISOString(),
-                    } as any)
-                  }
-                >
-                  Add step
-                </Button>
-              </div>
-            </details>
-
-            <details className="rounded-2xl bg-surface-secondary/10 p-4">
-              <summary className="cursor-pointer select-none rounded-xl text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
                 Incident response playbook (optional)
               </summary>
 
               <div className="mt-3 space-y-3">
                 {!playbookEnabled ? (
                   <div className="space-y-3">
-                    <label className="space-y-1">
-                      <span className="block text-xs font-semibold text-text-low">Template</span>
-                      <select
-                        className="rr-select w-full"
-                        value={selectedPlaybookTemplateId}
-                        onChange={(event) => setSelectedPlaybookTemplateId(event.target.value)}
-                        aria-label="Select playbook template"
-                      >
-                        {PLAYBOOK_TEMPLATES.map((template) => (
-                          <option key={template.id} value={template.id}>
-                            {template.title}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    <div className="flex flex-wrap items-end gap-3">
+                      <div className="flex-1 min-w-[200px] space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-text-low">Use template</span>
+                          <button type="button" className="text-xs text-brand-primary hover:underline">
+                            Browse & preview
+                          </button>
+                        </div>
+                        <div className="flex gap-2">
+                          <select
+                            className="rr-select w-full flex-1"
+                            value={selectedPlaybookTemplateId}
+                            onChange={(event) => setSelectedPlaybookTemplateId(event.target.value)}
+                            aria-label="Select playbook template"
+                          >
+                            {PLAYBOOK_TEMPLATES.map((template) => (
+                              <option key={template.id} value={template.id}>
+                                {template.title}
+                              </option>
+                            ))}
+                          </select>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => setSelectedPlaybookTemplateId(PLAYBOOK_TEMPLATES[0].id)}
+                            aria-label="Clear selection"
+                          >
+                            Clear
+                          </Button>
+                        </div>
+                      </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs text-text-low">
-                        Playbooks are editable checklists you can use during an incident. Forgotten passphrase = data loss if encryption is enabled.
-                      </p>
                       <Button
                         type="button"
-                        size="sm"
-                        variant="secondary"
+                        variant="primary"
                         onClick={() => {
                           const template = PLAYBOOK_TEMPLATES.find((item) => item.id === selectedPlaybookTemplateId)
                           const now = new Date().toISOString()
@@ -1153,9 +1270,12 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                           setPlaybookEnabled(true)
                         }}
                       >
-                        Add playbook
+                        Add
                       </Button>
                     </div>
+                    <p className="text-xs text-text-low">
+                      Playbooks are editable checklists you can use during an incident.
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -1447,98 +1567,49 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                 />
               </div>
             </details>
-              </div>
-            </details>
 
-            <aside
-              className={cn(
-                'flex h-full flex-col gap-3 rounded-[18px] border bg-surface-primary p-4 text-text-high shadow-sm',
-                severityMeta.cardTone,
-              )}
-              aria-label="Live score"
-            >
-              <div className="space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-text-low">
-                  Live score
-                </p>
 
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-4xl font-bold" aria-label={`Risk score: ${riskScore}`}>
-                      {riskScore}
-                    </span>
-                    <span
-                      className={cn(
-                        'rounded-full border px-3 py-0.5 text-xs font-semibold',
-                        severityMeta.pillTone,
-                      )}
-                      aria-label={`Risk severity: ${severityMeta.label.toUpperCase()}`}
-                    >
-                      {severityMeta.label.toUpperCase()}
-                    </span>
-                  </div>
 
-                  <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-text-low">
-                    <span className="rounded-full border border-border-faint/70 bg-surface-primary/70 px-3 py-1">
-                      Likelihood: <span className="text-text-high">{probability}/5</span>
-                    </span>
-                    <span className="rounded-full border border-border-faint/70 bg-surface-primary/70 px-3 py-1">
-                      Impact: <span className="text-text-high">{impact}/5</span>
-                    </span>
-                  </div>
-                </div>
 
-                <p className="text-xs text-text-low">
-                  {severityMeta.why}{' '}
-                  <span className="font-semibold text-text-high">
-                    {riskScore} = {probability}×{impact}
-                  </span>
-                  .
-                </p>
-              </div>
-
-              <div className="mt-auto rounded-2xl border border-border-faint/60 bg-surface-primary/70 p-3 text-xs text-text-low">
-                <p className="font-semibold text-text-high">Recommended next step</p>
-                <p className="mt-1">{severityMeta.nudge}</p>
-              </div>
-            </aside>
-
-          </section>
-        </div>
+          </div>
+        </details>
       </div>
 
       {showActions ? (
-        <div className="-mx-1 mt-6 border-t border-border-faint/70 bg-surface-primary px-1 pb-[calc(env(safe-area-inset-bottom)+0.375rem)] pt-4">
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {onCancel ? (
-              <Button type="button" variant="ghost" onClick={onCancel}>
-                Cancel
+        <div className="mt-4 border-t border-border-faint/70 bg-surface-primary px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              {isPrimaryDisabled && (
+                <p id="risk-form-submit-help" className="text-xs text-text-low truncate" aria-live="polite">
+                  {writeBlockedReason
+                    ? writeBlockedReason
+                    : 'Complete required fields marked * to enable submission.'}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {onCancel ? (
+                <Button type="button" variant="ghost" onClick={onCancel}>
+                  Cancel
+                </Button>
+              ) : null}
+              {mode === 'create' && onSaveDraft ? (
+                <Button type="button" variant="secondary" onClick={handleSaveDraft}>
+                  Save draft
+                </Button>
+              ) : null}
+              <Button
+                type="submit"
+                disabled={isPrimaryDisabled}
+                className="px-6"
+                aria-label={mode === 'create' ? 'Add new risk' : 'Update risk'}
+                aria-describedby={isPrimaryDisabled ? 'risk-form-submit-help' : undefined}
+              >
+                {mode === 'create' ? 'Add risk' : 'Update risk'}
               </Button>
-            ) : null}
-            {mode === 'create' && onSaveDraft ? (
-              <Button type="button" variant="secondary" onClick={handleSaveDraft}>
-                Save draft
-              </Button>
-            ) : null}
-            <Button
-              type="submit"
-              disabled={isPrimaryDisabled}
-              className="px-6"
-              aria-label={mode === 'create' ? 'Add new risk' : 'Update risk'}
-              aria-describedby={isPrimaryDisabled ? 'risk-form-submit-help' : undefined}
-            >
-              {mode === 'create' ? 'Add risk' : 'Update risk'}
-            </Button>
+            </div>
           </div>
-          {isPrimaryDisabled ? (
-            <p id="risk-form-submit-help" className="mt-2 text-xs text-text-low" aria-live="polite">
-              {writeBlockedReason
-                ? writeBlockedReason
-                : missingRequiredFields.length
-                  ? `Complete required fields: ${missingRequiredFields.join(', ')}.`
-                  : 'Complete required fields marked * to enable submission.'}
-            </p>
-          ) : null}
         </div>
       ) : null}
     </form>

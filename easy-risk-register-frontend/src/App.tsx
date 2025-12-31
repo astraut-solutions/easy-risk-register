@@ -1327,7 +1327,7 @@ function App() {
                     aria-label="Open export menu"
                     className={cn(
                       isHeaderExportMenuOpen &&
-                        'bg-brand-primary-light/60 ring-4 ring-brand-primary/20',
+                      'bg-brand-primary-light/60 ring-4 ring-brand-primary/20',
                     )}
                   >
                     <span className="inline-flex items-center gap-2">
@@ -1407,7 +1407,7 @@ function App() {
                     className={cn(
                       'border border-border-strong',
                       isHeaderToolsMenuOpen &&
-                        'bg-brand-primary-light/40 ring-4 ring-brand-primary/15',
+                      'bg-brand-primary-light/40 ring-4 ring-brand-primary/15',
                     )}
                   >
                     <span className="inline-flex items-center gap-2">
@@ -1583,10 +1583,7 @@ function App() {
             <div className="rr-panel p-6">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-low">
-                    {editingRisk ? 'Edit risk' : 'New risk'}
-                  </p>
-                  <h2 className="mt-2 text-2xl font-semibold text-text-high">
+                  <h2 className="text-2xl font-semibold text-text-high">
                     {editingRisk ? 'Update risk' : 'Create risk'}
                   </h2>
                   <p className="mt-1 text-sm text-text-low">
@@ -1595,9 +1592,6 @@ function App() {
                       : 'Capture likelihood, impact, and mitigation details. Drafts are saved locally.'}
                   </p>
                 </div>
-                <Button type="button" variant="ghost" onClick={() => requestNavigate(returnView)}>
-                  Back
-                </Button>
               </div>
 
               <div className="mt-6">
@@ -1607,7 +1601,7 @@ function App() {
                       <div className="flex-1">
                         <Select
                           label="Start from a cyber template (optional)"
-                          helperText="Choose a common cyber risk to prefill likelihood, impact, and mitigations."
+                          tooltip="Choose a common cyber risk to prefill likelihood, impact, and mitigations."
                           options={templateSelectOptions}
                           value={createTemplateId}
                           onChange={(value) => setCreateTemplateId(value)}
@@ -1665,7 +1659,7 @@ function App() {
                   className="border-0 bg-transparent p-0 shadow-none"
                 />
               </div>
-            </div>
+            </div >
           ) : activeView === 'settings' ? (
             <div className="rr-panel p-6">
               <div className="mb-6 flex items-start justify-between">
@@ -2057,14 +2051,14 @@ function App() {
                             Showing a quick preview. Open the risk table to review and edit.
                           </p>
                         </div>
-                         <Button
-                           type="button"
-                           variant="secondary"
-                           size="sm"
-                           onClick={() => requestNavigate('table')}
-                         >
-                           View
-                         </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => requestNavigate('table')}
+                        >
+                          View
+                        </Button>
                       </div>
 
                       <ul className="mt-4 grid gap-2" aria-label="Risks in selected matrix cell (preview)">
@@ -2101,13 +2095,13 @@ function App() {
                     </div>
                   ) : null}
 
-                    {visibleRisks.length === 0 ? (
-                      <div className="flex justify-end">
-                        <Button type="button" variant="ghost" size="sm" onClick={handleResetFilters}>
-                          Reset filters
-                        </Button>
-                      </div>
-                    ) : null}
+                  {visibleRisks.length === 0 ? (
+                    <div className="flex justify-end">
+                      <Button type="button" variant="ghost" size="sm" onClick={handleResetFilters}>
+                        Reset filters
+                      </Button>
+                    </div>
+                  ) : null}
 
                 </div>
               ) : activeView === 'dashboard' ? (
@@ -2190,32 +2184,33 @@ function App() {
                     emptyState={
                       tableNowFilter
                         ? {
-                            title:
-                              tableNowFilter === 'overdue_reviews'
-                                ? 'No overdue reviews'
-                                : tableNowFilter === 'due_soon'
-                                  ? 'Nothing due soon'
-                                  : tableNowFilter === 'high_risks'
-                                    ? 'No high-severity risks'
-                                    : 'No recent changes',
-                            description:
-                              tableNowFilter === 'overdue_reviews'
-                                ? 'Nice work—everything with a review date is up to date.'
-                                : tableNowFilter === 'due_soon'
-                                  ? 'You have no due dates coming up in the next two weeks.'
-                                  : tableNowFilter === 'high_risks'
-                                    ? 'No high risks match your current filters.'
-                                    : 'No risks were updated in the last week.',
-                          }
+                          title:
+                            tableNowFilter === 'overdue_reviews'
+                              ? 'No overdue reviews'
+                              : tableNowFilter === 'due_soon'
+                                ? 'Nothing due soon'
+                                : tableNowFilter === 'high_risks'
+                                  ? 'No high-severity risks'
+                                  : 'No recent changes',
+                          description:
+                            tableNowFilter === 'overdue_reviews'
+                              ? 'Nice work—everything with a review date is up to date.'
+                              : tableNowFilter === 'due_soon'
+                                ? 'You have no due dates coming up in the next two weeks.'
+                                : tableNowFilter === 'high_risks'
+                                  ? 'No high risks match your current filters.'
+                                  : 'No risks were updated in the last week.',
+                        }
                         : tableEmptyState
                     }
                   />
                 </div>
               )}
             </>
-          )}
-        </div>
-      </div>
+          )
+          }
+        </div >
+      </div >
 
       <RiskDetailModal
         risk={viewingRisk}
@@ -2632,7 +2627,7 @@ function App() {
       />
 
       <EncryptionUnlockGate />
-    </div>
+    </div >
   )
 }
 
