@@ -308,6 +308,27 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
     }
   }, [categories, defaultValues, reset, riskId])
 
+  useEffect(() => {
+    setChecklistsTouched(false)
+    setChecklistsError(null)
+  }, [riskId])
+
+  useEffect(() => {
+    if (mode !== 'edit' || !riskId || !onLoadChecklists) return
+    if (checklistsTouched) return
+
+    setChecklistsLoading(true)
+    setChecklistsError(null)
+
+    Promise.resolve(onLoadChecklists(riskId))
+      .then(() => setChecklistsTouched(true))
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : 'Unable to load checklists.'
+        setChecklistsError(message)
+      })
+      .finally(() => setChecklistsLoading(false))
+  }, [checklistsTouched, mode, onLoadChecklists, riskId])
+
   const collectErrorPaths = (value: unknown, prefix = ''): string[] => {
     if (!value || typeof value !== 'object') return []
 
