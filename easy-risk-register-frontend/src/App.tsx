@@ -61,9 +61,6 @@ type DashboardView = 'overview' | 'dashboard' | 'maturity' | 'table' | 'new' | '
 type DashboardWorkspaceView = Exclude<DashboardView, 'new'>
 type TableNowFilter = NowPanelItem['id'] | null
 
-type ExportFormat = 'CSV' | 'PDF' | 'Dashboard'
-type ExportOutcome = 'success' | 'error'
-
 const RISK_FORM_DRAFT_KEY = 'easy-risk-register:risk-form-draft'
 
 type CsvPreview = {
