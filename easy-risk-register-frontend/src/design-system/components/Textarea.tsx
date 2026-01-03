@@ -26,7 +26,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             <label className="text-sm font-medium text-text-high" htmlFor={textareaId}>
               {label}
             </label>
-            {tooltip ? <Tooltip content={tooltip} ariaLabel={`Help: ${label}`} /> : null}
+            {tooltip ? <Tooltip content={tooltip} ariaLabel="Show help" /> : null}
           </div>
         )}
         <textarea

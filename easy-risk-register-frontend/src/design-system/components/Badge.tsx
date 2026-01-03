@@ -16,19 +16,19 @@ const toneStyles: Record<BadgeTone, { solid: string; subtle: string }> = {
   },
   success: {
     solid: 'bg-status-success text-white',
-    subtle: 'border border-status-success/30 bg-status-success/10 text-status-success',
+    subtle: 'border border-status-success/30 bg-status-success/10 text-text-high',
   },
   warning: {
     solid: 'bg-status-warning text-white',
-    subtle: 'border border-status-warning/30 bg-status-warning/10 text-status-warning',
+    subtle: 'border border-status-warning/30 bg-status-warning/10 text-text-high',
   },
   danger: {
     solid: 'bg-status-danger text-white',
-    subtle: 'border border-status-danger/30 bg-status-danger/10 text-status-danger',
+    subtle: 'border border-status-danger/30 bg-status-danger/10 text-text-high',
   },
   info: {
     solid: 'bg-status-info text-white',
-    subtle: 'border border-status-info/30 bg-status-info/10 text-status-info',
+    subtle: 'border border-status-info/30 bg-status-info/10 text-text-high',
   },
   brand: {
     solid: 'bg-brand-primary text-white',

@@ -202,7 +202,7 @@ export const Select = ({
             {label}
           </label>
           {labelVisibility !== 'sr-only' && tooltip ? (
-            <Tooltip content={tooltip} ariaLabel={`Help: ${label}`} />
+            <Tooltip content={tooltip} ariaLabel="Show help" />
           ) : null}
           {labelAction}
         </div>

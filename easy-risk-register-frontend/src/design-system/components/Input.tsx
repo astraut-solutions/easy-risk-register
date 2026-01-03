@@ -30,7 +30,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             <label className="text-sm font-medium text-text-high" htmlFor={inputId}>
               {label}
             </label>
-            {tooltip ? <Tooltip content={tooltip} ariaLabel={`Help: ${label}`} /> : null}
+            {tooltip ? <Tooltip content={tooltip} ariaLabel="Show help" /> : null}
           </div>
         )}
         <input

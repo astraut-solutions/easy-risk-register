@@ -1305,23 +1305,23 @@ function App() {
         />
 
         <div id="main-content" className="flex flex-1 flex-col gap-8">
-          <SectionHeader
-            eyebrow="Easy Risk Register"
-            title="Risk management workspace"
-            description={
-              <div className="space-y-2">
-                <p className="text-base text-text-low">
-                  Workspace status and safety cues keep you confident about every change.
-                </p>
-                <TrustStrip
-                  isOnline={isOnline}
-                  readOnlyMode={readOnlyMode}
-                  readOnlyReason={readOnlyReason}
-                  workspaceLabel={workspaceLabel}
-                  encryptionStatus={encryptionStatus}
-                />
-              </div>
-            }
+              <SectionHeader
+                eyebrow="Easy Risk Register"
+                title="Risk management workspace"
+                description={
+                  <div className="space-y-2">
+                    <p className="text-base text-text-mid">
+                      Workspace status and safety cues keep you confident about every change.
+                    </p>
+                    <TrustStrip
+                      isOnline={isOnline}
+                      readOnlyMode={readOnlyMode}
+                      readOnlyReason={readOnlyReason}
+                      workspaceLabel={workspaceLabel}
+                      encryptionStatus={encryptionStatus}
+                    />
+                  </div>
+                }
             actions={
               <div className="flex flex-wrap items-center gap-3">
                 <Button
@@ -2012,6 +2012,16 @@ function App() {
                 onChange={actions.setFilters}
                 onReset={handleResetFilters}
               />
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-text-low/90">
+                <p className="text-text-mid" aria-live="polite">
+                  Showing {risks.length} of {allRisks.length} risks
+                </p>
+                {risks.length > 0 ? (
+                  <Button type="button" size="sm" variant="ghost" onClick={() => requestNavigate('table')}>
+                    Open risk table
+                  </Button>
+                ) : null}
+              </div>
 
               {matrixSelection && (
                 <div className="rr-panel flex flex-wrap items-center justify-between gap-3 p-4 text-sm text-text-high">
@@ -2083,7 +2093,7 @@ function App() {
                           size="sm"
                           onClick={() => requestNavigate('table')}
                         >
-                          View
+                          Open risk table
                         </Button>
                       </div>
 

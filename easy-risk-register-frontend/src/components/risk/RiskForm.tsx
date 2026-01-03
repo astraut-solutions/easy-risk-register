@@ -539,6 +539,14 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                 autoFocus
                 {...titleField}
               />
+              <details className="mt-3 rounded-2xl border border-border-faint bg-surface-secondary/10 p-4 shadow-sm">
+                <summary className="cursor-pointer select-none text-sm font-semibold text-text-high focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20">
+                  Details (optional)
+                </summary>
+                <p className="mt-3 text-sm text-text-low">
+                  Capture extra context, links, or notes that help reviewers understand the scenario before diving into mitigation.
+                </p>
+              </details>
 
               <div className="grid gap-5 md:grid-cols-3">
                 <Controller
@@ -790,13 +798,20 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                       {probability} (L) × {impact} (I)
                     </div>
                   </div>
+                  <p className="mt-3 text-sm text-text-low">{severityMeta.why}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-text-low">
+                    Recommended next step:{' '}
+                    <span className="font-normal normal-case text-text-high">
+                      {severityMeta.nudge.replace(/^Next:\s*/i, '')}
+                    </span>
+                  </p>
                 </div>
               </aside>
             </div>
           </div>
 
           {/* Plan Section - Collapsible */}
-          <details className="group space-y-4 rounded-2xl border border-border-subtle bg-surface-primary p-2 shadow-sm transition-all hover:shadow-md open:p-6">
+          <details open className="group space-y-4 rounded-2xl border border-border-subtle bg-surface-primary p-2 shadow-sm transition-all hover:shadow-md open:p-6">
             <summary className="flex cursor-pointer list-none items-center justify-between rounded-xl bg-surface-secondary/30 px-4 py-3 text-sm font-semibold text-text-high transition-colors hover:bg-surface-secondary/50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20 group-open:bg-transparent group-open:px-0 group-open:py-0 group-open:text-base group-open:mb-6">
               <span className="flex items-center gap-2">
                 Plan (optional)
@@ -1205,7 +1220,7 @@ export const RiskForm = forwardRef<RiskFormHandle, RiskFormProps>(({
                           </select>
                         </div>
                         <button type="button" className="mb-2 text-xs text-brand-primary hover:underline" onClick={() => {/* TODO: Implement browse */ }}>
-                          Browse & preview
+                          Browse templates
                         </button>
                         <Button
                           type="button"

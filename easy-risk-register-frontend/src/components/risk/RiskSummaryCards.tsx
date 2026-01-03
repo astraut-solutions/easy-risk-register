@@ -54,7 +54,7 @@ export const RiskSummaryCards = ({ stats }: RiskSummaryCardsProps) => {
 
   return (
     <div className="space-y-4">
-      <p className="text-right text-xs text-text-muted">
+      <p className="text-right text-xs text-text-mid">
         Updated {formatter.format(new Date(stats.updatedAt))}
       </p>
 
