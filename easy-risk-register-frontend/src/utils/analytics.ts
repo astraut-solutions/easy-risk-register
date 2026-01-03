@@ -1,12 +1,16 @@
 export type AnalyticsEventName =
   | 'session_start'
   | 'analytics_enabled'
+  | 'feedback.prompt-shown'
+  | 'feedback.prompt-subscribed'
+  | 'feedback.prompt-response'
   | 'view_change'
   | 'auth_modal_open'
   | 'auth_sign_in_success'
   | 'auth_sign_up_success'
   | 'auth_sign_out'
   | 'risk_created'
+  | 'risk.first-create'
   | 'risk_updated'
   | 'risk_deleted'
   | 'risk_modal_open'
@@ -15,6 +19,8 @@ export type AnalyticsEventName =
   | 'risk_modal_validation_error'
   | 'risk_modal_save_draft'
   | 'risk_template_apply'
+  | 'risk.batch-export'
+  | 'risk.export.format'
   | 'export_csv'
   | 'import_csv_open'
   | 'import_csv_parsed'
@@ -23,6 +29,8 @@ export type AnalyticsEventName =
   | 'export_pdf_download'
   | 'export_print_view_open'
   | 'export_png'
+  | 'usability.session-scheduled'
+  | 'usability.session-feedback-captured'
 
 export type AnalyticsEvent = {
   name: AnalyticsEventName

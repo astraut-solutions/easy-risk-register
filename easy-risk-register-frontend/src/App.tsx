@@ -22,6 +22,7 @@ import { cn } from './utils/cn'
 import { useToast } from './components/feedback/ToastProvider'
 import { apiFetch, apiGetBlob, type ApiError } from './services/apiClient'
 import { playbookService } from './services/playbookService'
+import { FeedbackPrompt } from './components/feedback/FeedbackPrompt'
 import { MetricsModal } from './components/feedback/MetricsModal'
 import { isAnalyticsEnabled, setAnalyticsEnabled, trackEvent } from './utils/analytics'
 import { buildRiskDefaultsFromCyberTemplate, CYBER_RISK_TEMPLATES } from './constants/cyber'
@@ -59,6 +60,9 @@ type DashboardView = 'overview' | 'dashboard' | 'maturity' | 'table' | 'new' | '
 
 type DashboardWorkspaceView = Exclude<DashboardView, 'new'>
 type TableNowFilter = NowPanelItem['id'] | null
+
+type ExportFormat = 'CSV' | 'PDF' | 'Dashboard'
+type ExportOutcome = 'success' | 'error'
 
 const RISK_FORM_DRAFT_KEY = 'easy-risk-register:risk-form-draft'
 
@@ -168,6 +172,13 @@ function App() {
   const formModalModeRef = useRef<'create' | 'edit' | null>(null)
   const formModalOpenedFromDraftRef = useRef(false)
   const formModalDidSubmitRef = useRef(false)
+  const sessionStartedAtRef = useRef(Date.now())
+  const firstRiskTrackedRef = useRef(false)
+  const feedbackPromptQueuedRef = useRef(false)
+  const [feedbackPromptStatus, setFeedbackPromptStatus] = useState<
+    'idle' | 'pending' | 'visible' | 'submitted' | 'dismissed'
+  >('idle')
+  const [feedbackPromptTrigger, setFeedbackPromptTrigger] = useState<'risk' | 'export' | null>(null)
 
   const isMetricsUiEnabled = useMemo(() => {
     if (typeof window === 'undefined') return false
@@ -213,6 +224,15 @@ function App() {
     lastViewRef.current = activeView
     trackEvent('view_change', { from, to: activeView })
   }, [activeView])
+
+  useEffect(() => {
+    if (feedbackPromptStatus !== 'pending') return
+    if (activeView !== 'overview') return
+    setFeedbackPromptStatus('visible')
+    trackEvent('feedback.prompt-shown', {
+      trigger: feedbackPromptTrigger ?? 'risk',
+    })
+  }, [activeView, feedbackPromptStatus, feedbackPromptTrigger])
 
   useEffect(() => {
     void syncFromApi().catch((error: unknown) => {
@@ -511,6 +531,49 @@ function App() {
     setActiveView('new')
   }
 
+  const queueFeedbackPrompt = (trigger: 'risk' | 'export') => {
+    if (feedbackPromptQueuedRef.current) return
+    feedbackPromptQueuedRef.current = true
+    setFeedbackPromptTrigger(trigger)
+    setFeedbackPromptStatus('pending')
+  }
+
+  const handleFeedbackPromptSubscribeChange = (subscribed: boolean) => {
+    if (!subscribed) return
+    const trigger = feedbackPromptTrigger ?? 'risk'
+    trackEvent('feedback.prompt-subscribed', { trigger })
+    trackEvent('usability.session-scheduled', { source: 'feedback_prompt', trigger })
+  }
+
+  const handleFeedbackPromptSubmit = (payload: {
+    rating: number
+    notes: string
+    subscribed: boolean
+  }) => {
+    const trigger = feedbackPromptTrigger ?? 'risk'
+    trackEvent('feedback.prompt-response', {
+      ...payload,
+      notesProvided: Boolean(payload.notes),
+      trigger,
+    })
+    trackEvent('usability.session-feedback-captured', {
+      rating: payload.rating,
+      trigger,
+    })
+    setFeedbackPromptStatus('submitted')
+  }
+
+  const trackFirstRiskCreation = (fromTemplate: boolean) => {
+    if (firstRiskTrackedRef.current) return
+    firstRiskTrackedRef.current = true
+    const durationMs = Math.max(Date.now() - sessionStartedAtRef.current, 0)
+    trackEvent('risk.first-create', {
+      durationMs,
+      view: activeView,
+      fromTemplate,
+    })
+  }
+
   const handleSubmit = async (values: RiskFormValues) => {
     formModalDidSubmitRef.current = true
     const durationMs =
@@ -542,6 +605,8 @@ function App() {
           variant: 'success',
         })
         trackEvent('risk_created', { view: activeView, fromTemplate, wasDraft: formModalOpenedFromDraftRef.current })
+        trackFirstRiskCreation(fromTemplate)
+        queueFeedbackPrompt('risk')
       }
     } catch (error) {
       toast.notify({
@@ -732,26 +797,53 @@ function App() {
         blob,
         filename: filename || `risk-register-${new Date().toISOString().split('T')[0]}.pdf`,
       })
+      const filterMeta = {
+        hasSearch: Boolean(filters.search.trim()),
+        category: filters.category !== 'all',
+        status: filters.status !== 'all',
+        threatType: filters.threatType !== 'all',
+        checklistStatus: filters.checklistStatus !== 'all',
+        severity: filters.severity !== 'all',
+        matrix: Boolean(matrixSelection),
+      }
       trackEvent('export_pdf_download', {
         kind: 'risk_register',
         outcome: 'success',
         scope: pdfRegisterScope,
-        filterMeta: {
-          hasSearch: Boolean(filters.search.trim()),
-          category: filters.category !== 'all',
-          status: filters.status !== 'all',
-          threatType: filters.threatType !== 'all',
-          checklistStatus: filters.checklistStatus !== 'all',
-          severity: filters.severity !== 'all',
-          matrix: Boolean(matrixSelection),
-        },
+        filterMeta,
       })
+      trackEvent('risk.batch-export', {
+        format: 'PDF',
+        outcome: 'success',
+        target: 'risk_register',
+        scope: pdfRegisterScope,
+        filterMeta,
+      })
+      trackEvent('risk.export.format', {
+        format: 'PDF',
+        outcome: 'success',
+        target: 'risk_register',
+        scope: pdfRegisterScope,
+      })
+      queueFeedbackPrompt('export')
       setIsPdfExportModalOpen(false)
     } catch (error) {
       trackEvent('export_pdf_download', { kind: 'risk_register', outcome: 'error' })
+      const failureMessage = describeApiError(error)
+      trackEvent('risk.batch-export', {
+        format: 'PDF',
+        outcome: 'error',
+        target: 'risk_register',
+        message: failureMessage,
+      })
+      trackEvent('risk.export.format', {
+        format: 'PDF',
+        outcome: 'error',
+        target: 'risk_register',
+      })
       toast.notify({
         title: 'Unable to export PDF',
-        description: describeApiError(error),
+        description: failureMessage,
         variant: 'warning',
       })
     } finally {
@@ -808,12 +900,35 @@ function App() {
         filename: filename || `privacy-incident-${risk.id}-${new Date().toISOString().split('T')[0]}.pdf`,
       })
       trackEvent('export_pdf_download', { kind: 'privacy_incident', outcome: 'success' })
+      trackEvent('risk.batch-export', {
+        format: 'PDF',
+        outcome: 'success',
+        target: 'privacy_incident',
+      })
+      trackEvent('risk.export.format', {
+        format: 'PDF',
+        outcome: 'success',
+        target: 'privacy_incident',
+      })
+      queueFeedbackPrompt('export')
       setIsPdfExportModalOpen(false)
     } catch (error) {
       trackEvent('export_pdf_download', { kind: 'privacy_incident', outcome: 'error' })
+      const failureMessage = describeApiError(error)
+      trackEvent('risk.batch-export', {
+        format: 'PDF',
+        outcome: 'error',
+        target: 'privacy_incident',
+        message: failureMessage,
+      })
+      trackEvent('risk.export.format', {
+        format: 'PDF',
+        outcome: 'error',
+        target: 'privacy_incident',
+      })
       toast.notify({
         title: 'Unable to export PDF',
-        description: describeApiError(error),
+        description: failureMessage,
         variant: 'warning',
       })
     } finally {
@@ -858,6 +973,17 @@ function App() {
     const exporter = dashboardPdfExporterRef.current
     if (exporter) {
       exporter()
+      trackEvent('risk.batch-export', {
+        format: 'Dashboard',
+        outcome: 'success',
+        target: 'dashboard_charts',
+      })
+      trackEvent('risk.export.format', {
+        format: 'Dashboard',
+        outcome: 'success',
+        target: 'dashboard_charts',
+      })
+      queueFeedbackPrompt('export')
       setIsPdfExportModalOpen(false)
       return
     }
@@ -889,24 +1015,58 @@ function App() {
   }
 
   const handleDownloadExport = () => {
-    const csvContent = exportRisksToCSV(visibleRisks, exportVariant)
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    const suffix = exportVariant === 'audit_pack' ? '-audit-pack' : ''
-    link.download = `risk-register${suffix}-${new Date().toISOString().split('T')[0]}.csv`
-    link.style.display = 'none'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.setTimeout(() => URL.revokeObjectURL(url), 250)
-    setIsExportModalOpen(false)
-    trackEvent('export_csv', {
-      variant: exportVariant,
-      count: visibleRisks.length,
-      hasMatrixSelection: Boolean(matrixSelection),
-    })
+    try {
+      const csvContent = exportRisksToCSV(visibleRisks, exportVariant)
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      const suffix = exportVariant === 'audit_pack' ? '-audit-pack' : ''
+      link.download = `risk-register${suffix}-${new Date().toISOString().split('T')[0]}.csv`
+      link.style.display = 'none'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.setTimeout(() => URL.revokeObjectURL(url), 250)
+
+      trackEvent('export_csv', {
+        variant: exportVariant,
+        count: visibleRisks.length,
+        hasMatrixSelection: Boolean(matrixSelection),
+      })
+      trackEvent('risk.batch-export', {
+        format: 'CSV',
+        outcome: 'success',
+        variant: exportVariant,
+        count: visibleRisks.length,
+        hasMatrixSelection: Boolean(matrixSelection),
+      })
+      trackEvent('risk.export.format', {
+        format: 'CSV',
+        outcome: 'success',
+        variant: exportVariant,
+        count: visibleRisks.length,
+      })
+      queueFeedbackPrompt('export')
+    } catch (error) {
+      const description = error instanceof Error ? error.message : 'Unable to generate the CSV.'
+      toast.notify({
+        title: 'Unable to export CSV',
+        description,
+        variant: 'warning',
+      })
+      trackEvent('risk.batch-export', {
+        format: 'CSV',
+        outcome: 'error',
+        message: description,
+      })
+      trackEvent('risk.export.format', {
+        format: 'CSV',
+        outcome: 'error',
+      })
+    } finally {
+      setIsExportModalOpen(false)
+    }
   }
 
   const resetImportState = () => {
@@ -1285,6 +1445,13 @@ function App() {
       ),
     [allRisks],
   )
+
+  const feedbackPromptTriggerLabel =
+    feedbackPromptTrigger === 'risk'
+      ? 'risk creation workflow'
+      : feedbackPromptTrigger === 'export'
+      ? 'export flow'
+      : 'recent action'
 
   return (
     <div className="min-h-screen bg-surface-tertiary text-text-mid">
@@ -2047,8 +2214,23 @@ function App() {
               )}
 
               {activeView === 'overview' ? (
-                <div className="flex flex-col gap-6">
-                  {visibleStats.total === 0 ? (
+              <div className="flex flex-col gap-6">
+                {feedbackPromptStatus === 'visible' ? (
+                  <FeedbackPrompt
+                    triggerLabel={feedbackPromptTriggerLabel}
+                    onClose={() => setFeedbackPromptStatus('dismissed')}
+                    onSubscribeChange={handleFeedbackPromptSubscribeChange}
+                    onSubmit={handleFeedbackPromptSubmit}
+                  />
+                ) : feedbackPromptStatus === 'submitted' ? (
+                  <div className="rr-panel rounded-2xl border border-border-faint bg-surface-secondary/20 p-4 text-sm text-text-low">
+                    <p className="font-semibold text-text-high">Thanks for the clarity rating.</p>
+                    <p className="text-xs">
+                      Your response helps shape the next release and keeps the experience confident.
+                    </p>
+                  </div>
+                ) : null}
+                {visibleStats.total === 0 ? (
                     <div className="rr-panel p-5">
                       <p className="text-sm font-semibold text-text-high">Get started</p>
                       <p className="mt-1 text-sm text-text-low">

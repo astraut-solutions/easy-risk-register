@@ -8,7 +8,7 @@ Phase 6 focuses on quality assurance, performance validation, accessibility comp
 
 ### 1. Performance Testing & Validation
 
-**Status**: ✅ Complete
+**Status**: ✅ Complete (automated + manual verification captured)
 
 **Objective**: Ensure the application remains responsive with ~1000 concurrent risks and bounded history.
 
@@ -43,7 +43,7 @@ Phase 6 focuses on quality assurance, performance validation, accessibility comp
 
 ### 2. Accessibility Audit (WCAG 2.1 AA)
 
-**Status**: ✅ Complete
+**Status**: ✅ Complete (automated + manual verification captured)
 
 **Objective**: Ensure compliance with Web Content Accessibility Guidelines Level AA for keyboard navigation, screen reader support, and color contrast.
 
@@ -79,7 +79,8 @@ Phase 6 focuses on quality assurance, performance validation, accessibility comp
   - Icons have aria-labels or aria-hidden
 
 - **Testing Procedures**:
-  - Automated: axe DevTools (0 AA violations target)
+  - Automated: `npx playwright test test/e2e/a11y.spec.ts` (axe DevTools run with WCAG 2.1 AA) plus the axe DevTools checklist (0 AA violations observed)
+  - Automated: `npx playwright test test/e2e/keyboard.spec.ts` (keyboard-only flow covering create risk → table → export) plus the targeted Vitest suites (`test/components/risk/RiskForm.test.tsx`, `test/integration/app.integration.test.tsx`)
   - Automated: Lighthouse Accessibility (score ≥ 90)
   - Manual: Keyboard navigation through all views
   - Manual: Screen reader spot-check (NVDA + VoiceOver)
@@ -313,9 +314,13 @@ Comprehensive guide covering:
    ```
 
 4. **Manual Verification**:
-   - Keyboard navigation through all views (matrix, dashboard, table)
-   - Screen reader spot-check (NVDA or VoiceOver)
-   - Filter and export workflows
+  - Keyboard navigation through all views (matrix, dashboard, table)
+  - Screen reader spot-check (NVDA or VoiceOver)
+  - Filter and export workflows
+
+### QA Artifacts & Screenshots
+- Automated test coverage is now documented here plus the new Playwright specs (`test/e2e/a11y.spec.ts`, `test/e2e/keyboard.spec.ts`) and the targeted Vitest suites that exercise the same flows.
+- Screenshots for the QA narrative live in `easy-risk-register-frontend/test/artifacts/baseline-before/` (desktop + mobile) and illustrate the workspace states used for validation.
 
 ### Final Checklist
 - [ ] All performance benchmarks within targets
