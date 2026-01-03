@@ -1,8 +1,14 @@
 import { useAuthStore } from '../stores/authStore'
 
 function getApiBaseUrl(): string {
-  const base = import.meta.env.VITE_API_BASE_URL as string | undefined
-  return (base ?? '').replace(/\/+$/, '')
+  const base = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? ''
+  const trimmed = base.replace(/\/+$/, '')
+  if (trimmed) return trimmed
+  if (import.meta.env.DEV) {
+    // In dev we typically proxy to localhost:3000; make it explicit when no override is provided.
+    return 'http://localhost:3000'
+  }
+  return ''
 }
 
 function joinUrl(base: string, path: string): string {
@@ -115,6 +121,9 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   }
 
   const url = joinUrl(getApiBaseUrl(), path)
+  if (import.meta.env.DEV) {
+    console.debug('[apiFetch]', { method, path, url, workspaceId, hasToken: Boolean(accessToken) })
+  }
   try {
     return await fetch(url, { ...init, headers, method })
   } catch (error) {

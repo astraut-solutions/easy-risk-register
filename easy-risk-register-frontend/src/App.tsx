@@ -12,6 +12,7 @@ import { RiskMatrix } from './components/risk/RiskMatrix'
 import { RiskFiltersBar } from './components/risk/RiskFilters'
 import { RiskTable } from './components/risk/RiskTable'
 import { NowPanel, type NowPanelItem } from './components/risk/NowPanel'
+import { TrustStrip } from './components/TrustStrip'
 import { useRiskManagement } from './services/riskService'
 import type { Risk, RiskSeverity } from './types/risk'
 import { exportRisksToCSV, type CSVExportVariant, type ReminderFrequency } from './stores/riskStore'
@@ -33,7 +34,7 @@ import {
   openReportWindow,
 } from './utils/reports'
 import { computeReminderSummary, getFrequencyMs } from './utils/reminders'
-import { getEncryptionStatus } from './utils/encryptionManager'
+import { getEncryptionStatus, onEncryptionStatusChange } from './utils/encryptionManager'
 import { EncryptionSettingsPanel } from './components/privacy/EncryptionSettingsPanel'
 import { EndToEndEncryptionSettingsPanel } from './components/privacy/EndToEndEncryptionSettingsPanel'
 import { IntegrationSettingsPanel } from './components/integrations/IntegrationSettingsPanel'
@@ -114,6 +115,7 @@ function App() {
   const toast = useToast()
   const authStatus = useAuthStore((s) => s.status)
   const workspaceId = useAuthStore((s) => s.workspaceId)
+  const workspaceName = useAuthStore((s) => s.workspaceName)
   const syncFromApi = actions.syncFromApi
   const [editingRisk, setEditingRisk] = useState<Risk | null>(null)
   const [viewingRisk, setViewingRisk] = useState<Risk | null>(null)
@@ -154,6 +156,7 @@ function App() {
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === 'undefined' ? true : navigator.onLine,
   )
+  const [encryptionStatusVersion, setEncryptionStatusVersion] = useState(0)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const dashboardPdfExporterRef = useRef<null | (() => void)>(null)
   const maturityPdfExporterRef = useRef<null | (() => void)>(null)
@@ -176,6 +179,9 @@ function App() {
   }, [])
 
   const lastViewRef = useRef<DashboardView | null>(null)
+  const encryptionStatus = useMemo(() => getEncryptionStatus(), [encryptionStatusVersion])
+  const workspaceLabel =
+    authStatus === 'authenticated' ? workspaceName || 'Personal' : 'Personal (local)'
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -187,6 +193,12 @@ function App() {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }
+  }, [])
+
+  useEffect(() => {
+    const listener = () => setEncryptionStatusVersion((current) => current + 1)
+    const cleanup = onEncryptionStatusChange(listener)
+    return cleanup
   }, [])
 
   useEffect(() => {
@@ -1296,6 +1308,20 @@ function App() {
           <SectionHeader
             eyebrow="Easy Risk Register"
             title="Risk management workspace"
+            description={
+              <div className="space-y-2">
+                <p className="text-base text-text-low">
+                  Workspace status and safety cues keep you confident about every change.
+                </p>
+                <TrustStrip
+                  isOnline={isOnline}
+                  readOnlyMode={readOnlyMode}
+                  readOnlyReason={readOnlyReason}
+                  workspaceLabel={workspaceLabel}
+                  encryptionStatus={encryptionStatus}
+                />
+              </div>
+            }
             actions={
               <div className="flex flex-wrap items-center gap-3">
                 <Button

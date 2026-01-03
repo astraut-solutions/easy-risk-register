@@ -19,7 +19,7 @@ describe('SectionHeader', () => {
   })
 
   it('renders description when provided', () => {
-    render(<SectionHeader title="Test Title" description="Test Description" />)
+    render(<SectionHeader title="Test Title" description={<span>Test Description</span>} />)
     expect(screen.getByText('Test Description')).toBeInTheDocument()
   })
 
@@ -63,18 +63,18 @@ describe('SectionHeader', () => {
       'gap-4',
       'text-text-mid',
       'md:flex-row',
-      'md:items-end'
+      'md:items-center'
     )
   })
 
   it('renders all elements together', () => {
     render(
-      <SectionHeader 
-        title="Main Title"
-        eyebrow="Section"
-        description="Description text"
-        actions={<button>Action Button</button>}
-      />
+    <SectionHeader 
+      title="Main Title"
+      eyebrow="Section"
+      description={<span>Description text</span>}
+      actions={<button>Action Button</button>}
+    />
     )
 
     expect(screen.getByText('Section')).toBeInTheDocument()

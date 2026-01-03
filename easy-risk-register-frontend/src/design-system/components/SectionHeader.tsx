@@ -5,7 +5,7 @@ import { cn } from '../../utils/cn'
 interface SectionHeaderProps extends HTMLAttributes<HTMLElement> {
   eyebrow?: string
   title: string
-  description?: string
+  description?: ReactNode
   actions?: ReactNode
   className?: string
 }

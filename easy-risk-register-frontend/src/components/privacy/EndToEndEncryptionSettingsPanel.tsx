@@ -4,6 +4,7 @@ import { Button, Input, Modal } from '../../design-system'
 import { useToast } from '../feedback/ToastProvider'
 import { useAuthStore } from '../../stores/authStore'
 import { useRiskStore } from '../../stores/riskStore'
+import type { ApiError } from '../../services/apiClient'
 import { apiPatchJson } from '../../services/apiClient'
 import { riskService } from '../../services/riskService'
 import {
@@ -72,8 +73,8 @@ export const EndToEndEncryptionSettingsPanel = () => {
     setConfirmNextPassphrase('')
   }
 
-  const closeModal = () => {
-    if (working) return
+  const closeModal = (force = false) => {
+    if (working && !force) return
     setModal(null)
     setProgress(null)
     resetSecrets()
@@ -99,6 +100,22 @@ export const EndToEndEncryptionSettingsPanel = () => {
     return true
   }
 
+  const refreshRiskList = async () => {
+    try {
+      await riskService.syncFromApi()
+    } catch {
+      // best effort
+    }
+  }
+
+  const isApiError = (value: unknown): value is ApiError =>
+    Boolean(value && typeof value === 'object' && typeof (value as ApiError).status === 'number')
+
+  const swallowNotFound = (error: unknown) => {
+    if (isApiError(error) && error.status === 404) return
+    throw error
+  }
+
   const encryptRiskOnServer = async (risk: { id: string; description: string; mitigationPlan: string }) => {
     const key = getE2eeSessionKey(workspaceId)
     const kdf = getE2eeKdfConfig(workspaceId)
@@ -111,15 +128,23 @@ export const EndToEndEncryptionSettingsPanel = () => {
       mitigationPlan: risk.mitigationPlan ?? '',
     })
 
-    await apiPatchJson(`/api/risks/${risk.id}`, { encryptedFields })
+    try {
+      await apiPatchJson(`/api/risks/${risk.id}`, { encryptedFields })
+    } catch (error) {
+      swallowNotFound(error)
+    }
   }
 
   const decryptRiskOnServer = async (risk: { id: string; description: string; mitigationPlan: string }) => {
-    await apiPatchJson(`/api/risks/${risk.id}`, {
-      encryptedFields: {},
-      description: risk.description ?? '',
-      mitigationPlan: risk.mitigationPlan ?? '',
-    })
+    try {
+      await apiPatchJson(`/api/risks/${risk.id}`, {
+        encryptedFields: {},
+        description: risk.description ?? '',
+        mitigationPlan: risk.mitigationPlan ?? '',
+      })
+    } catch (error) {
+      swallowNotFound(error)
+    }
   }
 
   return (
@@ -246,7 +271,7 @@ export const EndToEndEncryptionSettingsPanel = () => {
                   }
                   refresh()
                   await riskService.syncFromApi()
-                  closeModal()
+                  closeModal(true)
                   toast.notify({
                     title: 'Unlocked',
                     description: 'Encrypted risk fields are available for this session.',
@@ -312,7 +337,7 @@ export const EndToEndEncryptionSettingsPanel = () => {
                   }
                   refresh()
                   await riskService.syncFromApi()
-                  closeModal()
+                  closeModal(true)
                   toast.notify({
                     title: 'Unlocked',
                     description: 'Encrypted risk fields are available for this session.',
@@ -384,7 +409,9 @@ export const EndToEndEncryptionSettingsPanel = () => {
                     return
                   }
 
-                  const candidates = risks.filter((risk) => !normalizeRiskEncryptedFieldsV1(risk.encryptedFields))
+                  await refreshRiskList()
+                  const latestRisks = useRiskStore.getState().risks
+                  const candidates = latestRisks.filter((risk) => !normalizeRiskEncryptedFieldsV1(risk.encryptedFields))
                   setProgress({ done: 0, total: candidates.length })
                   let done = 0
 
@@ -400,7 +427,7 @@ export const EndToEndEncryptionSettingsPanel = () => {
 
                   refresh()
                   await riskService.syncFromApi()
-                  closeModal()
+                  closeModal(true)
                   toast.notify({
                     title: 'End-to-end encryption enabled',
                     description: 'Selected risk fields are now encrypted in the database.',
@@ -486,7 +513,12 @@ export const EndToEndEncryptionSettingsPanel = () => {
                     return
                   }
 
-                  const candidates = risks.filter((risk) => Boolean(normalizeRiskEncryptedFieldsV1(risk.encryptedFields)))
+                  await refreshRiskList()
+                  const latestRisks = useRiskStore.getState().risks
+
+                  const candidates = latestRisks.filter((risk) =>
+                    Boolean(normalizeRiskEncryptedFieldsV1(risk.encryptedFields)),
+                  )
                   setProgress({ done: 0, total: candidates.length })
                   let done = 0
 
@@ -502,7 +534,7 @@ export const EndToEndEncryptionSettingsPanel = () => {
 
                   refresh()
                   await riskService.syncFromApi()
-                  closeModal()
+                  closeModal(true)
                   toast.notify({
                     title: 'Passphrase rotated',
                     description: 'Encrypted risk fields have been re-encrypted with the new passphrase.',
@@ -560,7 +592,12 @@ export const EndToEndEncryptionSettingsPanel = () => {
                 setWorking(true)
                 setProgress(null)
                 try {
-                  const candidates = risks.filter((risk) => Boolean(normalizeRiskEncryptedFieldsV1(risk.encryptedFields)))
+                  await refreshRiskList()
+                  const latestRisks = useRiskStore.getState().risks
+
+                  const candidates = latestRisks.filter((risk) =>
+                    Boolean(normalizeRiskEncryptedFieldsV1(risk.encryptedFields)),
+                  )
                   setProgress({ done: 0, total: candidates.length })
                   let done = 0
 
@@ -577,7 +614,7 @@ export const EndToEndEncryptionSettingsPanel = () => {
                   disableE2eeForWorkspace(workspaceId)
                   refresh()
                   await riskService.syncFromApi()
-                  closeModal()
+                  closeModal(true)
                   toast.notify({
                     title: 'End-to-end encryption disabled',
                     description: 'Selected fields are now stored as plaintext in the database.',

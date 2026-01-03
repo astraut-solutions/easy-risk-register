@@ -24,6 +24,17 @@ type EncryptionConfigV1 = {
 }
 
 let sessionKey: CryptoKey | null = null
+const ENCRYPTION_STATUS_EVENT = 'easy-risk-register:encryption-status-changed'
+const encryptionStatusTarget = new EventTarget()
+
+const notifyEncryptionStatusChange = () => {
+  encryptionStatusTarget.dispatchEvent(new Event(ENCRYPTION_STATUS_EVENT))
+}
+
+export const onEncryptionStatusChange = (handler: () => void) => {
+  encryptionStatusTarget.addEventListener(ENCRYPTION_STATUS_EVENT, handler)
+  return () => encryptionStatusTarget.removeEventListener(ENCRYPTION_STATUS_EVENT, handler)
+}
 
 const safeReadLocalStorage = (key: string) => {
   try {
@@ -96,6 +107,7 @@ export const getEncryptionStatus = (): EncryptionStatus => {
 
 export const lockEncryptionSession = () => {
   sessionKey = null
+  notifyEncryptionStatusChange()
 }
 
 export const unlockEncryptionSession = async (passphrase: string) => {
@@ -117,6 +129,7 @@ export const unlockEncryptionSession = async (passphrase: string) => {
     }
 
     sessionKey = key
+    notifyEncryptionStatusChange()
     return { ok: true as const }
   } catch {
     return { ok: false as const, reason: 'invalid_passphrase' as const }
@@ -181,6 +194,8 @@ export const enablePassphraseEncryption = async (params: {
     return { ok: false as const, reason: 'storage_error' as const }
   }
 
+  notifyEncryptionStatusChange()
+
   const current = safeReadLocalStorage(params.persistKey)
   if (typeof current === 'string' && current) {
     const encrypted = await encryptString(current, key)
@@ -212,6 +227,7 @@ export const disablePassphraseEncryption = async (params: { passphrase: string; 
 
   safeRemoveLocalStorage(ENCRYPTION_CONFIG_KEY)
   sessionKey = null
+  notifyEncryptionStatusChange()
   return { ok: true as const }
 }
 
@@ -251,6 +267,7 @@ export const wipeEncryptedData = (persistKey: string) => {
   safeRemoveLocalStorage(persistKey)
   safeRemoveLocalStorage(ENCRYPTION_CONFIG_KEY)
   sessionKey = null
+  notifyEncryptionStatusChange()
 }
 
 export const migrateLegacyAutoEncryptionIfPresent = async (persistKey: string) => {
