@@ -303,15 +303,15 @@ function mapApiChecklistToRiskChecklist(apiChecklist: ApiRiskChecklist): RiskChe
     completedAt: apiChecklist.completedAt ?? undefined,
     items: Array.isArray(apiChecklist.items)
       ? apiChecklist.items
-          .map((item) => ({
-            id: item.id,
-            position: Number(item.position),
-            description: item.description,
-            createdAt: item.createdAt,
-            completedAt: item.completedAt ?? undefined,
-            completedBy: item.completedBy ?? undefined,
-          }))
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+        .map((item) => ({
+          id: item.id,
+          position: Number(item.position),
+          description: item.description,
+          createdAt: item.createdAt,
+          completedAt: item.completedAt ?? undefined,
+          completedBy: item.completedBy ?? undefined,
+        }))
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
       : [],
   }
 }
@@ -325,12 +325,12 @@ function inflateRisk(apiRisk: ApiRisk): Risk {
 
   const checklistStatus =
     apiRisk.checklistStatus === 'not_started' ||
-    apiRisk.checklistStatus === 'in_progress' ||
-    apiRisk.checklistStatus === 'done'
+      apiRisk.checklistStatus === 'in_progress' ||
+      apiRisk.checklistStatus === 'done'
       ? apiRisk.checklistStatus
       : data.checklistStatus === 'not_started' ||
-          data.checklistStatus === 'in_progress' ||
-          data.checklistStatus === 'done'
+        data.checklistStatus === 'in_progress' ||
+        data.checklistStatus === 'done'
         ? (data.checklistStatus as ChecklistStatus)
         : 'not_started'
 
@@ -358,18 +358,18 @@ function inflateRisk(apiRisk: ApiRisk): Risk {
     reviewDate: typeof data.reviewDate === 'string' ? data.reviewDate : undefined,
     reviewCadence:
       data.reviewCadence === 'weekly' ||
-      data.reviewCadence === 'monthly' ||
-      data.reviewCadence === 'quarterly' ||
-      data.reviewCadence === 'semiannual' ||
-      data.reviewCadence === 'annual' ||
-      data.reviewCadence === 'ad-hoc'
+        data.reviewCadence === 'monthly' ||
+        data.reviewCadence === 'quarterly' ||
+        data.reviewCadence === 'semiannual' ||
+        data.reviewCadence === 'annual' ||
+        data.reviewCadence === 'ad-hoc'
         ? (data.reviewCadence as any)
         : undefined,
     riskResponse:
       data.riskResponse === 'treat' ||
-      data.riskResponse === 'transfer' ||
-      data.riskResponse === 'tolerate' ||
-      data.riskResponse === 'terminate'
+        data.riskResponse === 'transfer' ||
+        data.riskResponse === 'tolerate' ||
+        data.riskResponse === 'terminate'
         ? (data.riskResponse as any)
         : 'treat',
     ownerResponse: normalizeString(data.ownerResponse, ''),
@@ -572,7 +572,7 @@ export const riskService = {
           lastUpdatedAt: lastSyncedAt,
           risks: boundedRisks,
           categories: categoryNames,
-        }).catch(() => {})
+        }).catch(() => { })
       }
     } catch (error) {
       if (isOfflineOrUnreachable(error)) {
@@ -770,6 +770,8 @@ export const riskService = {
       ...(typeof reviewIntervalDays === 'number' ? { reviewIntervalDays } : {}),
     }
 
+    console.debug('[riskService] addRisk payload:', { p: payload.probability, i: payload.impact, title: payload.title })
+
     const workspaceId = useAuthStore.getState().workspaceId
     const e2eeStatus = getE2eeStatus(workspaceId)
     if (e2eeStatus.enabled) {
@@ -787,16 +789,16 @@ export const riskService = {
         mitigationPlan: input.mitigationPlan ?? '',
       })
 
-      ;(payload as any).encryptedFields = encryptedFields
-      ;(payload as any).description = ''
-      ;(payload as any).mitigationPlan = ''
+        ; (payload as any).encryptedFields = encryptedFields
+        ; (payload as any).description = ''
+        ; (payload as any).mitigationPlan = ''
     }
 
     const apiRisk = await apiPostJson<ApiRisk>('/api/risks', payload as any)
     const risk = await inflateRiskWithE2ee(apiRisk, workspaceId)
 
     useRiskStore.getState().upsertFromApi(risk)
-    void timeSeriesService.writeSnapshot(risk).catch(() => {})
+    void timeSeriesService.writeSnapshot(risk).catch(() => { })
     return risk
   },
 
@@ -870,6 +872,8 @@ export const riskService = {
       reviewIntervalDays,
     }
 
+    console.debug('[riskService] update patch:', { id, p: patch.probability, i: patch.impact })
+
     const workspaceId = useAuthStore.getState().workspaceId
     const e2eeStatus = getE2eeStatus(workspaceId)
     const touchesSensitive =
@@ -893,7 +897,7 @@ export const riskService = {
 
       delete (patch as any).description
       delete (patch as any).mitigationPlan
-      ;(patch as any).encryptedFields = encryptedFields
+        ; (patch as any).encryptedFields = encryptedFields
     }
 
     const apiRisk = await apiPatchJson<ApiRisk>(`/api/risks/${id}`, patch as any)
@@ -905,7 +909,7 @@ export const riskService = {
       Object.prototype.hasOwnProperty.call(updates, 'probability') ||
       Object.prototype.hasOwnProperty.call(updates, 'impact')
     if (risk && maybeScoreChanged) {
-      void timeSeriesService.writeSnapshot(risk).catch(() => {})
+      void timeSeriesService.writeSnapshot(risk).catch(() => { })
     }
 
     return risk

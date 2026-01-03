@@ -1,5 +1,5 @@
 import type { Risk } from '../../types/risk'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useId } from 'react'
 import {
   Badge,
   Button,
@@ -51,33 +51,34 @@ export const RiskTable = ({
 }: RiskTableProps) => {
   const [openActionsMenuForId, setOpenActionsMenuForId] = useState<string | null>(null)
 
+  const menuRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+
   useEffect(() => {
     if (!openActionsMenuForId) return
 
-    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
-      const menu = document.getElementById(`risk-actions-menu-${openActionsMenuForId}`)
-      const button = document.getElementById(`risk-actions-trigger-${openActionsMenuForId}`)
-      const target = event.target as Node | null
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      // If we clicked on the trigger for the SAME menu, let the individual click handler handle the toggle
+      if (triggerRef.current?.contains(event.target as Node)) {
+        return
+      }
 
-      if (!target) return
-      if (menu?.contains(target) || button?.contains(target)) return
-
-      setOpenActionsMenuForId(null)
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setOpenActionsMenuForId(null)
       }
     }
 
-    document.addEventListener('mousedown', handlePointerDown)
-    document.addEventListener('touchstart', handlePointerDown)
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpenActionsMenuForId(null)
+    }
+
+    document.addEventListener('mousedown', handleClickOutside, { capture: true })
+    document.addEventListener('touchstart', handleClickOutside, { capture: true })
     document.addEventListener('keydown', handleKeyDown)
 
     return () => {
-      document.removeEventListener('mousedown', handlePointerDown)
-      document.removeEventListener('touchstart', handlePointerDown)
+      document.removeEventListener('mousedown', handleClickOutside, { capture: true })
+      document.removeEventListener('touchstart', handleClickOutside, { capture: true })
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [openActionsMenuForId])
@@ -97,29 +98,31 @@ export const RiskTable = ({
   }
 
   return (
-    <div className="rr-panel overflow-x-auto p-0" role="region" aria-labelledby="risk-table-title">
+    <div className="rr-panel overflow-visible p-0" role="region" aria-labelledby="risk-table-title">
       <h3 id="risk-table-title" className="sr-only">Risk Table</h3>
       <Table
-        className="[&_th]:whitespace-nowrap"
+        className="[&_th]:whitespace-normal"
         role="table"
         aria-label="Risk register table showing key risk details"
       >
         <TableHeader className="bg-surface-secondary/60">
           <TableRow role="row">
             <TableHead role="columnheader" scope="col">Risk</TableHead>
-            <TableHead role="columnheader" scope="col">Category</TableHead>
-            <TableHead role="columnheader" scope="col" className="text-center">Score</TableHead>
-            <TableHead role="columnheader" scope="col">Owner</TableHead>
-            <TableHead role="columnheader" scope="col">Due</TableHead>
-            <TableHead role="columnheader" scope="col">Status</TableHead>
-            <TableHead role="columnheader" scope="col">Last updated</TableHead>
-            <TableHead role="columnheader" scope="col" className="text-center">Actions</TableHead>
+            <TableHead role="columnheader" scope="col" className="w-[140px]">Category</TableHead>
+            <TableHead role="columnheader" scope="col" className="text-center w-[100px]">Score</TableHead>
+            <TableHead role="columnheader" scope="col" className="w-[120px]">Owner</TableHead>
+            <TableHead role="columnheader" scope="col" className="w-[100px]">Due</TableHead>
+            <TableHead role="columnheader" scope="col" className="w-[100px]">Status</TableHead>
+            <TableHead role="columnheader" scope="col" className="w-[120px]">Last updated</TableHead>
+            <TableHead role="columnheader" scope="col" className="text-center w-[70px] px-2">
+              Actions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {risks.map((risk) => (
             <TableRow key={risk.id} role="row">
-              <TableCell className="max-w-[320px]" role="cell">
+              <TableCell className="max-w-[280px]" role="cell">
                 {onView ? (
                   <button
                     type="button"
@@ -136,12 +139,12 @@ export const RiskTable = ({
                   {risk.e2eeLocked ? 'Encrypted (locked)' : risk.description}
                 </p>
               </TableCell>
-              <TableCell role="cell">
+              <TableCell className="w-[140px]" role="cell">
                 <Badge tone="neutral" className="rounded-full px-3 py-1 text-xs font-semibold" aria-label={`Category: ${risk.category}`}>
                   {risk.category}
                 </Badge>
               </TableCell>
-              <TableCell className="text-center" role="cell">
+              <TableCell className="text-center w-[100px]" role="cell">
                 <Badge
                   tone={getSeverityTone(risk)}
                   subtle={false}
@@ -154,28 +157,29 @@ export const RiskTable = ({
                   {risk.probability}×{risk.impact} · {(risk.severity ?? getRiskSeverity(risk.riskScore)).toUpperCase()}
                 </p>
               </TableCell>
-              <TableCell role="cell">
+              <TableCell className="w-[120px]" role="cell">
                 <span className="text-sm text-text-high">{risk.owner || '-'}</span>
                 {risk.ownerTeam ? (
                   <p className="text-xs text-text-low">{risk.ownerTeam}</p>
                 ) : null}
               </TableCell>
-              <TableCell role="cell" aria-label={`Due date: ${formatMaybeDate(risk.dueDate)}`}>
+              <TableCell className="w-[100px]" role="cell" aria-label={`Due date: ${formatMaybeDate(risk.dueDate)}`}>
                 {formatMaybeDate(risk.dueDate)}
               </TableCell>
-              <TableCell role="cell" aria-label={`Status: ${risk.status}`}>
+              <TableCell className="w-[100px]" role="cell" aria-label={`Status: ${risk.status}`}>
                 <span className="capitalize">{risk.status}</span>
               </TableCell>
-              <TableCell role="cell" aria-label={`Last updated: ${dateFormatter.format(new Date(risk.lastModified))}`}>
+              <TableCell className="w-[120px]" role="cell" aria-label={`Last updated: ${dateFormatter.format(new Date(risk.lastModified))}`}>
                 {dateFormatter.format(new Date(risk.lastModified))}
               </TableCell>
-              <TableCell className="text-center" role="cell">
+              <TableCell className="text-center w-[70px] px-2" role="cell">
                 <div
                   className="relative flex items-center justify-center gap-2"
                   role="group"
                   aria-label={`Actions for risk ${risk.title}`}
                 >
                   <Button
+                    ref={openActionsMenuForId === risk.id ? triggerRef : undefined}
                     id={`risk-actions-trigger-${risk.id}`}
                     type="button"
                     size="sm"
@@ -187,9 +191,8 @@ export const RiskTable = ({
                     aria-haspopup="menu"
                     aria-expanded={openActionsMenuForId === risk.id}
                     aria-controls={`risk-actions-menu-${risk.id}`}
-                    className={`h-9 w-9 p-0 text-text-high ${
-                      openActionsMenuForId === risk.id ? 'ring-2 ring-brand-primary/30' : ''
-                    }`}
+                    className={`h-9 w-9 p-0 text-text-high ${openActionsMenuForId === risk.id ? 'ring-2 ring-brand-primary/30' : ''
+                      }`}
                   >
                     <span className="sr-only">More</span>
                     <svg
@@ -208,10 +211,11 @@ export const RiskTable = ({
 
                   {openActionsMenuForId === risk.id ? (
                     <div
+                      ref={menuRef}
                       id={`risk-actions-menu-${risk.id}`}
                       role="menu"
                       aria-label={`More actions for risk ${risk.title}`}
-                      className="absolute right-0 top-full z-20 mt-2 w-24 overflow-hidden rounded-2xl border border-border-faint bg-surface-primary shadow-[0_18px_35px_rgba(15,23,42,0.15)]"
+                      className="absolute right-0 bottom-full z-50 mb-2 w-32 overflow-hidden rounded-2xl border border-border-faint bg-surface-primary shadow-[0_18px_35px_rgba(15,23,42,0.15)]"
                     >
                       {onView ? (
                         <button
