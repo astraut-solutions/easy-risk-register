@@ -1,11 +1,15 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 // Accessibility testing utility component
 const AccessibilityTester = () => {
+  const runningRef = useRef(false);
+
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       // Run accessibility tests in development mode
       const runA11yTest = async () => {
+        if (runningRef.current) return;
+        runningRef.current = true;
         // Dynamic import to avoid build issues with axe-core
         const axeModule: any = await import('axe-core');
         const axe: any = axeModule.default;
@@ -32,6 +36,8 @@ const AccessibilityTester = () => {
           }
         } catch (err) {
           console.error('Accessibility test error:', err);
+        } finally {
+          runningRef.current = false;
         }
       };
 

@@ -30,7 +30,9 @@ export const SectionHeader = ({
       )}
       <div>
         <h1 className="text-3xl font-semibold text-text-high">{title}</h1>
-        {description && <p className="mt-2 max-w-3xl text-base text-text-low">{description}</p>}
+        {description && (
+          <div className="mt-2 max-w-3xl text-base text-text-low">{description}</div>
+        )}
       </div>
     </div>
     {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}

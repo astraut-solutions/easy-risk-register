@@ -38,18 +38,27 @@ function normalizePathname(pathname) {
 }
 
 function buildRoutes() {
-  const apiDir = path.join(__dirname, '..', 'api')
-  const files = walkFiles(apiDir)
+  const rootDir = path.join(__dirname, '..')
+  const apiDir = path.join(rootDir, 'api')
+  const serverApiDir = path.join(rootDir, 'server', 'api')
+
+  const files = [
+    ...walkFiles(apiDir).map(f => ({ file: f, base: apiDir })),
+    ...walkFiles(serverApiDir).map(f => ({ file: f, base: serverApiDir }))
+  ]
 
   const routes = []
 
-  for (const file of files) {
-    const rel = path.relative(apiDir, file).replace(/\\/g, '/')
+  for (const { file, base } of files) {
+    const rel = path.relative(base, file).replace(/\\/g, '/')
     if (rel.startsWith('_lib/')) continue
 
     let routePath = `/api/${rel.replace(/\.js$/, '')}`
     routePath = routePath.replace(/\/index$/, '')
     routePath = routePath.replace(/\/+/g, '/')
+
+    // Avoid duplication if the same route is found in both places (favor server/api)
+    if (routes.find(r => r.routePath === routePath)) continue
 
     const segments = routePath.split('/').filter(Boolean)
     const pattern = segments.map(segment => {
@@ -79,27 +88,41 @@ function matchRoute(routes, pathname) {
   const pathSegments = normalizePathname(pathname).split('/').filter(Boolean)
 
   for (const route of routes) {
-    if (route.pattern.length !== pathSegments.length) continue
-
     const params = {}
     let matched = true
+    let pathIdx = 0
 
     for (let i = 0; i < route.pattern.length; i++) {
       const segmentSpec = route.pattern[i]
-      const segmentValue = pathSegments[i]
 
+      if (segmentSpec.type === 'param' && segmentSpec.name.startsWith('...')) {
+        // Catch-all segment: consumes all remaining path segments
+        const paramName = segmentSpec.name.slice(3)
+        params[paramName] = pathSegments.slice(pathIdx)
+        pathIdx = pathSegments.length
+        break
+      }
+
+      if (pathIdx >= pathSegments.length) {
+        matched = false
+        break
+      }
+
+      const segmentValue = pathSegments[pathIdx]
       if (segmentSpec.type === 'literal') {
         if (segmentSpec.value !== segmentValue) {
           matched = false
           break
         }
-        continue
+      } else {
+        params[segmentSpec.name] = segmentValue
       }
-
-      params[segmentSpec.name] = segmentValue
+      pathIdx++
     }
 
-    if (matched) return { route, params }
+    if (matched && pathIdx === pathSegments.length) {
+      return { route, params }
+    }
   }
 
   return null
@@ -115,6 +138,7 @@ function setResponseHelpers(res) {
     if (!res.getHeader('content-type')) {
       res.setHeader('content-type', 'application/json; charset=utf-8')
     }
+    console.log(`[dev-api] ${res.statusCode} response body:`, JSON.stringify(payload))
     res.end(JSON.stringify(payload))
   }
 

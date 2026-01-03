@@ -1,14 +1,17 @@
 import { useAuthStore } from '../stores/authStore'
 
 function getApiBaseUrl(): string {
-  const base = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? ''
-  const trimmed = base.replace(/\/+$/, '')
-  if (trimmed) return trimmed
   if (import.meta.env.DEV) {
-    // In dev we typically proxy to localhost:3000; make it explicit when no override is provided.
-    return 'http://localhost:3000'
+    const direct = (import.meta.env.VITE_API_DIRECT_URL as string | undefined) ?? ''
+    const trimmedDirect = direct.replace(/\/+$/, '')
+    if (trimmedDirect) {
+      return trimmedDirect
+    }
+    return ''
   }
-  return ''
+
+  const base = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? ''
+  return base.replace(/\/+$/, '')
 }
 
 function joinUrl(base: string, path: string): string {
