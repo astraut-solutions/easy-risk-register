@@ -53,7 +53,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           </p>
         )}
         {error && (
-          <p id={errorId} className="mt-2 text-sm text-status-danger">
+          <p
+            id={errorId}
+            className="mt-2 text-sm text-status-danger"
+            role="status"
+            aria-live="assertive"
+          >
             {error}
           </p>
         )}

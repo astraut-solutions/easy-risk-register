@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Bar, Line, getElementAtEvent } from 'react-chartjs-2'
 
 import type { Risk, RiskFilters, RiskSeverity } from '../../types/risk'
@@ -104,6 +104,9 @@ export const RiskDashboardCharts = ({
   const severityChartRef = useRef<any>(null)
   const categoryChartRef = useRef<any>(null)
   const trendChartRef = useRef<any>(null)
+  const severitySummaryId = useId()
+  const categorySummaryId = useId()
+  const trendSummaryId = useId()
 
   const downloadPng = (opts: { dataUrl: string; filename: string }) => {
     try {
@@ -276,6 +279,12 @@ export const RiskDashboardCharts = ({
     [severityCounts],
   )
 
+  const severitySummary = useMemo(() => {
+    return severityOrder
+      .map((severity) => `${severityLabel[severity]} ${severityCounts[severity]}`)
+      .join(', ')
+  }, [severityCounts])
+
   const stackedCategoryData = useMemo(() => {
     return {
       labels: categorySeverityCounts.labels,
@@ -299,6 +308,15 @@ export const RiskDashboardCharts = ({
       }),
     [categorySeverityCounts],
   )
+
+  const categorySummary = useMemo(() => {
+    if (!categoryTableRows.length) {
+      return 'No categories are available yet.'
+    }
+    const topLabels = categoryTableRows.slice(0, 3)
+    const description = topLabels.map((row) => `${row.label} (${row.value})`).join(', ')
+    return `Top categories: ${description}.`
+  }, [categoryTableRows])
 
   const trendLineData = useMemo(() => {
     if (!historyEnabled) return null
@@ -338,6 +356,28 @@ export const RiskDashboardCharts = ({
       ],
     }
   }, [historyEnabled, recentChangeCounts, trendMode, trendSeries])
+
+  const trendSummary = useMemo(() => {
+    if (!historyEnabled) {
+      return 'Trend charts are disabled until score history tracking is enabled.'
+    }
+    if (!trendLineData) {
+      return 'No snapshots exist yet for the current selection.'
+    }
+    if (!trendLineData.labels.length) {
+      return 'Trend data has not been populated yet.'
+    }
+    const lastLabel = trendLineData.labels[trendLineData.labels.length - 1]
+    const rawValue = (trendLineData.datasets?.[0]?.data as Array<number | string> | undefined)?.[
+      trendLineData.labels.length - 1
+    ]
+    const formattedValue =
+      typeof rawValue === 'number' ? rawValue.toFixed(2) : String(rawValue ?? '0')
+    const trendDescriptor =
+      trendMode === 'recent_changes' ? 'score updates per day' : 'average score'
+
+    return `Trend (${trendDescriptor}) on ${lastLabel}: ${formattedValue}.`
+  }, [historyEnabled, trendLineData, trendMode])
 
   const drillDownButtons = useMemo(() => {
     return [] as DrillDownTarget[]
@@ -509,7 +549,11 @@ export const RiskDashboardCharts = ({
             </div>
           </div>
 
-          <div className="mt-2 h-80" aria-label="Severity distribution chart">
+          <div
+            className="mt-2 h-80"
+            aria-label="Severity distribution chart"
+            aria-describedby={severitySummaryId}
+          >
             <Bar
               ref={severityChartRef}
               data={severityBarData as any}
@@ -560,6 +604,9 @@ export const RiskDashboardCharts = ({
                 onDrillDown({ label: `Show ${severityLabel[severity]} severity`, filters: { severity } })
               }}
             />
+            <p id={severitySummaryId} className="sr-only">
+              {severitySummary}
+            </p>
           </div>
 
           {showSeverityTable ? renderDataTable(severityTableRows, 'Count') : null}
@@ -588,7 +635,11 @@ export const RiskDashboardCharts = ({
             </div>
           </div>
 
-          <div className="mt-2 h-80" aria-label="Category distribution chart">
+          <div
+            className="mt-2 h-80"
+            aria-label="Category distribution chart"
+            aria-describedby={categorySummaryId}
+          >
             <Bar
               ref={categoryChartRef}
               data={stackedCategoryData as any}
@@ -652,6 +703,9 @@ export const RiskDashboardCharts = ({
                 })
               }}
             />
+            <p id={categorySummaryId} className="sr-only">
+              {categorySummary}
+            </p>
           </div>
 
           {showCategoryTable ? renderDataTable(categoryTableRows, 'Count') : null}
@@ -699,7 +753,11 @@ export const RiskDashboardCharts = ({
             No snapshots available for the current selection yet. Update a risk’s likelihood/impact to start capturing trends.
           </div>
         ) : (
-          <div className="mt-2 h-80" aria-label="Trend chart">
+          <div
+            className="mt-2 h-80"
+            aria-label="Trend chart"
+            aria-describedby={trendSummaryId}
+          >
             <Line
               ref={trendChartRef}
               data={trendLineData as any}
@@ -738,6 +796,9 @@ export const RiskDashboardCharts = ({
                 }
               }}
             />
+            <p id={trendSummaryId} className="sr-only">
+              {trendSummary}
+            </p>
           </div>
         )}
 

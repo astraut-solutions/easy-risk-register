@@ -17,6 +17,11 @@
     @apply min-h-screen bg-surface-secondary;
   }
 
+  :focus-visible {
+    outline: 3px solid #2563eb;
+    outline-offset: 3px;
+  }
+
   code {
     font-family: 'JetBrains Mono', 'Fira Code', 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
   }
