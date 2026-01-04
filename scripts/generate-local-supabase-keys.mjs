@@ -39,6 +39,9 @@ const serviceKey = signJwtHs256(
 );
 
 process.stdout.write(`SUPABASE_JWT_SECRET=${jwtSecret}\n`);
+process.stdout.write(`SUPABASE_PUBLISHABLE_KEY=${anonKey}\n`);
+process.stdout.write(`SUPABASE_SECRET_KEY=${serviceKey}\n`);
 process.stdout.write(`SUPABASE_ANON_KEY=${anonKey}\n`);
 process.stdout.write(`SUPABASE_SERVICE_KEY=${serviceKey}\n`);
+process.stdout.write(`SUPABASE_SERVICE_ROLE_KEY=${serviceKey}\n`);
 

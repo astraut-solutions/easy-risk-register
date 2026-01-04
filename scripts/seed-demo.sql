@@ -5,6 +5,9 @@
 --   workspace_name (text)
 --   owner_email, admin_email, member_email (text; optional)
 
+\set owner_email 'rooma.rizwan@yahoo.com'
+\set owner_id '5b091040-12a0-4517-a29c-71c5e98d946a'
+
 -- This app auto-selects the *oldest* workspace created by the current user.
 -- When users are created in GoTrue, a "Personal" workspace may be created automatically.
 -- To ensure the frontend shows seeded data immediately after login, seed into each user's personal workspace.

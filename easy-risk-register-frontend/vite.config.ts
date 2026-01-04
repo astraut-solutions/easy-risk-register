@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import { promises as dns } from 'node:dns'
 
 // https://vite.dev/config/
 function cspHeader({ mode }: { mode: string }) {
@@ -37,10 +38,33 @@ function cspHeader({ mode }: { mode: string }) {
   ].join('; ')
 }
 
-export default defineConfig(({ mode }) => {
+async function resolveProxyTarget(targets: string[]) {
+  for (const candidate of targets) {
+    try {
+      const candidateHostname = new URL(candidate).hostname
+      await dns.lookup(candidateHostname)
+      return candidate
+    } catch {
+      // Any DNS hiccup means the unresolved candidate gets skipped.
+    }
+  }
+  return null
+}
+
+export default defineConfig(async ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const apiProxyTarget =
-    env.API_PROXY_TARGET || env.VITE_API_BASE_URL || 'http://localhost:3000'
+  const fallbackTarget = 'http://localhost:3000'
+  const candidateTargets = [env.API_PROXY_TARGET, env.VITE_API_BASE_URL].filter(
+    (value): value is string => Boolean(value),
+  )
+  // The fallback logic is only needed when Vite runs on the host OS.
+  // Dockerized containers signal that the API hostname already exists.
+  const shouldFallback = env.VITE_RUNNING_IN_DOCKER !== 'true'
+  const resolvedTarget =
+    shouldFallback && candidateTargets.length > 0
+      ? await resolveProxyTarget(candidateTargets)
+      : null
+  const apiProxyTarget = resolvedTarget ?? candidateTargets[0] ?? fallbackTarget
 
   return {
     plugins: [react()],

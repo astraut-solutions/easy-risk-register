@@ -19,7 +19,7 @@ Vercel has two different “places” env vars are used:
 Required for Supabase browser auth:
 
 - `VITE_SUPABASE_URL` — Supabase Project URL
-- `VITE_SUPABASE_ANON_KEY` — Supabase anon/public key (**safe to expose**)
+- `VITE_SUPABASE_PUBLISHABLE_KEY` — Supabase publishable key (legacy `VITE_SUPABASE_ANON_KEY` still works; still safe to expose)
 
 Common optional vars:
 
@@ -33,7 +33,8 @@ Never put secrets in `VITE_*` variables.
 Required for `/api/*` authentication + data access:
 
 - `SUPABASE_URL` — Supabase Project URL (same value as `VITE_SUPABASE_URL`)
-- `SUPABASE_ANON_KEY` — Supabase anon/public key (used with user JWT so RLS applies)
+- `SUPABASE_PUBLISHABLE_KEY` — Supabase publishable key (used with user JWT so RLS applies; legacy `SUPABASE_ANON_KEY` still works)
+- `SUPABASE_SECRET_KEY` — Supabase secret key (server-only; replaces the old service role key)
 
 Recommended / conditional:
 
@@ -42,7 +43,7 @@ Recommended / conditional:
 
 Admin-only (only needed if you add endpoints that must bypass RLS):
 
-- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (**server-only; never expose to the browser**)
+- `SUPABASE_SERVICE_ROLE_KEY` — Legacy alias for the service role key; set it to the same value as `SUPABASE_SECRET_KEY` if you need to keep using the old name (**server-only; never expose to the browser**)
 
 ## Risk scoring thresholds (workspace-configurable)
 
@@ -66,8 +67,8 @@ where workspace_id = '<workspace-uuid>';
 From your Supabase project:
 
 - **Project URL**: Project Settings → API → “Project URL”
-- **Anon key**: Project Settings → API → “anon public”
-- **Service role key**: Project Settings → API → “service_role” (**treat as a secret**)
+- **Publishable key**: Project Settings → API → “publishable key” (legacy “anon public” key is still valid)
+- **Secret key**: Project Settings → API → “secret key” (replaces the old “service_role” key; treat as a secret)
 - **JWT secret** (optional): Project Settings → API → JWT Settings → “JWT Secret”
 
 ## Vercel setup

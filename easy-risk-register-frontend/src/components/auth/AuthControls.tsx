@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { getSupabaseClient, getSupabaseEnv } from '../../lib/supabase'
 import { useAuthStore } from '../../stores/authStore'
@@ -31,12 +31,12 @@ export function AuthControls() {
     return workspaceName || 'Personal'
   }, [status, workspaceName])
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setIsModalOpen(false)
     setError(null)
     setBusy(false)
     setMode('sign_in')
-  }
+  }, [setIsModalOpen, setError, setBusy, setMode])
 
   useEffect(() => {
     if (!isMenuOpen) return
@@ -255,7 +255,7 @@ export function AuthControls() {
       >
         {!supabaseConfigured ? (
           <div className="rounded-2xl border border-status-warning/30 bg-status-warning/10 p-4 text-sm text-text-high">
-            Supabase is not configured. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `easy-risk-register-frontend/.env`.
+            Supabase is not configured. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (or the legacy `VITE_SUPABASE_ANON_KEY`) in `easy-risk-register-frontend/.env`.
           </div>
         ) : (
           <div className="space-y-4">

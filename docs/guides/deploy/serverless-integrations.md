@@ -62,7 +62,8 @@ Notes:
 Server-side environment variables:
 
 - `SUPABASE_URL` (required)
-- `SUPABASE_ANON_KEY` (required; server uses this with the user's JWT so RLS enforces access)
+- `SUPABASE_PUBLISHABLE_KEY` (required; used together with the user JWT so RLS enforces access; legacy `SUPABASE_ANON_KEY` still works)
+- `SUPABASE_SECRET_KEY` (required; server-only key with service-role privileges for workspace-scoped queries)
 - `SUPABASE_JWT_SECRET` (optional; enables local JWT verification, otherwise the API verifies via Supabase Auth)
 - `ENCRYPTION_KEY` (required in production; used by `/api/data-protection`)
 
@@ -81,13 +82,14 @@ Start it:
 Set server-side env vars for your local serverless runtime (`vercel dev`):
 
 - `SUPABASE_URL=http://127.0.0.1:54321`
-- `SUPABASE_ANON_KEY=<dev key>`
+- `SUPABASE_PUBLISHABLE_KEY=<dev publishable key>`
+- `SUPABASE_SECRET_KEY=<dev secret key>`
 - `SUPABASE_JWT_SECRET=<dev jwt secret>` (optional but recommended for local verification)
 
 Dev-only defaults used by the minimal compose stack:
 
 - JWT secret: `dev-supabase-jwt-secret` (override by setting `SUPABASE_JWT_SECRET`)
-- Keys: generated JWTs for `anon` and `service_role` (set `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_KEY`)
+- Keys: generated JWTs for `publishable` and `secret` (set `SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_SECRET_KEY`; legacy `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_KEY` still work)
 
 ### Rotating local Supabase keys (recommended after any exposure)
 
@@ -110,7 +112,8 @@ Notes:
 Server-side environment variables:
 
 - `SUPABASE_URL` (compose gateway: `http://127.0.0.1:54321`)
-- `SUPABASE_ANON_KEY` (set in `/.env.local` or your shell)
+- `SUPABASE_PUBLISHABLE_KEY` (set in `/.env.local` or your shell; legacy `SUPABASE_ANON_KEY` still works)
+- `SUPABASE_SECRET_KEY` (set in `/.env.local` or your shell; legacy `SUPABASE_SERVICE_KEY` still works)
 - `SUPABASE_JWT_SECRET` (optional; local JWT verification)
 
 ## Local development options
@@ -136,7 +139,8 @@ Notes:
 
 3) Set server env vars for local `vercel dev`:
 - `SUPABASE_URL=http://127.0.0.1:54321`
-- `SUPABASE_ANON_KEY=...` (from your `/.env.local` or `scripts/generate-local-supabase-keys.mjs`)
+- `SUPABASE_PUBLISHABLE_KEY=...` (from your `/.env.local` or `scripts/generate-local-supabase-keys.mjs`)
+- `SUPABASE_SECRET_KEY=...` (from your `/.env.local` or `scripts/generate-local-supabase-keys.mjs`; legacy `SUPABASE_SERVICE_KEY` also works)
 - `SUPABASE_JWT_SECRET=...` (optional; enables local JWT verification)
 
 4) Run local serverless + frontend:
@@ -149,5 +153,5 @@ Notes:
 - `GET /api/timeseries/query` is kept as a backwards-compatible endpoint and reads from the same snapshots data.
 
 6) Optional verification (1000 risks + retention bounds):
-- Set `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (or `SUPABASE_SERVICE_KEY`) in your shell
+- Set `SUPABASE_URL` + `SUPABASE_SECRET_KEY` (or `SUPABASE_SERVICE_ROLE_KEY`/`SUPABASE_SERVICE_KEY`) in your shell
 - Run `npm run verify:score-history`

@@ -1,0 +1,47 @@
+services:
+  api-cloud:
+    image: node:20-alpine
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/app
+      - api_cloud_node_modules:/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      # Provide your cloud Supabase values in the root `.env` (see README/docs).
+      - SUPABASE_URL=${SUPABASE_URL:-http://localhost:54321}
+      - SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
+      - SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY:-}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SECRET_KEY:-}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY:-}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET:-}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+    command: ["sh", "-lc", "npm ci --silent && node scripts/dev-api-server.js"]
+
+  frontend-cloud:
+    build:
+      context: ./easy-risk-register-frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./easy-risk-register-frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_RUNNING_IN_DOCKER=true
+      - VITE_SUPABASE_URL=${SUPABASE_URL:-http://localhost:54321}
+      - VITE_SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-}
+      - VITE_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
+      - VITE_API_BASE_URL=http://api-cloud:3000
+      - API_PROXY_TARGET=http://api-cloud:3000
+    restart: unless-stopped
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+    depends_on:
+      - api-cloud
+
+volumes:
+  api_cloud_node_modules:

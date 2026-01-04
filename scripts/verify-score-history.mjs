@@ -6,10 +6,11 @@ import { createClient } from '@supabase/supabase-js'
 const env = (key) => (process.env[key] ?? '').trim()
 
 const SUPABASE_URL = env('SUPABASE_URL')
-const SERVICE_KEY = env('SUPABASE_SERVICE_ROLE_KEY') || env('SUPABASE_SERVICE_KEY')
+const SERVICE_KEY =
+  env('SUPABASE_SECRET_KEY') || env('SUPABASE_SERVICE_ROLE_KEY') || env('SUPABASE_SERVICE_KEY')
 
 if (!SUPABASE_URL || !SERVICE_KEY) {
-  console.error('Missing env vars: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SERVICE_KEY).')
+  console.error('Missing env vars: SUPABASE_URL and SUPABASE_SECRET_KEY (or SUPABASE_SERVICE_ROLE_KEY/SUPABASE_SERVICE_KEY).')
   process.exit(1)
 }
 

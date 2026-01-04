@@ -7,6 +7,7 @@ services:
       - "3001:8080"
     environment:
       - NODE_ENV=production
+      - VITE_RUNNING_IN_DOCKER=true
       # Local dev convenience: proxy `/api/*` (handled by `easy-risk-register-frontend/server.mjs`) to the dev API server.
       # In production deployments, `/api/*` is served by the platform (e.g., Vercel), so this is not used.
       - API_PROXY_TARGET=http://api-dev:3000
@@ -32,8 +33,10 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
+      - VITE_RUNNING_IN_DOCKER=true
       # Browser-side Supabase client (served from Vite) should talk to the local gateway by default.
       - VITE_SUPABASE_URL=${SUPABASE_URL:-http://localhost:54321}
+      - VITE_SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-}
       - VITE_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
       # Vercel-style serverless APIs are not served by Vite; point the browser at the local dev API server.
       - VITE_API_BASE_URL=http://localhost:3000
@@ -60,9 +63,12 @@ services:
       - SUPABASE_URL_INTERNAL=http://supabase-gateway
       # Fallbacks are for local dev only; prefer setting these in `.env`.
       - SUPABASE_URL=${SUPABASE_URL:-http://localhost:54321}
+      - SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-}
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
       - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET:-dev-supabase-jwt-secret}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_KEY:-}
+      - SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY:-}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SECRET_KEY:-}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY:-}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
     depends_on:
       - supabase-gateway
@@ -76,8 +82,9 @@ services:
     image: supabase/postgres:15.1.0.117
     restart: unless-stopped
     environment:
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=postgres
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-postgres}
     ports:
       - "54322:5432"
     volumes:
@@ -97,7 +104,7 @@ services:
     depends_on:
       - supabase-db
     environment:
-      - PGRST_DB_URI=postgres://postgres:postgres@supabase-db:5432/postgres
+      - PGRST_DB_URI=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@supabase-db:5432/${POSTGRES_DB:-postgres}
       - PGRST_DB_SCHEMAS=public
       - PGRST_DB_ANON_ROLE=anon
       - PGRST_JWT_SECRET=${SUPABASE_JWT_SECRET:-dev-supabase-jwt-secret}
@@ -119,7 +126,8 @@ services:
       - GOTRUE_DB_DRIVER=postgres
       # Use a dedicated superuser role with a search_path that includes `auth` so GoTrue migrations
       # that create types without schema qualification land in the correct namespace.
-      - GOTRUE_DB_DATABASE_URL=postgres://supabase_admin:postgres@supabase-db:5432/postgres?options=-c%20search_path%3Dauth%2Cpublic
+      - SUPABASE_ADMIN_PASSWORD=${SUPABASE_ADMIN_PASSWORD:-postgres}
+      - GOTRUE_DB_DATABASE_URL=postgres://supabase_admin:${SUPABASE_ADMIN_PASSWORD:-postgres}@supabase-db:5432/postgres?options=-c%20search_path%3Dauth%2Cpublic
       # Keep all auth objects in the `auth` schema so newer GoTrue migrations don't error.
       - GOTRUE_DB_NAMESPACE=auth
       - DB_NAMESPACE=auth
@@ -149,7 +157,7 @@ services:
       - SERVICE_KEY=${SUPABASE_SERVICE_KEY:-__MISSING_SUPABASE_SERVICE_KEY__}
       - POSTGREST_URL=http://supabase-rest:3000
       - PGRST_JWT_SECRET=${SUPABASE_JWT_SECRET:-dev-supabase-jwt-secret}
-      - DATABASE_URL=postgres://postgres:postgres@supabase-db:5432/postgres
+      - DATABASE_URL=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@supabase-db:5432/${POSTGRES_DB:-postgres}
       - FILE_SIZE_LIMIT=52428800
       - STORAGE_BACKEND=file
       - FILE_STORAGE_BACKEND_PATH=/var/lib/storage
@@ -173,9 +181,9 @@ services:
       - RLIMIT_NOFILE=1048576
       - DB_HOST=supabase-db
       - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=postgres
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_NAME=${POSTGRES_DB:-postgres}
       - DB_SSL=false
       - JWT_SECRET=${SUPABASE_JWT_SECRET:-dev-supabase-jwt-secret}
       - SECRET_KEY_BASE=dev-secret-key-base-change-me
@@ -209,9 +217,9 @@ services:
       - PG_META_PORT=8080
       - PG_META_DB_HOST=supabase-db
       - PG_META_DB_PORT=5432
-      - PG_META_DB_NAME=postgres
-      - PG_META_DB_USER=postgres
-      - PG_META_DB_PASSWORD=postgres
+      - PG_META_DB_NAME=${POSTGRES_DB:-postgres}
+      - PG_META_DB_USER=${POSTGRES_USER:-postgres}
+      - PG_META_DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
     profiles:
       - development
 
@@ -226,7 +234,7 @@ services:
       - "54323:3000"
     environment:
       - STUDIO_PG_META_URL=http://supabase-meta:8080
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - JWT_SECRET=${SUPABASE_JWT_SECRET:-dev-supabase-jwt-secret}
       - SUPABASE_URL=http://supabase-gateway
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-__MISSING_SUPABASE_ANON_KEY__}

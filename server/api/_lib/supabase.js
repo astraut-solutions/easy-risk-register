@@ -79,9 +79,19 @@ function requireSupabaseUrl() {
 }
 
 function requireSupabaseServiceRoleKey() {
+  const secret = getEnv('SUPABASE_SECRET_KEY')
+  if (secret) return secret
+
   const explicit = getEnv('SUPABASE_SERVICE_ROLE_KEY')
   if (explicit) return explicit
+
   return requireEnv('SUPABASE_SERVICE_KEY')
+}
+
+function requirePublishableKey() {
+  const publishable = getEnv('SUPABASE_PUBLISHABLE_KEY')
+  if (publishable) return publishable
+  return requireEnv('SUPABASE_ANON_KEY')
 }
 
 function getSupabaseAdmin() {
@@ -95,18 +105,18 @@ function getSupabaseAdmin() {
 
 function getSupabaseAuthClient() {
   const url = requireSupabaseUrl()
-  const anonKey = requireEnv('SUPABASE_ANON_KEY')
+  const publishableKey = requirePublishableKey()
 
-  return createClient(url, anonKey, {
+  return createClient(url, publishableKey, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   })
 }
 
 function getSupabaseUserClient(accessToken) {
   const url = requireSupabaseUrl()
-  const anonKey = requireEnv('SUPABASE_ANON_KEY')
+  const publishableKey = requirePublishableKey()
 
-  return createClient(url, anonKey, {
+  return createClient(url, publishableKey, {
     global: {
       headers: {
         Authorization: `Bearer ${accessToken}`,

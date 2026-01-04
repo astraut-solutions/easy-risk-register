@@ -103,7 +103,7 @@ Diagrams and a deeper breakdown are in [Architecture Documentation](docs/archite
    ```
 3. Create `easy-risk-register-frontend/.env` (see `easy-risk-register-frontend/.env.example`) and set:
    - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY` (or legacy `VITE_SUPABASE_ANON_KEY` until your project rotates)
    - `VITE_API_BASE_URL` (optional; set when pointing at a separate API host)
 4. Install dependencies:
    ```bash
@@ -142,7 +142,7 @@ If you run the full dev profile (including the local Supabase-compatible service
 ```bash
 cp .env.example .env
 ```
-Then set `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_KEY` in `.env` (do not commit `.env`).
+Then set `SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY` in `.env` (do not commit `.env`). You can also keep the legacy `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_KEY` entries temporarily if you have not rotated the keys yet.
 
 Then open [http://localhost:5173](http://localhost:5173).
 
@@ -155,7 +155,7 @@ If you want demo users and sample data in the UI, use the built-in seed script (
    cp .env.example .env
    node scripts/generate-local-supabase-keys.mjs
    ```
-   Paste the printed values into `.env` as `SUPABASE_JWT_SECRET`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_KEY`, then restart the compose stack.
+   Paste the printed values into `.env` as `SUPABASE_JWT_SECRET`, `SUPABASE_PUBLISHABLE_KEY`, and `SUPABASE_SECRET_KEY` (or the legacy `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_KEY` entries), then restart the compose stack.
 
 2. Start the full local stack (DB + gateway/auth/rest/storage + API dev server + frontend + Studio):
    ```bash
@@ -199,6 +199,16 @@ To stop/remove containers:
 ```bash
 docker compose down
 ```
+
+### Docker Compose (Supabase Cloud)
+
+Run the `frontend` and API containers against a hosted Supabase project by pointing the compose file at your cloud values. Add your Supabase credentials (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, and optionally `SUPABASE_JWT_SECRET` / `ENCRYPTION_KEY`) to the root `.env` so both the frontend and API containers inherit them. You can also keep the legacy `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_KEY` entries while you rotate the keys. Then:
+
+```
+docker compose -f docker-compose.cloud.yml up --build api-cloud frontend-cloud
+```
+
+The frontend proxies `/api/*` to `api-cloud`, and the API container forwards those requests to the configured Supabase project. Tear it down with `docker compose -f docker-compose.cloud.yml down`.
 
 ## User Journey Examples
 

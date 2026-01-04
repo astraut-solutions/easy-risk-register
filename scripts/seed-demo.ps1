@@ -104,7 +104,7 @@ function New-GoTrueUser([string]$email, [string]$password, [string]$serviceKey) 
         continue
       }
 
-      throw "Failed to create auth user '$email' via GoTrue admin API at '$uri'. Ensure supabase-gateway and supabase-auth are running, and SUPABASE_SERVICE_KEY in .env is valid. Underlying error: $message"
+      throw "Failed to create auth user '$email' via GoTrue admin API at '$uri'. Ensure supabase-gateway and supabase-auth are running, and SUPABASE_SECRET_KEY (or SUPABASE_SERVICE_KEY) in .env is valid. Underlying error: $message"
     }
   }
   throw "Timed out creating auth user '$email' via GoTrue admin API at '$uri'."
@@ -115,12 +115,18 @@ $envPath = Join-Path $repoRoot ".env"
 $env = Read-DotEnvFile $envPath
 
 if (-not $SkipAuthUsers) {
-  if (-not $env.ContainsKey("SUPABASE_SERVICE_KEY")) {
-    throw "Missing SUPABASE_SERVICE_KEY in '$envPath'. Create it from .env.example and set keys (or run: node scripts/generate-local-supabase-keys.mjs)."
+  if (-not ($env.ContainsKey("SUPABASE_SECRET_KEY") -or $env.ContainsKey("SUPABASE_SERVICE_KEY"))) {
+    throw "Missing SUPABASE_SECRET_KEY (or SUPABASE_SERVICE_KEY) in '$envPath'. Create it from .env.example and set keys (or run: node scripts/generate-local-supabase-keys.mjs)."
   }
-  if ($env["SUPABASE_SERVICE_KEY"] -match '^sb_service_role_change_me$') {
-    throw "SUPABASE_SERVICE_KEY in '$envPath' is still the placeholder value. Generate real keys (node scripts/generate-local-supabase-keys.mjs) and restart the docker compose stack."
+  $serviceKey = $env["SUPABASE_SECRET_KEY"]
+  if (-not $serviceKey) {
+    $serviceKey = $env["SUPABASE_SERVICE_KEY"]
   }
+  if ($serviceKey -match '^sb_secret_change_me$' -or $serviceKey -match '^sb_service_role_change_me$') {
+    throw "Supabase service key in '$envPath' still uses the placeholder value. Generate real keys (node scripts/generate-local-supabase-keys.mjs) and restart the docker compose stack."
+  }
+} else {
+  $serviceKey = ''
 }
 
 Require-RunningService "supabase-db"
@@ -145,7 +151,6 @@ if ($suffix) {
 }
 
 if (-not $SkipAuthUsers) {
-  $serviceKey = $env["SUPABASE_SERVICE_KEY"]
   $ownerId = New-GoTrueUser -email $ownerEmail -password $Password -serviceKey $serviceKey
   $adminId = New-GoTrueUser -email $adminEmail -password $Password -serviceKey $serviceKey
   $memberId = New-GoTrueUser -email $memberEmail -password $Password -serviceKey $serviceKey

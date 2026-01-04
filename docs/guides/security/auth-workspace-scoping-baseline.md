@@ -11,7 +11,7 @@ This repo uses **Supabase Auth** for user identity and **workspace scoping** for
 
 1) The frontend creates a Supabase client using:
    - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY` (or the legacy `VITE_SUPABASE_ANON_KEY` until your project rotates)
 
 2) On load and on auth state changes, the frontend:
    - reads the current Supabase session
