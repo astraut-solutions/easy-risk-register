@@ -154,9 +154,12 @@ function App() {
     overdue: number
     dueSoon: number
   } | null>(null)
-  const [isOnline, setIsOnline] = useState(() =>
-    typeof navigator === 'undefined' ? true : navigator.onLine,
-  )
+  const [isOnline, setIsOnline] = useState(() => {
+    if (authStatus === 'authenticated') {
+      return typeof navigator === 'undefined' ? true : navigator.onLine
+    }
+    return false
+  })
   const [encryptionStatusVersion, setEncryptionStatusVersion] = useState(0)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const dashboardPdfExporterRef = useRef<null | (() => void)>(null)
@@ -193,7 +196,11 @@ function App() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const handleOnline = () => setIsOnline(true)
+    const handleOnline = () => {
+      if (useAuthStore.getState().status === 'authenticated') {
+        setIsOnline(true)
+      }
+    }
     const handleOffline = () => setIsOnline(false)
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
@@ -202,6 +209,15 @@ function App() {
       window.removeEventListener('offline', handleOffline)
     }
   }, [])
+
+  useEffect(() => {
+    const navigatorIsOnline = typeof navigator === 'undefined' ? true : navigator.onLine
+    if (authStatus === 'authenticated') {
+      setIsOnline(navigatorIsOnline)
+    } else {
+      setIsOnline(false)
+    }
+  }, [authStatus])
 
   useEffect(() => {
     const listener = () => setEncryptionStatusVersion((current) => current + 1)
