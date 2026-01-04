@@ -37,7 +37,7 @@ Required for `/api/*` authentication + data access:
 
 Recommended / conditional:
 
-- `SUPABASE_JWT_SECRET` — optional; enables local JWT verification (HS256). If unset, the API verifies tokens via Supabase Auth.
+- `SUPABASE_JWT_SECRET` - optional; enables local JWT verification (HS256). Set it to the **Legacy JWT secret (still used)** value from Supabase → Settings → API → JWT Settings so the functions can verify tokens without extra network calls. If unset, the API verifies tokens via Supabase Auth.
 - `ENCRYPTION_KEY` — required in production for `/api/data-protection` (32 bytes). Accepts `base64` (32 bytes) or `hex` (64 chars). Generate one with: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
 
 Admin-only (only needed if you add endpoints that must bypass RLS):
