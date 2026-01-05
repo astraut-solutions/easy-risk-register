@@ -344,6 +344,10 @@ function App() {
   useEffect(() => {
     const encryption = getEncryptionStatus()
     if (encryption.available && encryption.enabled && !encryption.unlocked) return
+    if (authStatus !== 'authenticated') {
+      setReminderSummary(null)
+      return
+    }
     if (!settings.reminders.enabled) {
       setReminderSummary(null)
       return
@@ -422,6 +426,7 @@ function App() {
   }, [
     actions,
     allRisks,
+    authStatus,
     settings.reminders.enabled,
     settings.reminders.frequency,
     settings.reminders.lastTriggeredAt,
